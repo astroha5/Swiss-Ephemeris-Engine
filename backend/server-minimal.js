@@ -5,7 +5,7 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Basic CORS
+// Basic CORS with preflight handling
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -14,7 +14,11 @@ app.use(cors({
     'https://astrova-frontend-v2.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Basic middleware
@@ -44,6 +48,12 @@ app.get('/', (req, res) => {
     status: 'running',
     version: '1.0.0'
   });
+});
+
+// Handle preflight requests for API endpoint
+app.options('/api/kundli', (req, res) => {
+  console.log('Preflight request for /api/kundli');
+  res.status(204).send();
 });
 
 // Simple API endpoint for testing
