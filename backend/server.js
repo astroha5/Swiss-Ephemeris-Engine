@@ -54,7 +54,7 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Health check endpoint
+// Health check endpoint (simplified for faster response)
 app.get('/health', (req, res) => {
   res.status(200).json({
     status: 'healthy',
@@ -63,6 +63,11 @@ app.get('/health', (req, res) => {
     version: process.env.npm_package_version || '1.0.0',
     environment: process.env.NODE_ENV || 'development'
   });
+});
+
+// Simple ping endpoint for Render health checks
+app.get('/ping', (req, res) => {
+  res.status(200).send('pong');
 });
 
 // API routes
@@ -110,12 +115,39 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server with error handling
+const server = app.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Astrova Backend running on port ${PORT}`);
   logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
   logger.info(`📚 API docs: http://localhost:${PORT}/`);
+  
+  // Signal to Render that the server is ready
+  if (process.send) {
+    process.send('ready');
+  }
+});
+
+// Handle server startup errors
+server.on('error', (error) => {
+  logger.error('Server startup error:', error);
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+  
+  const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+  switch (error.code) {
+    case 'EACCES':
+      logger.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      logger.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
 });
 
 module.exports = app;

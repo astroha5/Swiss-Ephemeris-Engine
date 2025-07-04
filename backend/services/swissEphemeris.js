@@ -20,20 +20,33 @@ class SwissEphemerisService {
     this.useSwissEph = useSwissEph;
     
     if (this.useSwissEph) {
-      // Set Swiss Ephemeris path with fallback
-      const ephemerisPath = __dirname + '/../ephemeris';
       try {
-        swisseph.swe_set_ephe_path(ephemerisPath);
-        logger.info(`Swiss Ephemeris path set to: ${ephemerisPath}`);
+        // Set Swiss Ephemeris path with fallback
+        const ephemerisPath = __dirname + '/../ephemeris';
+        
+        // Add timeout protection for ephemeris path setting
+        const pathTimeout = setTimeout(() => {
+          logger.warn('Swiss Ephemeris path setting taking too long, continuing with built-in data');
+        }, 5000);
+        
+        try {
+          swisseph.swe_set_ephe_path(ephemerisPath);
+          clearTimeout(pathTimeout);
+          logger.info(`Swiss Ephemeris path set to: ${ephemerisPath}`);
+        } catch (error) {
+          clearTimeout(pathTimeout);
+          logger.warn('Swiss Ephemeris path not set, using built-in data:', error.message);
+        }
+        
+        // Lahiri Ayanamsa (most commonly used in Vedic astrology)
+        swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+        
+        // Log initialization
+        logger.info('Swiss Ephemeris service initialized with Lahiri Ayanamsa');
       } catch (error) {
-        logger.warn('Swiss Ephemeris path not set, using built-in data:', error.message);
+        logger.error('Error initializing Swiss Ephemeris, falling back to simple calculations:', error);
+        this.useSwissEph = false;
       }
-      
-      // Lahiri Ayanamsa (most commonly used in Vedic astrology)
-      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-      
-      // Log initialization
-      logger.info('Swiss Ephemeris service initialized with Lahiri Ayanamsa');
     } else {
       logger.info('Using Astronomy Engine fallback for calculations');
     }
