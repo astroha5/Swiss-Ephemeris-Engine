@@ -1,7 +1,7 @@
 services:
   # Backend API Service
   - type: web
-    name: astrova-backend
+    name: astrova-backend-v2
     env: node
     rootDir: backend
     buildCommand: npm install
@@ -10,16 +10,16 @@ services:
       - key: NODE_ENV
         value: production
       - key: FRONTEND_URL
-        value: https://astrova-frontend.onrender.com
+        value: https://astrova-frontend-v2.onrender.com
     healthCheckPath: /health
 
   # Frontend Static Site
   - type: web
-    name: astrova-frontend
+    name: astrova-frontend-v2
     env: static
     rootDir: .
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:
       - key: VITE_API_URL
-        value: https://astrova-backend.onrender.com
+        value: https://astrova-backend-v2.onrender.com
