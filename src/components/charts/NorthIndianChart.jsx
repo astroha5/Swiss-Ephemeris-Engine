@@ -131,31 +131,6 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             
             return (
               <g key={`house-${houseNum}`} onClick={() => onHouseClick?.(house)} className="cursor-pointer">
-                {/* House number - Small, gray, top */}
-                <text
-                  x={center.x}
-                  y={yHouseNumber}
-                  fontSize="10"
-                  textAnchor="middle"
-                  fill="#6b7280"
-                  fontWeight="bold"
-                  dominantBaseline="middle"
-                >
-                  H{houseNum}
-                </text>
-                
-                {/* Sign number - Large, black, center */}
-                <text
-                  x={center.x}
-                  y={ySignNumber}
-                  fontSize="16"
-                  textAnchor="middle"
-                  fill="#000"
-                  fontWeight="bold"
-                  dominantBaseline="middle"
-                >
-                  {house?.signNumber || houseNum}
-                </text>
                 
                 {/* Planets - Medium, red, bottom, stacked with proper spacing */}
                 {house?.planets?.map((planet, planetIdx) => (
