@@ -42,17 +42,17 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   // Sign number positions in corners and edges with proper visibility offsets
   const signPositions = {
     1: { x: 148, y: 100 },          // Top-left corner (shifted inward)
-    2: { x: mid, y: padding + 15 },                   // Top edge
+    2: { x: 300, y: 260 },                   // Top edge
     3: { x: 450, y: 100 },   // Top-right corner (shifted inward)
-    4: { x: size - padding - 15, y: mid },            // Right edge
-    5: { x: size - padding - 20, y: size - padding - 20 }, // Bottom-right corner (shifted inward)
-    6: { x: mid, y: size - padding - 15 },            // Bottom edge
-    7: { x: padding + 20, y: size - padding - 20 },   // Bottom-left corner (shifted inward)
-    8: { x: padding + 15, y: mid },                   // Left edge
-    9: { x: mid - 60, y: mid - 60 },                  // Inner top-left (adjusted)
-    10: { x: mid + 60, y: mid - 60 },                 // Inner top-right (adjusted)
-    11: { x: mid + 60, y: mid + 60 },                 // Inner bottom-right (adjusted)
-    12: { x: mid - 60, y: mid + 60 }                  // Inner bottom-left (adjusted)
+    4: { x: 500, y: 155 },            // Right edge
+    5: { x: 330, y: 300 }, // Bottom-right corner (shifted inward)
+    6: { x: 500, y: 460 },            // Bottom edge
+    7: { x: 450, y: 500 },   // Bottom-left corner (shifted inward)
+    8: { x: 300, y: 350 },                   // Left edge
+    9: { x: 150, y: 500 },                  // Inner top-left (adjusted)
+    10: { x: 110, y: 450 },                 // Inner top-right (adjusted)
+    11: { x: 260, y: 300 },                 // Inner bottom-right (adjusted)
+    12: { x: 110, y: 150 }                  // Inner bottom-left (adjusted)
   };
 
   const houseCenters = getHouseCenterPoints();
