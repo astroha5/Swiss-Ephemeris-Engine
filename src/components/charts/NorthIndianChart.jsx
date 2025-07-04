@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
 
 /**
- * Traditional North Indian Diamond Style Chart Component
- * Matches the exact layout shown in reference image
+ * Enhanced Traditional North Indian Diamond Style Chart Component
+ * Features Astrova theme colors, hover effects, animations, and detailed interactivity
  */
 const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) => {
   const houses = chartData?.houses || [];
+  const [hoveredHouse, setHoveredHouse] = useState(null);
+  const [hoveredPlanet, setHoveredPlanet] = useState(null);
+  const [selectedHouse, setSelectedHouse] = useState(null);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipData, setTooltipData] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const chartRef = useRef(null);
 
   // Correct North Indian Diamond chart house positions
   // Based on the reference image provided
@@ -13,7 +20,8 @@ const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) 
     1: { 
       position: 'center',
       coords: { top: '37.5%', left: '37.5%', width: '25%', height: '25%' },
-      label: 'Ascendant'
+      label: 'Ascendant',
+      isAscendant: true
     },
     2: { 
       position: 'top-left-outer',
@@ -70,6 +78,13 @@ const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) 
       coords: { top: '0%', left: '75%', width: '25%', height: '25%' },
       number: '12'
     }
+  };
+
+  // Zodiac sign abbreviations
+  const zodiacSigns = {
+    'Aries': 'Ar', 'Taurus': 'Ta', 'Gemini': 'Ge', 'Cancer': 'Ca',
+    'Leo': 'Le', 'Virgo': 'Vi', 'Libra': 'Li', 'Scorpio': 'Sc',
+    'Sagittarius': 'Sa', 'Capricorn': 'Cp', 'Aquarius': 'Aq', 'Pisces': 'Pi'
   };
 
   // Planet symbols
