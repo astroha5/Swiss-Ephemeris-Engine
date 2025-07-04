@@ -7,12 +7,23 @@ let astronomyEngine;
 let useSwissEph = true;
 
 try {
+  // Add timeout for Swiss Ephemeris loading
+  const loadTimeout = setTimeout(() => {
+    logger.warn('Swiss Ephemeris loading taking too long, will use fallback');
+    useSwissEph = false;
+  }, 3000);
+  
   swisseph = require('swisseph');
+  clearTimeout(loadTimeout);
   logger.info('Swiss Ephemeris loaded successfully');
 } catch (error) {
   logger.warn('Swiss Ephemeris not available, using Astronomy Engine fallback:', error.message);
   useSwissEph = false;
-  astronomyEngine = require('./astronomyEngine');
+  try {
+    astronomyEngine = require('./astronomyEngine');
+  } catch (fallbackError) {
+    logger.error('Astronomy Engine fallback also failed:', fallbackError.message);
+  }
 }
 
 class SwissEphemerisService {

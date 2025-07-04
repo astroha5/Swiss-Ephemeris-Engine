@@ -41,11 +41,14 @@ app.use(cors({
     'http://localhost:5173',
     'https://astrova.vercel.app',
     'https://astrova-frontend.onrender.com',
+    'https://astrova-frontend-v2.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Middleware
