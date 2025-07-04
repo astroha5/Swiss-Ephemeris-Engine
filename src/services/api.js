@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Backend API configuration
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // For production, the API calls will go to the deployed backend
 // In development, they go to localhost:3001

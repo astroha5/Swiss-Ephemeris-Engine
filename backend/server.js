@@ -40,6 +40,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://localhost:5173',
     'https://astrova.vercel.app',
+    'https://astrova-frontend.onrender.com',
     process.env.FRONTEND_URL
   ].filter(Boolean),
   credentials: true,
