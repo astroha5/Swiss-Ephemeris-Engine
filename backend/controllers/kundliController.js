@@ -2,6 +2,7 @@ const Joi = require('joi');
 const swissEphemerisService = require('../services/enhancedSwissEphemeris');
 const yogaService = require('../services/yogaService');
 const doshaService = require('../services/doshaService');
+const dashaService = require('../services/dashaService');
 const logger = require('../utils/logger');
 
 // Input validation schema
@@ -35,7 +36,7 @@ function generateNavamsaHouses(navamsaChart, ascendant) {
   return houses;
 }
 
-function transformPlanetaryData(planetaryPositions, julianDay, latitude, longitude) {
+function transformPlanetaryData(planetaryPositions, julianDay, latitude, longitude, ascendant) {
   const planetaryData = [];
   
   const planetSymbols = {
@@ -61,7 +62,7 @@ function transformPlanetaryData(planetaryPositions, julianDay, latitude, longitu
       planet: planet.name,
       symbol: planetSymbols[planet.name],
       sign: planet.sign,
-      house: calculateHouseNumber(planet, planetaryPositions),
+      house: calculateHouseNumber(planet, ascendant),
       degree: planet.degreeFormatted,
       nakshatra: planet.nakshatra,
       pada: planet.nakshatraPada,
@@ -74,11 +75,9 @@ function transformPlanetaryData(planetaryPositions, julianDay, latitude, longitu
   return planetaryData;
 }
 
-function calculateHouseNumber(planet, planetaryPositions) {
-  // This is a simplified calculation
-  // In a full implementation, you'd use the actual house cusps
-  const ascendantSign = planetaryPositions.sun.signNumber; // Simplified - should use actual ascendant
-  let houseNumber = planet.signNumber - ascendantSign + 1;
+function calculateHouseNumber(planet, ascendant) {
+  // Calculate house number based on ascendant (proper Vedic method)
+  let houseNumber = planet.signNumber - ascendant.signNumber + 1;
   if (houseNumber <= 0) houseNumber += 12;
   if (houseNumber > 12) houseNumber -= 12;
   return houseNumber;
@@ -147,11 +146,33 @@ class KundliController {
       const navamsaHouses = generateNavamsaHouses(navamsaChart, ascendant);
 
       // Transform planetary data for frontend
-      const planetaryData = transformPlanetaryData(planetaryPositions, julianDay, latitude, longitude);
+      const planetaryData = transformPlanetaryData(planetaryPositions, julianDay, latitude, longitude, ascendant);
 
       // Calculate yogas and doshas
       const yogas = yogaService.calculateYogas(planetaryPositions, ascendant);
       const doshas = doshaService.calculateDoshas(planetaryPositions, ascendant);
+
+      // Calculate Vimshottari Dasha
+      let dashaTimeline = null;
+      try {
+        const moon = planetaryPositions.moon;
+        if (moon && moon.nakshatra) {
+          // Calculate moon's progress in nakshatra for dasha calculation
+          const nakshatraLength = 360 / 27; // 13.333... degrees per nakshatra
+          const nakshatraStart = Math.floor(moon.longitude / nakshatraLength) * nakshatraLength;
+          const moonProgressInNakshatra = ((moon.longitude - nakshatraStart) / nakshatraLength) * 100;
+          
+          dashaTimeline = dashaService.calculateDashaTimeline(
+            date, 
+            time, 
+            moon.nakshatra, 
+            moonProgressInNakshatra, 
+            timezone
+          );
+        }
+      } catch (error) {
+        logger.warn('Error calculating Dasha timeline:', error.message);
+      }
 
       // Prepare birth details
       const birthDetails = {
@@ -185,7 +206,10 @@ class KundliController {
           nakshatra: planetaryPositions.sun.nakshatra
         },
         yogas: yogas,
-        doshas: doshas
+        doshas: doshas,
+        currentDasha: dashaTimeline?.currentMahadasha || null,
+        currentAntardasha: dashaTimeline?.currentAntardasha || null,
+        vimshottariDasha: dashaTimeline || null
       };
 
       // Prepare response data

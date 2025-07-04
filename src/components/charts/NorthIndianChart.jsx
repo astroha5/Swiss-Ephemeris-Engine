@@ -1,34 +1,75 @@
 import React from 'react';
 
 /**
- * North Indian Diamond Style Chart Component
- * Renders traditional diamond-shaped Vedic astrology charts
+ * Traditional North Indian Diamond Style Chart Component
+ * Matches the exact layout shown in reference image
  */
 const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) => {
-  // Default empty chart structure
-  const emptyChart = Array.from({ length: 12 }, (_, i) => ({
-    number: i + 1,
-    sign: '',
-    planets: [],
-    degrees: []
-  }));
+  const houses = chartData?.houses || [];
 
-  const houses = chartData?.houses || emptyChart;
-
-  // House positions in diamond layout (North Indian style)
+  // Correct North Indian Diamond chart house positions
+  // Based on the reference image provided
   const housePositions = {
-    1: { top: '50%', left: '0%', transform: 'translate(-50%, -50%)' },      // Left center
-    2: { top: '25%', left: '25%', transform: 'translate(-50%, -50%)' },     // Top-left
-    3: { top: '0%', left: '50%', transform: 'translate(-50%, -50%)' },      // Top center
-    4: { top: '25%', left: '75%', transform: 'translate(-50%, -50%)' },     // Top-right
-    5: { top: '50%', left: '100%', transform: 'translate(-50%, -50%)' },    // Right center
-    6: { top: '75%', left: '75%', transform: 'translate(-50%, -50%)' },     // Bottom-right
-    7: { top: '100%', left: '50%', transform: 'translate(-50%, -50%)' },    // Bottom center
-    8: { top: '75%', left: '25%', transform: 'translate(-50%, -50%)' },     // Bottom-left
-    9: { top: '50%', left: '25%', transform: 'translate(-50%, -50%)' },     // Left-inner
-    10: { top: '25%', left: '50%', transform: 'translate(-50%, -50%)' },    // Top-inner
-    11: { top: '50%', left: '75%', transform: 'translate(-50%, -50%)' },    // Right-inner
-    12: { top: '75%', left: '50%', transform: 'translate(-50%, -50%)' }     // Bottom-inner
+    1: { 
+      position: 'center',
+      coords: { top: '37.5%', left: '37.5%', width: '25%', height: '25%' },
+      label: 'Ascendant'
+    },
+    2: { 
+      position: 'top-left-outer',
+      coords: { top: '0%', left: '0%', width: '25%', height: '25%' },
+      number: '2'
+    },
+    3: { 
+      position: 'top-left-inner', 
+      coords: { top: '12.5%', left: '12.5%', width: '25%', height: '25%' },
+      number: '3'
+    },
+    4: { 
+      position: 'left-side',
+      coords: { top: '37.5%', left: '0%', width: '25%', height: '25%' },
+      number: '4'
+    },
+    5: { 
+      position: 'bottom-left-inner',
+      coords: { top: '62.5%', left: '12.5%', width: '25%', height: '25%' },
+      number: '5'
+    },
+    6: { 
+      position: 'bottom-left-outer',
+      coords: { top: '75%', left: '0%', width: '25%', height: '25%' },
+      number: '6'
+    },
+    7: { 
+      position: 'bottom-center',
+      coords: { top: '75%', left: '37.5%', width: '25%', height: '25%' },
+      number: '7'
+    },
+    8: { 
+      position: 'bottom-right-outer',
+      coords: { top: '75%', left: '75%', width: '25%', height: '25%' },
+      number: '8'
+    },
+    9: { 
+      position: 'bottom-right-inner',
+      coords: { top: '62.5%', left: '62.5%', width: '25%', height: '25%' },
+      number: '9'
+    },
+    10: { 
+      position: 'right-side',
+      coords: { top: '37.5%', left: '75%', width: '25%', height: '25%' },
+      number: '10'
+    },
+    11: { 
+      position: 'top-right-inner',
+      coords: { top: '12.5%', left: '62.5%', width: '25%', height: '25%' },
+      number: '11'
+    },
+    12: { 
+      position: 'top-right-outer',
+      coords: { top: '0%', left: '75%', width: '25%', height: '25%' },
+      number: '12'
+    }
   };
 
   // Planet symbols
@@ -64,44 +105,38 @@ const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) 
 
   return (
     <div className={`north-indian-chart ${className}`}>
-      <h3 className="text-lg font-semibold text-center mb-4 text-gray-800">{title}</h3>
+      <h3 className="text-xl font-semibold text-center mb-6 text-gray-800">{title}</h3>
       
       {/* Chart Container */}
-      <div className="relative w-80 h-80 mx-auto">
-        {/* Diamond Background */}
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox="0 0 320 320"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Outer Diamond */}
-          <polygon
-            points="160,20 280,160 160,300 40,160"
-            fill="none"
-            stroke="#374151"
-            strokeWidth="2"
-          />
+      <div className="relative w-96 h-96 mx-auto bg-white border-2 border-gray-800">
+        {/* Draw the diamond grid structure */}
+        <svg className="absolute inset-0 w-full h-full" viewBox="0 0 400 400">
+          {/* Outer border */}
+          <rect x="0" y="0" width="400" height="400" fill="none" stroke="#1f2937" strokeWidth="3"/>
           
-          {/* Inner Square */}
-          <polygon
-            points="160,80 240,160 160,240 80,160"
-            fill="none"
-            stroke="#6B7280"
-            strokeWidth="1"
-          />
+          {/* Main grid lines creating the diamond pattern */}
+          {/* Vertical lines */}
+          <line x1="100" y1="0" x2="100" y2="400" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="200" y1="0" x2="200" y2="400" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="300" y1="0" x2="300" y2="400" stroke="#1f2937" strokeWidth="2"/>
           
-          {/* Diagonal Lines */}
-          <line x1="40" y1="160" x2="280" y2="160" stroke="#9CA3AF" strokeWidth="1" />
-          <line x1="160" y1="20" x2="160" y2="300" stroke="#9CA3AF" strokeWidth="1" />
+          {/* Horizontal lines */}
+          <line x1="0" y1="100" x2="400" y2="100" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="0" y1="200" x2="400" y2="200" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="0" y1="300" x2="400" y2="300" stroke="#1f2937" strokeWidth="2"/>
           
-          {/* Additional division lines */}
-          <line x1="100" y1="60" x2="220" y2="60" stroke="#D1D5DB" strokeWidth="0.5" />
-          <line x1="100" y1="260" x2="220" y2="260" stroke="#D1D5DB" strokeWidth="0.5" />
-          <line x1="60" y1="100" x2="60" y2="220" stroke="#D1D5DB" strokeWidth="0.5" />
-          <line x1="260" y1="100" x2="260" y2="220" stroke="#D1D5DB" strokeWidth="0.5" />
+          {/* Diagonal lines creating the diamond effect */}
+          <line x1="50" y1="50" x2="150" y2="150" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="150" y1="50" x2="50" y2="150" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="250" y1="50" x2="350" y2="150" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="350" y1="50" x2="250" y2="150" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="50" y1="250" x2="150" y2="350" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="150" y1="250" x2="50" y2="350" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="250" y1="250" x2="350" y2="350" stroke="#1f2937" strokeWidth="2"/>
+          <line x1="350" y1="250" x2="250" y2="350" stroke="#1f2937" strokeWidth="2"/>
         </svg>
 
-        {/* House Numbers and Planets */}
+        {/* Houses with planets */}
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((houseNum) => {
           const houseData = getHouseData(houseNum);
           const position = housePositions[houseNum];
@@ -109,66 +144,73 @@ const NorthIndianChart = ({ chartData, title = "Birth Chart", className = "" }) 
           return (
             <div
               key={houseNum}
-              className="absolute"
-              style={position}
+              className="absolute flex flex-col items-center justify-center text-center p-1"
+              style={{
+                top: position.coords.top,
+                left: position.coords.left,
+                width: position.coords.width,
+                height: position.coords.height
+              }}
             >
-              <div className="relative">
-                {/* House Number */}
-                <div className="absolute -top-2 -left-2 w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-800 border border-blue-300">
-                  {houseNum}
-                </div>
-                
-                {/* House Content */}
-                <div className="w-16 h-16 bg-white border border-gray-300 rounded-lg shadow-sm flex flex-col items-center justify-center p-1">
-                  {/* Sign Name */}
-                  {houseData.sign && (
-                    <div className="text-xs font-medium text-gray-600 mb-1 truncate w-full text-center">
-                      {houseData.sign.slice(0, 3)}
+              {/* House number in corner */}
+              <div className="absolute top-1 left-1 text-xs font-bold text-gray-600 bg-white px-1 rounded">
+                {houseNum === 1 ? (position.label || houseNum) : houseNum}
+              </div>
+              
+              {/* Planets in this house */}
+              <div className="flex flex-col items-center justify-center h-full w-full">
+                {houseData.planets?.map((planet, idx) => (
+                  <div key={idx} className="mb-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-lg font-bold text-blue-800">
+                        {planetSymbols[planet] || planet.slice(0, 2)}
+                      </span>
+                      <span className="text-xs font-medium">{planet}</span>
                     </div>
-                  )}
-                  
-                  {/* Planets */}
-                  <div className="flex flex-wrap gap-1 items-center justify-center">
-                    {houseData.planets?.map((planet, idx) => (
-                      <div
-                        key={idx}
-                        className="relative group"
-                      >
-                        <span className="text-lg cursor-help">
-                          {planetSymbols[planet] || planetShortNames[planet] || planet?.slice(0, 2)}
-                        </span>
-                        
-                        {/* Tooltip */}
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
-                          {planet}
-                          {houseData.degrees?.[idx] && (
-                            <div className="text-xs">{houseData.degrees[idx]}</div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                    {houseData.degrees?.[idx] && (
+                      <div className="text-xs text-gray-600">{houseData.degrees[idx]}</div>
+                    )}
                   </div>
-                </div>
+                ))}
+                
+                {/* House sign */}
+                {houseData.sign && (
+                  <div className="text-xs text-gray-500 mt-1 font-medium">
+                    {houseData.sign}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
+        
+        {/* House labels in traditional positions */}
+        <div className="absolute top-2 right-2 text-xs text-gray-500">H12</div>
+        <div className="absolute top-12 right-12 text-xs text-gray-500">H11</div>
+        <div className="absolute top-2 left-2 text-xs text-gray-500">H2</div>
+        <div className="absolute top-12 left-12 text-xs text-gray-500">H3</div>
+        <div className="absolute bottom-2 left-2 text-xs text-gray-500">H6</div>
+        <div className="absolute bottom-12 left-12 text-xs text-gray-500">H5</div>
+        <div className="absolute bottom-2 right-2 text-xs text-gray-500">H8</div>
+        <div className="absolute bottom-12 right-12 text-xs text-gray-500">H9</div>
+        <div className="absolute top-1/2 left-2 text-xs text-gray-500 transform -translate-y-1/2">H4</div>
+        <div className="absolute top-1/2 right-2 text-xs text-gray-500 transform -translate-y-1/2">H10</div>
+        <div className="absolute bottom-2 left-1/2 text-xs text-gray-500 transform -translate-x-1/2">H7</div>
+        <div className="absolute top-1/2 left-1/2 text-xs text-gray-500 transform -translate-x-1/2 -translate-y-1/2">H1</div>
       </div>
       
       {/* Legend */}
       <div className="mt-6 text-sm text-gray-600">
-        <div className="grid grid-cols-3 gap-2 max-w-md mx-auto">
-          <div className="text-center">
-            <strong>Planet Symbols:</strong>
-          </div>
-          <div className="col-span-2 grid grid-cols-3 gap-1 text-xs">
-            {Object.entries(planetSymbols).map(([name, symbol]) => (
-              <div key={name} className="flex items-center gap-1">
-                <span className="text-base">{symbol}</span>
-                <span>{name}</span>
-              </div>
-            ))}
-          </div>
+        <div className="text-center mb-2">
+          <strong>Planet Symbols:</strong>
+        </div>
+        <div className="grid grid-cols-3 gap-2 max-w-md mx-auto text-xs">
+          {Object.entries(planetSymbols).map(([name, symbol]) => (
+            <div key={name} className="flex items-center gap-1 justify-center">
+              <span className="text-base font-bold text-blue-800">{symbol}</span>
+              <span>{name}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
