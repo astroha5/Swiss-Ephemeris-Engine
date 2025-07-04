@@ -44,15 +44,31 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     1: { x: 148, y: 100 },          // Top-left corner (shifted inward)
     2: { x: 300, y: 260 },                   // Top edge
     3: { x: 450, y: 100 },   // Top-right corner (shifted inward)
-    4: { x: 500, y: 155 },            // Right edge
-    5: { x: 330, y: 300 }, // Bottom-right corner (shifted inward)
-    6: { x: 500, y: 460 },            // Bottom edge
+    4: { x: 500, y: 150 },            // Right edge
+    5: { x: 350, y: 300 }, // Bottom-right corner (shifted inward)
+    6: { x: 500, y: 450 },            // Bottom edge
     7: { x: 450, y: 500 },   // Bottom-left corner (shifted inward)
     8: { x: 300, y: 350 },                   // Left edge
     9: { x: 150, y: 500 },                  // Inner top-left (adjusted)
-    10: { x: 110, y: 450 },                 // Inner top-right (adjusted)
-    11: { x: 260, y: 300 },                 // Inner bottom-right (adjusted)
-    12: { x: 110, y: 150 }                  // Inner bottom-left (adjusted)
+    10: { x: 100, y: 450 },                 // Inner top-right (adjusted)
+    11: { x: 250, y: 300 },                 // Inner bottom-right (adjusted)
+    12: { x: 100, y: 150 }                  // Inner bottom-left (adjusted)
+  };
+  
+  // House number positions (H1-H12)
+  const housePositions = {
+    1: { x: 148, y: 130 },
+    2: { x: 300, y: 280 },
+    3: { x: 450, y: 130 },
+    4: { x: 470, y: 150 },
+    5: { x: 330, y: 330 },
+    6: { x: 470, y: 450 },
+    7: { x: 450, y: 470 },
+    8: { x: 300, y: 320 },
+    9: { x: 150, y: 470 },
+    10: { x: 130, y: 450 },
+    11: { x: 280, y: 300 },
+    12: { x: 130, y: 150 }
   };
 
   const houseCenters = getHouseCenterPoints();
@@ -117,17 +133,17 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* House numbers (H1-H12) with 30pt gap from sign positions */}
+          {/* House numbers (H1-H12) with custom positions */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
-            const pos = signPositions[houseNum];
+            const pos = housePositions[houseNum];
             if (!pos) return null;
             
             return (
               <text
                 key={`house-label-${houseNum}`}
                 x={pos.x}
-                y={pos.y + 30}
+                y={pos.y}
                 fontSize="10"
                 textAnchor="middle"
                 fill="#6b7280"
