@@ -57,11 +57,11 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   
   // House number positions (H1-H12)
   const housePositions = {
-    1: { x: 148, y: 130 },
+    1: { x: 150, y: 130 },
     2: { x: 300, y: 280 },
     3: { x: 450, y: 130 },
     4: { x: 470, y: 150 },
-    5: { x: 330, y: 330 },
+    5: { x: 330, y: 300 },
     6: { x: 470, y: 450 },
     7: { x: 450, y: 470 },
     8: { x: 300, y: 320 },
