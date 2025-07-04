@@ -41,9 +41,9 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
 
   // Sign number positions in corners and edges with proper visibility offsets
   const signPositions = {
-    1: { x: padding + 20, y: padding + 20 },          // Top-left corner (shifted inward)
+    1: { x: 148, y: 100 },          // Top-left corner (shifted inward)
     2: { x: mid, y: padding + 15 },                   // Top edge
-    3: { x: size - padding - 20, y: padding + 20 },   // Top-right corner (shifted inward)
+    3: { x: 450, y: 100 },   // Top-right corner (shifted inward)
     4: { x: size - padding - 15, y: mid },            // Right edge
     5: { x: size - padding - 20, y: size - padding - 20 }, // Bottom-right corner (shifted inward)
     6: { x: mid, y: size - padding - 15 },            // Bottom edge
