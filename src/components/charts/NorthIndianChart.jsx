@@ -117,6 +117,28 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
+          {/* House numbers (H1-H12) with 30pt gap from sign positions */}
+          {Array.from({ length: 12 }, (_, i) => {
+            const houseNum = i + 1;
+            const pos = signPositions[houseNum];
+            if (!pos) return null;
+            
+            return (
+              <text
+                key={`house-label-${houseNum}`}
+                x={pos.x}
+                y={pos.y + 30}
+                fontSize="10"
+                textAnchor="middle"
+                fill="#6b7280"
+                fontWeight="bold"
+                dominantBaseline="middle"
+              >
+                H{houseNum}
+              </text>
+            );
+          })}
+          
           {/* House content - Properly spaced and layered */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
