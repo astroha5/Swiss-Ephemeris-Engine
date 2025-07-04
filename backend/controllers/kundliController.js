@@ -1,5 +1,5 @@
 const Joi = require('joi');
-const swissEphemerisService = require('../services/swissEphemeris');
+const swissEphemerisService = require('../services/enhancedSwissEphemeris');
 const yogaService = require('../services/yogaService');
 const doshaService = require('../services/doshaService');
 const logger = require('../utils/logger');
