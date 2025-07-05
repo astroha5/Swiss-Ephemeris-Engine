@@ -19,24 +19,23 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   };
 
   // Calculate house center points (centroids) for proper positioning
-  // CORRECTED to Anti-Clockwise arrangement based on mapping instructions
+  // UPDATED with new mapping: H5→H12, H6→H11, H7→H5, H8→H6, H9→H7, H11→H9, H12→H8
   const getHouseCenterPoints = () => {
     const centers = {};
     
-    // Apply the house swap mapping: Current position -> Should Be
-    // H1 position -> H2, H2 position -> H1, H3 position -> H12, etc.
-    centers[1] = { x: mid + 80, y: mid - 80 };    // Was H2 position
-    centers[2] = { x: mid, y: mid - 100 };        // Was H1 position (Ascendant)
-    centers[3] = { x: mid + 100, y: mid };        // Was H12 position  
-    centers[4] = { x: mid + 80, y: mid - 80 };    // Was H11 position
-    centers[5] = { x: mid, y: mid + 100 };        // Was H10 position
-    centers[6] = { x: mid - 80, y: mid - 80 };    // Was H9 position
-    centers[7] = { x: mid - 80, y: mid + 80 };    // Was H8 position
-    centers[8] = { x: mid - 100, y: mid };        // Was H7 position
-    centers[9] = { x: mid - 80, y: mid + 80 };    // Was H6 position
-    centers[10] = { x: mid, y: mid + 100 };       // Was H5 position
-    centers[11] = { x: mid + 80, y: mid + 80 };   // Was H4 position
-    centers[12] = { x: mid + 100, y: mid };       // Was H3 position
+    // Apply the new house mapping
+    centers[1] = { x: mid + 80, y: mid - 80 };    // H1 unchanged
+    centers[2] = { x: mid, y: mid - 100 };        // H2 unchanged
+    centers[3] = { x: mid + 100, y: mid };        // H3 unchanged
+    centers[4] = { x: mid + 80, y: mid - 80 };    // H4 unchanged
+    centers[5] = { x: mid + 100, y: mid };        // H5 at H12 position
+    centers[6] = { x: mid + 80, y: mid + 80 };    // H6 at H11 position
+    centers[7] = { x: mid, y: mid + 100 };        // H7 at H5 position
+    centers[8] = { x: mid - 80, y: mid + 80 };    // H8 at H6 position
+    centers[9] = { x: mid - 100, y: mid };        // H9 at H7 position
+    centers[10] = { x: mid, y: mid + 100 };       // H10 unchanged
+    centers[11] = { x: mid - 80, y: mid + 80 };   // H11 at H9 position
+    centers[12] = { x: mid + 100, y: mid };       // H12 at H8 position
     
     return centers;
   };
@@ -57,22 +56,21 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 100, y: 150 }                  // Inner bottom-left (adjusted)
   };
   
-  // House number positions (H1-H12) - CORRECTED to Anti-Clockwise arrangement
-  // Mapping: Current ➡️ Should Be
-  // H1 position ➡️ H2, H2 position ➡️ H1, H3 position ➡️ H12, etc.
+  // House number positions (H1-H12) - UPDATED with new mapping
+  // New Mapping: H5→H12, H6→H11, H7→H5, H8→H6, H9→H7, H11→H9, H12→H8
   const housePositions = {
-    1: { x: 300, y: 280 },    // Was H2 position
-    2: { x: 150, y: 130 },    // Was H1 position  
-    3: { x: 130, y: 150 },    // Was H12 position
-    4: { x: 280, y: 300 },    // Was H11 position
-    5: { x: 300, y: 320 },    // Was H8 position
-    6: { x: 450, y: 470 },    // Was H7 position
-    7: { x: 470, y: 450 },    // Was H6 position
-    8: { x: 450, y: 130 },    // Was H3 position
-    9: { x: 470, y: 150 },    // Was H4 position
-    10: { x: 330, y: 300 },   // Was H5 position
-    11: { x: 150, y: 470 },   // Was H9 position
-    12: { x: 130, y: 450 }    // Was H10 position
+    1: { x: 300, y: 280 },    // H1 unchanged
+    2: { x: 150, y: 130 },    // H2 unchanged
+    3: { x: 130, y: 150 },    // H3 unchanged
+    4: { x: 280, y: 300 },    // H4 unchanged
+    5: { x: 130, y: 450 },    // H5 at H12 position
+    6: { x: 150, y: 470 },    // H6 at H11 position
+    7: { x: 300, y: 320 },    // H7 at H5 position
+    8: { x: 450, y: 470 },    // H8 at H6 position
+    9: { x: 470, y: 450 },    // H9 at H7 position
+    10: { x: 330, y: 300 },   // H10 unchanged
+    11: { x: 470, y: 150 },   // H11 at H9 position
+    12: { x: 450, y: 130 }    // H12 at H8 position
   };
 
   const houseCenters = getHouseCenterPoints();
