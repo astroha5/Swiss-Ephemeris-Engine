@@ -19,22 +19,24 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   };
 
   // Calculate house center points (centroids) for proper positioning
+  // CORRECTED to Anti-Clockwise arrangement based on mapping instructions
   const getHouseCenterPoints = () => {
     const centers = {};
     
-    // Calculate centers based on diamond geometry
-    centers[1] = { x: mid, y: mid - 100 };        // Top-middle (Ascendant)
-    centers[2] = { x: mid + 80, y: mid - 80 };    // Top-right kite
-    centers[3] = { x: mid + 100, y: mid };        // Right triangle
-    centers[4] = { x: mid + 80, y: mid + 80 };    // Right kite
-    centers[5] = { x: mid, y: mid + 100 };        // Bottom-middle
-    centers[6] = { x: mid - 80, y: mid + 80 };    // Bottom-left
-    centers[7] = { x: mid - 100, y: mid };        // Left triangle
-    centers[8] = { x: mid - 80, y: mid - 80 };    // Left kite
-    centers[9] = { x: mid - 80, y: mid - 80 };    // Top-left
-    centers[10] = { x: mid, y: mid - 100 };       // Top triangle
-    centers[11] = { x: mid + 80, y: mid - 80 };   // Right-top kite
-    centers[12] = { x: mid + 100, y: mid };       // Right-middle
+    // Apply the house swap mapping: Current position -> Should Be
+    // H1 position -> H2, H2 position -> H1, H3 position -> H12, etc.
+    centers[1] = { x: mid + 80, y: mid - 80 };    // Was H2 position
+    centers[2] = { x: mid, y: mid - 100 };        // Was H1 position (Ascendant)
+    centers[3] = { x: mid + 100, y: mid };        // Was H12 position  
+    centers[4] = { x: mid + 80, y: mid - 80 };    // Was H11 position
+    centers[5] = { x: mid, y: mid + 100 };        // Was H10 position
+    centers[6] = { x: mid - 80, y: mid - 80 };    // Was H9 position
+    centers[7] = { x: mid - 80, y: mid + 80 };    // Was H8 position
+    centers[8] = { x: mid - 100, y: mid };        // Was H7 position
+    centers[9] = { x: mid - 80, y: mid + 80 };    // Was H6 position
+    centers[10] = { x: mid, y: mid + 100 };       // Was H5 position
+    centers[11] = { x: mid + 80, y: mid + 80 };   // Was H4 position
+    centers[12] = { x: mid + 100, y: mid };       // Was H3 position
     
     return centers;
   };
@@ -55,20 +57,22 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 100, y: 150 }                  // Inner bottom-left (adjusted)
   };
   
-  // House number positions (H1-H12)
+  // House number positions (H1-H12) - CORRECTED to Anti-Clockwise arrangement
+  // Mapping: Current ➡️ Should Be
+  // H1 position ➡️ H2, H2 position ➡️ H1, H3 position ➡️ H12, etc.
   const housePositions = {
-    1: { x: 150, y: 130 },
-    2: { x: 300, y: 280 },
-    3: { x: 450, y: 130 },
-    4: { x: 470, y: 150 },
-    5: { x: 330, y: 300 },
-    6: { x: 470, y: 450 },
-    7: { x: 450, y: 470 },
-    8: { x: 300, y: 320 },
-    9: { x: 150, y: 470 },
-    10: { x: 130, y: 450 },
-    11: { x: 280, y: 300 },
-    12: { x: 130, y: 150 }
+    1: { x: 300, y: 280 },    // Was H2 position
+    2: { x: 150, y: 130 },    // Was H1 position  
+    3: { x: 130, y: 150 },    // Was H12 position
+    4: { x: 280, y: 300 },    // Was H11 position
+    5: { x: 300, y: 320 },    // Was H8 position
+    6: { x: 450, y: 470 },    // Was H7 position
+    7: { x: 470, y: 450 },    // Was H6 position
+    8: { x: 450, y: 130 },    // Was H3 position
+    9: { x: 470, y: 150 },    // Was H4 position
+    10: { x: 330, y: 300 },   // Was H5 position
+    11: { x: 150, y: 470 },   // Was H9 position
+    12: { x: 130, y: 450 }    // Was H10 position
   };
 
   const houseCenters = getHouseCenterPoints();
