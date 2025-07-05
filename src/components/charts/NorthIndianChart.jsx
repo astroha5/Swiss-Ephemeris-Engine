@@ -92,7 +92,6 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         <svg
           viewBox={`0 0 ${size} ${size}`}
           width="100%"
-          height="auto"
           className="w-full h-auto"
         >
           {/* Background */}

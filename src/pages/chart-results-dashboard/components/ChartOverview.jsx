@@ -70,32 +70,43 @@ const ChartOverview = ({ chartData, birthDetails }) => {
   // Use real data if available, otherwise use mock data
   let details, summary;
   
-  if (isRealChart && realData) {
+  // Try to extract real data from various sources
+  const extractedChartData = chartData || realData?.chartData;
+  const extractedBirthDetails = birthDetails || realData;
+  
+  if (extractedChartData) {
     // Extract birth details from real data
     details = {
-      name: realData.fullName || 'Unknown',
-      dateOfBirth: realData.birthDate,
-      timeOfBirth: realData.birthTime,
-      placeOfBirth: realData.birthLocation,
-      latitude: realData.locationData?.latitude?.toFixed(4),
-      longitude: realData.locationData?.longitude?.toFixed(4),
-      timezone: realData.locationData?.timezone || 'Unknown'
+      name: extractedBirthDetails?.fullName || extractedBirthDetails?.name || 'Unknown',
+      dateOfBirth: extractedBirthDetails?.birthDate || extractedBirthDetails?.dateOfBirth || 'Unknown',
+      timeOfBirth: extractedBirthDetails?.birthTime || extractedBirthDetails?.timeOfBirth || 'Unknown', 
+      placeOfBirth: extractedBirthDetails?.birthLocation || extractedBirthDetails?.placeOfBirth || 'Unknown',
+      latitude: extractedBirthDetails?.locationData?.latitude?.toFixed(4) || extractedBirthDetails?.latitude || 'Unknown',
+      longitude: extractedBirthDetails?.locationData?.longitude?.toFixed(4) || extractedBirthDetails?.longitude || 'Unknown',
+      timezone: extractedBirthDetails?.locationData?.timezone || extractedBirthDetails?.timezone || 'Unknown'
     };
     
     // Extract chart summary from real backend data
-    const chartData = realData.chartData;
+    const chartSummary = extractedChartData.chartSummary || {};
+    const vimshottariDasha = extractedChartData.vimshottariDasha || {};
+    
     summary = {
-      ascendant: chartData?.chartSummary?.ascendant || mockChartSummary.ascendant,
-      moonSign: chartData?.chartSummary?.moonSign || mockChartSummary.moonSign,
-      sunSign: chartData?.chartSummary?.sunSign || mockChartSummary.sunSign,
-      currentDasha: mockChartSummary.currentDasha, // TODO: Add dasha calculation to backend
-      yogas: chartData?.chartSummary?.yogas || [],
-      doshas: chartData?.chartSummary?.doshas || []
+      ascendant: chartSummary.ascendant || mockChartSummary.ascendant,
+      moonSign: chartSummary.moonSign || mockChartSummary.moonSign,
+      sunSign: chartSummary.sunSign || mockChartSummary.sunSign,
+      currentDasha: {
+        mahadasha: vimshottariDasha.currentMahadasha?.planet || mockChartSummary.currentDasha.mahadasha,
+        antardasha: vimshottariDasha.currentAntardasha?.planet || mockChartSummary.currentDasha.antardasha,
+        remainingYears: vimshottariDasha.currentMahadasha?.remainingYears || mockChartSummary.currentDasha.remainingYears,
+        remainingMonths: vimshottariDasha.currentAntardasha?.remainingMonths || mockChartSummary.currentDasha.remainingMonths
+      },
+      yogas: chartSummary.yogas || [],
+      doshas: chartSummary.doshas || []
     };
   } else {
     // Fallback to provided props or mock data
-    details = birthDetails || mockBirthDetails;
-    summary = chartData || mockChartSummary;
+    details = extractedBirthDetails || mockBirthDetails;
+    summary = mockChartSummary; // Always use mock summary as fallback
   }
 
   const formatDate = (dateString) => {
@@ -191,19 +202,19 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Sign:</span>
-              <span className="font-medium text-text-primary">{summary.ascendant.sign}</span>
+              <span className="font-medium text-text-primary">{summary?.ascendant?.sign || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Degree:</span>
-              <span className="font-mono text-sm text-text-secondary">{summary.ascendant.degree}</span>
+              <span className="font-mono text-sm text-text-secondary">{summary?.ascendant?.degree || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Lord:</span>
-              <span className="font-medium text-text-primary">{summary.ascendant.lord}</span>
+              <span className="font-medium text-text-primary">{summary?.ascendant?.lord || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Nakshatra:</span>
-              <span className="font-medium text-text-primary">{summary.ascendant.nakshatra}</span>
+              <span className="font-medium text-text-primary">{summary?.ascendant?.nakshatra || 'Unknown'}</span>
             </div>
           </div>
         </div>
@@ -220,19 +231,19 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Sign:</span>
-              <span className="font-medium text-text-primary">{summary.moonSign.sign}</span>
+              <span className="font-medium text-text-primary">{summary?.moonSign?.sign || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Degree:</span>
-              <span className="font-mono text-sm text-text-secondary">{summary.moonSign.degree}</span>
+              <span className="font-mono text-sm text-text-secondary">{summary?.moonSign?.degree || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Lord:</span>
-              <span className="font-medium text-text-primary">{summary.moonSign.lord}</span>
+              <span className="font-medium text-text-primary">{summary?.moonSign?.lord || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Nakshatra:</span>
-              <span className="font-medium text-text-primary">{summary.moonSign.nakshatra}</span>
+              <span className="font-medium text-text-primary">{summary?.moonSign?.nakshatra || 'Unknown'}</span>
             </div>
           </div>
         </div>
@@ -249,15 +260,15 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Mahadasha:</span>
-              <span className="font-medium text-text-primary">{summary.currentDasha.mahadasha}</span>
+              <span className="font-medium text-text-primary">{summary?.currentDasha?.mahadasha || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Antardasha:</span>
-              <span className="font-medium text-text-primary">{summary.currentDasha.antardasha}</span>
+              <span className="font-medium text-text-primary">{summary?.currentDasha?.antardasha || 'Unknown'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Remaining:</span>
-              <span className="font-medium text-accent">{summary.currentDasha.remainingYears}y</span>
+              <span className="font-medium text-accent">{summary?.currentDasha?.remainingYears || 0}y</span>
             </div>
           </div>
         </div>
@@ -275,14 +286,14 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           </div>
           
           <div className="space-y-3">
-            {summary.yogas.map((yoga, index) => (
+            {(summary?.yogas || []).map((yoga, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
                 <div>
-                  <div className="font-medium text-text-primary">{yoga.name}</div>
-                  <div className="text-sm text-text-muted font-caption">{yoga.effect}</div>
+                  <div className="font-medium text-text-primary">{yoga?.name || 'Unknown Yoga'}</div>
+                  <div className="text-sm text-text-muted font-caption">{yoga?.effect || 'No description available'}</div>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getYogaStrengthColor(yoga.strength)} bg-current/10`}>
-                  {yoga.strength}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getYogaStrengthColor(yoga?.strength || 'unknown')} bg-current/10`}>
+                  {yoga?.strength || 'Unknown'}
                 </span>
               </div>
             ))}
@@ -299,18 +310,18 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           </div>
           
           <div className="space-y-3">
-            {summary.doshas.map((dosha, index) => (
+            {(summary?.doshas || []).map((dosha, index) => (
               <div key={index} className="flex items-center justify-between p-3 bg-surface-secondary rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Icon 
-                    name={dosha.present ? 'AlertCircle' : 'CheckCircle'} 
+                    name={dosha?.present ? 'AlertCircle' : 'CheckCircle'} 
                     size={16} 
-                    className={getDoshaColor(dosha.present, dosha.severity)}
+                    className={getDoshaColor(dosha?.present, dosha?.severity)}
                   />
-                  <span className="font-medium text-text-primary">{dosha.name}</span>
+                  <span className="font-medium text-text-primary">{dosha?.name || 'Unknown Dosha'}</span>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDoshaColor(dosha.present, dosha.severity)} bg-current/10`}>
-                  {dosha.present ? (dosha.severity || 'Present') : 'Absent'}
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDoshaColor(dosha?.present, dosha?.severity)} bg-current/10`}>
+                  {dosha?.present ? (dosha?.severity || 'Present') : 'Absent'}
                 </span>
               </div>
             ))}
