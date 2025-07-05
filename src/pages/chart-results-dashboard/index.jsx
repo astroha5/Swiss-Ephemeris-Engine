@@ -24,6 +24,75 @@ const ChartResultsDashboard = () => {
   // Check if user came from birth details form or upload
   const sourceRoute = location.state?.from || '/home-landing-page';
   const inputMethod = sourceRoute.includes('birth-details') ? 'Manual Entry' : 'Upload';
+  
+  // Extract chart data from location state
+  const chartData = location.state?.chartData;
+  const birthDetails = location.state?.birthDetails;
+  
+  // Transform backend planetary data to component format
+  const transformPlanetaryData = (backendData) => {
+    console.log('🔄 Transforming chart data:', backendData);
+    
+    if (!backendData?.planets) {
+      console.warn('❌ No planets data found in chart data');
+      return null;
+    }
+    
+    const planets = backendData.planets;
+    const planetaryData = [];
+    
+    // Planet symbols mapping
+    const planetSymbols = {
+      'Sun': '☉', 'Moon': '☽', 'Mars': '♂', 'Mercury': '☿',
+      'Jupiter': '♃', 'Venus': '♀', 'Saturn': '♄', 'Rahu': '☊', 'Ketu': '☋'
+    };
+    
+    // Calculate house positions from chart houses data
+    const getHouseForPlanet = (planetName) => {
+      if (backendData.houses) {
+        for (let house of backendData.houses) {
+          if (house.planets?.includes(planetName)) {
+            return house.number;
+          }
+        }
+      }
+      return 1; // Default fallback
+    };
+    
+    // Transform each planet's data
+    Object.values(planets).forEach(planet => {
+      if (planet?.name) {
+        const houseNumber = getHouseForPlanet(planet.name);
+        const transformedPlanet = {
+          planet: planet.name,
+          symbol: planetSymbols[planet.name] || '○',
+          sign: planet.sign || 'Unknown',
+          house: houseNumber,
+          degree: planet.degreeFormatted || '0°00\'00"',
+          nakshatra: planet.nakshatra || 'Unknown',
+          pada: planet.nakshatraPada || 1,
+          retrograde: planet.isRetrograde || false,
+          strength: 'Moderate', // TODO: Add strength calculation from backend
+          nature: 'Neutral' // TODO: Add nature determination from backend
+        };
+        
+        planetaryData.push(transformedPlanet);
+        console.log(`✅ Transformed ${planet.name}:`, transformedPlanet);
+      }
+    });
+    
+    console.log('🎯 Final planetary data:', planetaryData);
+    return planetaryData;
+  };
+  
+  const planetaryData = chartData ? transformPlanetaryData(chartData) : null;
+  
+  // Debug: Log what data we're working with
+  useEffect(() => {
+    console.log('📊 Dashboard received location.state:', location.state);
+    console.log('📈 Extracted chartData:', chartData);
+    console.log('🪐 Transformed planetaryData:', planetaryData);
+  }, [location.state, chartData, planetaryData]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -151,22 +220,33 @@ const ChartResultsDashboard = () => {
               <div className="space-y-8">
                 {/* Overview Section */}
                 <section id="overview" className="scroll-mt-32">
-                  <ChartOverview />
+                  <ChartOverview 
+                    birthDetails={birthDetails}
+                    chartData={chartData}
+                    isRealChart={!!chartData}
+                    realData={location.state}
+                  />
                 </section>
 
                 {/* Lagna Chart Section */}
                 <section id="lagna-chart" className="scroll-mt-32">
-                  <ChartVisualization chartType="lagna" />
+                  <ChartVisualization 
+                    chartType="lagna" 
+                    chartData={chartData?.houses ? chartData : null}
+                  />
                 </section>
 
                 {/* Navamsa Chart Section */}
                 <section id="navamsa-chart" className="scroll-mt-32">
-                  <ChartVisualization chartType="navamsa" />
+                  <ChartVisualization 
+                    chartType="navamsa" 
+                    chartData={chartData?.navamsa ? chartData.navamsa : null}
+                  />
                 </section>
 
                 {/* Planetary Positions Section */}
                 <section id="planetary-positions" className="scroll-mt-32">
-                  <PlanetaryPositionsTable />
+                  <PlanetaryPositionsTable planetaryData={planetaryData} />
                 </section>
 
                 {/* Dasha Periods Section */}

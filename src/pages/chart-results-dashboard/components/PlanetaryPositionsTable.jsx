@@ -5,6 +5,9 @@ const PlanetaryPositionsTable = ({ planetaryData }) => {
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'cards'
   const [sortBy, setSortBy] = useState('planet');
   const [sortOrder, setSortOrder] = useState('asc');
+  
+  // Debug: Log received data
+  console.log('🪐 PlanetaryPositionsTable received planetaryData:', planetaryData);
 
   // Mock planetary positions data
   const mockPlanetaryData = [
