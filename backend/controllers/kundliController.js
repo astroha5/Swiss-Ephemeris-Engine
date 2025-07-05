@@ -128,8 +128,9 @@ class KundliController {
       
       logger.info(`Generating Kundli for ${date} ${time} at ${latitude}, ${longitude}`);
 
-      // Calculate Julian Day
-      const julianDay = swissEphemerisService.getJulianDay(date, time, timezone);
+      // Calculate Julian Day with enhanced historical timezone support
+      const coordinates = { lat: latitude, lng: longitude };
+      const julianDay = swissEphemerisService.getJulianDay(date, time, timezone, place, coordinates);
 
       // Get planetary positions
       const planetaryPositionsResult = swissEphemerisService.getPlanetaryPositions(julianDay);

@@ -1,5 +1,6 @@
 const moment = require('moment-timezone');
 const logger = require('../utils/logger');
+const historicalTimezoneHandler = require('./historicalTimezoneHandler');
 
 // Try to load Swiss Ephemeris with better error handling
 let swisseph;
@@ -69,7 +70,9 @@ class EnhancedSwissEphemerisService {
       swisseph.swe_set_ephe_path(ephemerisPath);
       
       // Set Lahiri Ayanamsa (most accurate for Vedic astrology)
+      logger.info(`🔧 DEBUG - Setting Lahiri Ayanamsa: SE_SIDM_LAHIRI = ${swisseph.SE_SIDM_LAHIRI}`);
       swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+      logger.info(`🔧 DEBUG - Lahiri Ayanamsa set successfully`);
       
       this.isInitialized = true;
       logger.info('Enhanced Swiss Ephemeris initialized with Lahiri Ayanamsa');
@@ -80,33 +83,43 @@ class EnhancedSwissEphemerisService {
   }
 
   /**
-   * Convert date, time, and timezone to accurate Julian Day Number
+   * Convert date, time, and timezone to accurate Julian Day Number with historical support
    */
-  getJulianDay(date, time, timezone = 'Asia/Kolkata') {
+  getJulianDay(date, time, timezone = 'Asia/Kolkata', place = null, coordinates = null) {
     try {
-      const dateTimeString = `${date} ${time}`;
-      const momentObj = moment.tz(dateTimeString, 'YYYY-MM-DD HH:mm', timezone);
+      logger.info(`🕐 Julian Day calculation for: ${date} ${time} at ${place || 'Unknown'}`);
       
-      if (!momentObj.isValid()) {
-        throw new Error('Invalid date/time format');
+      if (!this.useSwissEph) {
+        // Fallback calculation for when Swiss Ephemeris is not available
+        const momentObj = moment.tz(`${date} ${time}`, 'YYYY-MM-DD HH:mm', timezone);
+        if (!momentObj.isValid()) {
+          throw new Error('Invalid date/time format');
+        }
+        const utcMoment = momentObj.utc();
+        return this.calculateJulianDayFallback(
+          utcMoment.year(),
+          utcMoment.month() + 1,
+          utcMoment.date(),
+          utcMoment.hour() + (utcMoment.minute() / 60.0)
+        );
       }
 
-      const utcMoment = momentObj.utc();
-      const year = utcMoment.year();
-      const month = utcMoment.month() + 1;
-      const day = utcMoment.date();
-      const hour = utcMoment.hour() + (utcMoment.minute() / 60.0) + (utcMoment.second() / 3600.0);
-
-      if (this.useSwissEph) {
-        const julianDay = swisseph.swe_julday(year, month, day, hour, swisseph.SE_GREG_CAL);
-        logger.info(`Julian Day calculated: ${julianDay} for ${dateTimeString} ${timezone}`);
-        return julianDay;
-      } else {
-        // Fallback calculation
-        return this.calculateJulianDayFallback(year, month, day, hour);
+      // Use enhanced historical timezone handler
+      const enhancedJD = historicalTimezoneHandler.getEnhancedJulianDay(
+        swisseph, date, time, place, coordinates, timezone
+      );
+      
+      // Log detailed conversion info
+      if (enhancedJD.isHistorical) {
+        logger.info(`📜 Historical date detected - using corrected timezone offset`);
+        logger.info(`⏰ UTC Details: ${enhancedJD.utcDetails.year}-${enhancedJD.utcDetails.month.toString().padStart(2, '0')}-${enhancedJD.utcDetails.day.toString().padStart(2, '0')} ${enhancedJD.utcDetails.hour}h`);
       }
+      
+      logger.info(`📊 Final Julian Day: ${enhancedJD.julianDay.toFixed(8)}`);
+      return enhancedJD.julianDay;
+      
     } catch (error) {
-      logger.error('Error calculating Julian Day:', error);
+      logger.error('Error calculating enhanced Julian Day:', error);
       throw new Error(`Failed to calculate Julian Day: ${error.message}`);
     }
   }
@@ -133,10 +146,26 @@ class EnhancedSwissEphemerisService {
     const positions = {};
     const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
 
+    // DEBUG: Log calculation parameters
+    logger.info(`🔍 DEBUG - Julian Day: ${julianDay}`);
+    logger.info(`🔍 DEBUG - Flags: ${flags} (SEFLG_SIDEREAL: ${swisseph.SEFLG_SIDEREAL})`);
+    logger.info(`🔍 DEBUG - Sidereal mode initialized: ${this.isInitialized}`);
+    
+    // CRITICAL: Re-verify and re-set Ayanamsa before calculations
+    if (this.useSwissEph && this.isInitialized) {
+      try {
+        swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+        logger.info(`🔄 Re-confirmed Lahiri Ayanamsa setting before planetary calculations`);
+      } catch (error) {
+        logger.error('Failed to re-set Ayanamsa:', error);
+      }
+    }
+
     try {
       for (const [planetName, planetId] of Object.entries(this.planets)) {
         if (planetName === 'KETU') continue; // Handle Ketu separately
 
+        logger.info(`🔍 DEBUG - Calculating ${planetName} (ID: ${planetId})`);
         const result = swisseph.swe_calc_ut(julianDay, planetId, flags);
         
         if (result.rflag < 0) {
@@ -146,6 +175,14 @@ class EnhancedSwissEphemerisService {
         const longitude = result.longitude;
         const latitude = result.latitude;
         const speed = result.longitudeSpeed;
+        
+        // DEBUG: Log Moon calculation specifically
+        if (planetName === 'MOON') {
+          logger.info(`🌙 DEBUG MOON - Raw longitude: ${longitude}°`);
+          logger.info(`🌙 DEBUG MOON - Sign number: ${Math.floor(longitude / 30) + 1}`);
+          logger.info(`🌙 DEBUG MOON - Degree in sign: ${longitude % 30}°`);
+          logger.info(`🌙 DEBUG MOON - Sign name: ${this.zodiacSigns[Math.floor(longitude / 30)]}`);
+        }
 
         // Calculate sign and degrees
         const signNumber = Math.floor(longitude / 30);
@@ -214,7 +251,12 @@ class EnhancedSwissEphemerisService {
     }
 
     try {
+      // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation
+      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+      logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
+      
       const flags = swisseph.SEFLG_SIDEREAL;
+      logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
       const houses = swisseph.swe_houses(julianDay, latitude, longitude, 'P', flags);
       
       if (!houses || houses.rflag < 0) {
