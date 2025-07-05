@@ -25,64 +25,80 @@ const ChartResultsDashboard = () => {
   const sourceRoute = location.state?.from || '/home-landing-page';
   const inputMethod = sourceRoute.includes('birth-details') ? 'Manual Entry' : 'Upload';
   
-  // Extract chart data from location state
-  const chartData = location.state?.chartData;
-  const birthDetails = location.state?.birthDetails;
+  // Extract chart data from location state OR localStorage
+  let chartData = location.state?.chartData;
+  let birthDetails = location.state?.birthDetails;
+  
+  // If no chart data in navigation state, try localStorage
+  if (!chartData) {
+    try {
+      const storedData = localStorage.getItem('birthChartData');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        console.log('📦 Retrieved chart data from localStorage:', parsedData);
+        chartData = parsedData.chartData;
+        birthDetails = {
+          name: parsedData.fullName,
+          dateOfBirth: parsedData.birthDate,
+          timeOfBirth: parsedData.birthTime,
+          placeOfBirth: parsedData.birthLocation,
+          latitude: parsedData.locationData?.latitude,
+          longitude: parsedData.locationData?.longitude,
+          timezone: parsedData.locationData?.timezone
+        };
+      }
+    } catch (error) {
+      console.error('❌ Error reading chart data from localStorage:', error);
+    }
+  }
   
   // Transform backend planetary data to component format
   const transformPlanetaryData = (backendData) => {
     console.log('🔄 Transforming chart data:', backendData);
     
-    if (!backendData?.planets) {
-      console.warn('❌ No planets data found in chart data');
-      return null;
+    // Check if backend already has planetaryData array (new format)
+    if (backendData?.planetaryData && Array.isArray(backendData.planetaryData)) {
+      console.log('✅ Using direct planetaryData from backend:', backendData.planetaryData);
+      return backendData.planetaryData;
     }
     
-    const planets = backendData.planets;
-    const planetaryData = [];
-    
-    // Planet symbols mapping
-    const planetSymbols = {
-      'Sun': '☉', 'Moon': '☽', 'Mars': '♂', 'Mercury': '☿',
-      'Jupiter': '♃', 'Venus': '♀', 'Saturn': '♄', 'Rahu': '☊', 'Ketu': '☋'
-    };
-    
-    // Calculate house positions from chart houses data
-    const getHouseForPlanet = (planetName) => {
-      if (backendData.houses) {
-        for (let house of backendData.houses) {
-          if (house.planets?.includes(planetName)) {
-            return house.number;
-          }
+    // Fallback: Try to transform from charts.lagna.houses format
+    if (backendData?.charts?.lagna?.houses) {
+      const houses = backendData.charts.lagna.houses;
+      const planetaryData = [];
+      
+      // Planet symbols mapping
+      const planetSymbols = {
+        'Sun': '☉', 'Moon': '☽', 'Mars': '♂', 'Mercury': '☿',
+        'Jupiter': '♃', 'Venus': '♀', 'Saturn': '♄', 'Rahu': '☊', 'Ketu': '☋'
+      };
+      
+      // Extract planets from houses
+      houses.forEach(house => {
+        if (house.planets && house.planets.length > 0) {
+          house.planets.forEach((planetName, index) => {
+            planetaryData.push({
+              planet: planetName,
+              symbol: planetSymbols[planetName] || '○',
+              sign: house.sign || 'Unknown',
+              house: house.number,
+              degree: house.degrees?.[index] || '0°00\'00"',
+              nakshatra: 'Unknown', // Not available in this format
+              pada: 1,
+              retrograde: false,
+              strength: 'Moderate',
+              nature: 'Neutral'
+            });
+          });
         }
-      }
-      return 1; // Default fallback
-    };
+      });
+      
+      console.log('✅ Transformed from houses data:', planetaryData);
+      return planetaryData;
+    }
     
-    // Transform each planet's data
-    Object.values(planets).forEach(planet => {
-      if (planet?.name) {
-        const houseNumber = getHouseForPlanet(planet.name);
-        const transformedPlanet = {
-          planet: planet.name,
-          symbol: planetSymbols[planet.name] || '○',
-          sign: planet.sign || 'Unknown',
-          house: houseNumber,
-          degree: planet.degreeFormatted || '0°00\'00"',
-          nakshatra: planet.nakshatra || 'Unknown',
-          pada: planet.nakshatraPada || 1,
-          retrograde: planet.isRetrograde || false,
-          strength: 'Moderate', // TODO: Add strength calculation from backend
-          nature: 'Neutral' // TODO: Add nature determination from backend
-        };
-        
-        planetaryData.push(transformedPlanet);
-        console.log(`✅ Transformed ${planet.name}:`, transformedPlanet);
-      }
-    });
-    
-    console.log('🎯 Final planetary data:', planetaryData);
-    return planetaryData;
+    console.warn('❌ No suitable planetary data found in chart data');
+    return null;
   };
   
   const planetaryData = chartData ? transformPlanetaryData(chartData) : null;
