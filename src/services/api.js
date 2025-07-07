@@ -1,10 +1,22 @@
 import axios from 'axios';
 
 // Backend API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Environment-based API URL configuration:
+// - Development: Uses localhost:3001 (from .env.local)
+// - Production: Uses https://astrova-backend.onrender.com (from .env.production)
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.PROD 
+    ? 'https://astrova-backend.onrender.com' 
+    : 'http://localhost:3001'
+);
 
-// For production, the API calls will go to the deployed backend
-// In development, they go to localhost:3001
+// Log the current API configuration for debugging
+console.log('🔗 API Configuration:', {
+  baseURL: API_BASE_URL,
+  environment: import.meta.env.MODE,
+  isProduction: import.meta.env.PROD,
+  isDevelopment: import.meta.env.DEV
+});
 
 // Create axios instance for backend API
 const api = axios.create({
