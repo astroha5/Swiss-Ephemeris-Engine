@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import ProgressIndicator from '../../components/ui/ProgressIndicator';
@@ -29,32 +29,63 @@ const ChartResultsDashboard = () => {
   const sourceRoute = location.state?.from || '/home-landing-page';
   const inputMethod = sourceRoute.includes('birth-details') ? 'Manual Entry' : 'Upload';
   
-  // Extract chart data from location state OR localStorage
-  let chartData = location.state?.chartData;
-  let birthDetails = location.state?.birthDetails;
-  
-  // If no chart data in navigation state, try localStorage
-  if (!chartData) {
-    try {
-      const storedData = localStorage.getItem('birthChartData');
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        console.log('📦 Retrieved chart data from localStorage:', parsedData);
-        chartData = parsedData.chartData;
-        birthDetails = {
-          name: parsedData.fullName,
-          dateOfBirth: parsedData.birthDate,
-          timeOfBirth: parsedData.birthTime,
-          placeOfBirth: parsedData.birthLocation,
-          latitude: parsedData.locationData?.latitude,
-          longitude: parsedData.locationData?.longitude,
-          timezone: parsedData.locationData?.timezone
-        };
+  // Extract chart data and raw birth details from location state OR localStorage
+  const { chartData, birthDetailsRaw } = useMemo(() => {
+    let data = location.state?.chartData;
+    let details = location.state?.birthDetails;
+    
+    // If no chart data in navigation state, try localStorage
+    if (!data) {
+      try {
+        const storedData = localStorage.getItem('birthChartData');
+        if (storedData) {
+          const parsedData = JSON.parse(storedData);
+          console.log('📦 Retrieved chart data from localStorage:', parsedData);
+          data = parsedData.chartData;
+          details = {
+            name: parsedData.fullName,
+            dateOfBirth: parsedData.birthDate,
+            timeOfBirth: parsedData.birthTime,
+            placeOfBirth: parsedData.birthLocation,
+            latitude: parsedData.locationData?.latitude,
+            longitude: parsedData.locationData?.longitude,
+            timezone: parsedData.locationData?.timezone
+          };
+        }
+      } catch (error) {
+        console.error('❌ Error reading chart data from localStorage:', error);
       }
-    } catch (error) {
-      console.error('❌ Error reading chart data from localStorage:', error);
     }
-  }
+    
+    return { chartData: data, birthDetailsRaw: details };
+  }, [location.state?.chartData, location.state?.birthDetails]);
+  
+  // Create a stable birthDetails object with only primitive values to prevent infinite re-renders
+  const birthDetails = useMemo(() => {
+    if (!birthDetailsRaw) return null;
+    
+    return {
+      name: birthDetailsRaw.name || birthDetailsRaw.fullName || null,
+      dateOfBirth: birthDetailsRaw.dateOfBirth || birthDetailsRaw.birthDate || null,
+      timeOfBirth: birthDetailsRaw.timeOfBirth || birthDetailsRaw.birthTime || null,
+      placeOfBirth: birthDetailsRaw.placeOfBirth || birthDetailsRaw.birthLocation || null,
+      latitude: birthDetailsRaw.latitude != null ? Number(birthDetailsRaw.latitude) : null,
+      longitude: birthDetailsRaw.longitude != null ? Number(birthDetailsRaw.longitude) : null,
+      timezone: birthDetailsRaw.timezone || null,
+    };
+  }, [
+    birthDetailsRaw?.name,
+    birthDetailsRaw?.fullName,
+    birthDetailsRaw?.dateOfBirth,
+    birthDetailsRaw?.birthDate,
+    birthDetailsRaw?.timeOfBirth,
+    birthDetailsRaw?.birthTime,
+    birthDetailsRaw?.placeOfBirth,
+    birthDetailsRaw?.birthLocation,
+    birthDetailsRaw?.latitude,
+    birthDetailsRaw?.longitude,
+    birthDetailsRaw?.timezone
+  ]);
   
   // Fetch Dasha Data
   useEffect(() => {

@@ -128,9 +128,10 @@ async function searchExternalAPIs(query, limit) {
 
     const response = await axios.get(nominatimUrl, {
       headers: {
-        'User-Agent': 'Astrova-App/1.0 (contact@astrova.app)'
+        'Accept': 'application/json',
+        'Accept-Language': 'en'
       },
-      timeout: 5000
+      timeout: 10000
     });
 
     if (response.data && response.data.length > 0) {
@@ -211,9 +212,10 @@ export const getLocationDetails = async (latitude, longitude) => {
 
     const response = await axios.get(reverseGeocodeUrl, {
       headers: {
-        'User-Agent': 'Astrova-App/1.0 (contact@astrova.app)'
+        'Accept': 'application/json',
+        'Accept-Language': 'en'
       },
-      timeout: 5000
+      timeout: 10000
     });
 
     if (response.data) {

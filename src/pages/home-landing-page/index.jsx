@@ -9,6 +9,7 @@ import ActionCards from './components/ActionCards';
 import FeaturesSection from './components/FeaturesSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import FooterSection from './components/FooterSection';
+import AccuracyTooltip from '../../components/ui/AccuracyTooltip';
 
 const HomeLandingPage = () => {
   return (
@@ -46,6 +47,20 @@ const HomeLandingPage = () => {
           
           {/* Testimonials Section */}
           <TestimonialsSection />
+          
+          {/* Technical Accuracy Section */}
+          <section className="py-16 px-4 bg-gray-50">
+            <div className="max-w-4xl mx-auto text-center">
+              <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                Unmatched Scientific Precision
+              </h2>
+              <p className="text-lg text-gray-600 mb-6">
+                Our calculations use the Swiss Ephemeris with precise historical timezone data and Lahiri Ayanamsa, 
+                ensuring your birth chart reflects the exact planetary positions at your time of birth.
+              </p>
+              <AccuracyTooltip trigger="Learn why our calculations are more accurate" />
+            </div>
+          </section>
           
           {/* Action Button Cluster */}
           <ActionButtonCluster />
