@@ -169,7 +169,21 @@ class SwissEphemerisService {
     }
 
     const positions = {};
+    // Ensure consistent sidereal flags for all planetary calculations
     const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
+
+    // Debug: Verify and enforce Lahiri Ayanamsa before calculations
+    try {
+      // Always re-set sidereal mode to ensure consistency
+      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+      
+      const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
+      logger.info(`🌟 PLANETARY CALC - Lahiri Ayanamsa for JD ${julianDay}: ${currentAyanamsa.toFixed(8)}°`);
+      logger.info(`🔧 PLANETARY CALC - Sidereal flags enforced: ${flags}`);
+    } catch (ayanamsaError) {
+      logger.error('❌ Error getting/setting Ayanamsa for planetary calculations:', ayanamsaError);
+      throw new Error(`Ayanamsa setup failed: ${ayanamsaError.message}`);
+    }
 
     try {
       for (const [planetName, planetId] of Object.entries(this.planets)) {
@@ -276,8 +290,19 @@ class SwissEphemerisService {
     }
 
     try {
-      const houses = swisseph.swe_houses(
+      // Re-ensure Lahiri Ayanamsa is set (defensive programming)
+      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+      logger.info('🔧 Lahiri Ayanamsa mode confirmed before house calculations');
+      
+      // Debug: Get current ayanamsa value
+      const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
+      logger.info(`🌟 Current Lahiri Ayanamsa for house calc JD ${julianDay}: ${currentAyanamsa.toFixed(8)}°`);
+      
+      // Use swe_houses_ex with sidereal flags for accurate sidereal calculations
+      const flags = swisseph.SEFLG_SIDEREAL;
+      const houses = swisseph.swe_houses_ex(
         julianDay,
+        flags,
         latitude,
         longitude,
         'P' // Placidus house system
@@ -288,9 +313,15 @@ class SwissEphemerisService {
       }
 
       const ascendantLongitude = houses.ascendant;
+      
+      // Debug logging for ascendant calculation
+      logger.info(`🏠 Raw ascendant longitude from swe_houses_ex: ${ascendantLongitude.toFixed(8)}°`);
+      
       const signNum = Math.floor(ascendantLongitude / 30);
       const degreeInSign = ascendantLongitude % 30;
       const nakshatra = this.calculateNakshatra(ascendantLongitude);
+      
+      logger.info(`🏠 Ascendant: ${ascendantLongitude.toFixed(6)}° = ${this.zodiacSigns[signNum]} ${degreeInSign.toFixed(6)}°`);
 
       return {
         longitude: ascendantLongitude,

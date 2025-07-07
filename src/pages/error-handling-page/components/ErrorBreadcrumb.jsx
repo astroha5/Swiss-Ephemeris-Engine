@@ -62,9 +62,9 @@ const ErrorBreadcrumb = ({ errorSource, previousPath, onNavigateBack }) => {
   };
 
   const breadcrumbItems = [
-    { label: 'Home', path: '/home-landing-page', icon: 'Home' },
-    { label: sourceInfo.title, path: sourceInfo.backPath, icon: sourceInfo.icon },
-    { label: 'Error', path: '/error-handling-page', icon: 'AlertTriangle', current: true }
+    { id: 'home', label: 'Home', path: '/home-landing-page', icon: 'Home' },
+    { id: 'source', label: sourceInfo.title, path: sourceInfo.backPath, icon: sourceInfo.icon },
+    { id: 'error', label: 'Error', path: '/error-handling-page', icon: 'AlertTriangle', current: true }
   ];
 
   return (
@@ -73,7 +73,7 @@ const ErrorBreadcrumb = ({ errorSource, previousPath, onNavigateBack }) => {
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center space-x-2 text-sm mb-4">
           {breadcrumbItems.map((item, index) => (
-            <React.Fragment key={item.path}>
+            <React.Fragment key={item.id}>
               {index > 0 && (
                 <Icon name="ChevronRight" size={14} className="text-text-muted" />
               )}

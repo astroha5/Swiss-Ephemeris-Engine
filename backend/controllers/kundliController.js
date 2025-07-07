@@ -126,10 +126,18 @@ class KundliController {
 
       const { date, time, latitude, longitude, timezone, name, place } = value;
       
+      // Enhanced debugging for coordinate extraction
+      logger.info(`🔍 VALIDATION RESULT: ${JSON.stringify(value)}`);
+      logger.info(`🔍 EXTRACTED VALUES: date=${date}, time=${time}, lat=${latitude}, lng=${longitude}, tz=${timezone}`);
+      logger.info(`🔍 TYPE CHECK: lat=${typeof latitude}, lng=${typeof longitude}`);
       logger.info(`Generating Kundli for ${date} ${time} at ${latitude}, ${longitude}`);
 
       // Calculate Julian Day with enhanced historical timezone support
+      if (latitude === undefined || longitude === undefined) {
+        throw new Error(`Missing coordinates: latitude=${latitude}, longitude=${longitude}`);
+      }
       const coordinates = { lat: latitude, lng: longitude };
+      logger.info(`🌍 COORDINATES OBJECT: ${JSON.stringify(coordinates)}`);
       const julianDay = swissEphemerisService.getJulianDay(date, time, timezone, place, coordinates);
 
       // Get planetary positions
@@ -181,8 +189,8 @@ class KundliController {
         dateOfBirth: date,
         timeOfBirth: time,
         placeOfBirth: place || `${latitude}°N, ${longitude}°E`,
-        latitude: latitude.toString(),
-        longitude: longitude.toString(),
+        latitude: latitude ? latitude.toString() : 'Unknown',
+        longitude: longitude ? longitude.toString() : 'Unknown',
         timezone: timezone
       };
 

@@ -88,34 +88,70 @@ class EnhancedSwissEphemerisService {
   getJulianDay(date, time, timezone = 'Asia/Kolkata', place = null, coordinates = null) {
     try {
       logger.info(`🕐 Julian Day calculation for: ${date} ${time} at ${place || 'Unknown'}`);
+      logger.info(`📍 Input Parameters: Date=${date}, Time=${time}, Timezone=${timezone}`);
+      if (coordinates) {
+        logger.info(`🌍 Coordinates: Lat=${coordinates.lat}, Lon=${coordinates.lng}`);
+      }
       
       if (!this.useSwissEph) {
         // Fallback calculation for when Swiss Ephemeris is not available
+        logger.info(`⚠️  Using fallback Julian Day calculation (Swiss Ephemeris not available)`);
         const momentObj = moment.tz(`${date} ${time}`, 'YYYY-MM-DD HH:mm', timezone);
         if (!momentObj.isValid()) {
           throw new Error('Invalid date/time format');
         }
         const utcMoment = momentObj.utc();
-        return this.calculateJulianDayFallback(
+        
+        // Enhanced UTC logging for fallback
+        logger.info(`🔄 Fallback Local Time: ${momentObj.format('YYYY-MM-DD HH:mm:ss')} (${timezone})`);
+        logger.info(`🌐 Fallback UTC Time: ${utcMoment.format('YYYY-MM-DD HH:mm:ss')} UTC`);
+        logger.info(`⏰ Fallback UTC Components: Year=${utcMoment.year()}, Month=${utcMoment.month() + 1}, Day=${utcMoment.date()}, Hour=${utcMoment.hour() + (utcMoment.minute() / 60.0)}`);
+        
+        const fallbackJD = this.calculateJulianDayFallback(
           utcMoment.year(),
           utcMoment.month() + 1,
           utcMoment.date(),
           utcMoment.hour() + (utcMoment.minute() / 60.0)
         );
+        logger.info(`📊 Fallback Julian Day: ${fallbackJD.toFixed(8)}`);
+        return fallbackJD;
       }
 
       // Use enhanced historical timezone handler
+      logger.info(`🔧 Using enhanced historical timezone handler`);
       const enhancedJD = historicalTimezoneHandler.getEnhancedJulianDay(
         swisseph, date, time, place, coordinates, timezone
       );
       
+      // Enhanced UTC conversion logging
+      logger.info(`🔄 Enhanced UTC Conversion Details:`);
+      logger.info(`   📅 Original Local: ${date} ${time} (${timezone})`);
+      if (enhancedJD.localDetails) {
+        logger.info(`   📅 Parsed Local: ${enhancedJD.localDetails.year}-${(enhancedJD.localDetails.month || 0).toString().padStart(2, '0')}-${(enhancedJD.localDetails.day || 0).toString().padStart(2, '0')} ${(enhancedJD.localDetails.hour || 0).toString().padStart(2, '0')}:${(enhancedJD.localDetails.minute || 0).toString().padStart(2, '0')}`);
+      }
+      if (enhancedJD.offsetMinutes !== undefined) {
+        logger.info(`   ⏰ Timezone Offset: ${enhancedJD.offsetMinutes} minutes`);
+      }
+      if (enhancedJD.utcDetails) {
+        const utcHour = typeof enhancedJD.utcDetails.hour === 'string' ? parseFloat(enhancedJD.utcDetails.hour) : enhancedJD.utcDetails.hour;
+        const utcMinute = enhancedJD.utcDetails.minute || 0;
+        const utcSecond = enhancedJD.utcDetails.second || 0;
+        logger.info(`   🌐 Final UTC: ${enhancedJD.utcDetails.year}-${enhancedJD.utcDetails.month.toString().padStart(2, '0')}-${enhancedJD.utcDetails.day.toString().padStart(2, '0')} Hour=${utcHour}`);
+        logger.info(`   🌐 UTC Decimal Hour: ${utcHour}`);
+      }
+      
       // Log detailed conversion info
       if (enhancedJD.isHistorical) {
         logger.info(`📜 Historical date detected - using corrected timezone offset`);
-        logger.info(`⏰ UTC Details: ${enhancedJD.utcDetails.year}-${enhancedJD.utcDetails.month.toString().padStart(2, '0')}-${enhancedJD.utcDetails.day.toString().padStart(2, '0')} ${enhancedJD.utcDetails.hour}h`);
+        logger.info(`⏰ Historical UTC Details: ${enhancedJD.utcDetails.year}-${enhancedJD.utcDetails.month.toString().padStart(2, '0')}-${enhancedJD.utcDetails.day.toString().padStart(2, '0')} ${enhancedJD.utcDetails.hour}h`);
       }
       
       logger.info(`📊 Final Julian Day: ${enhancedJD.julianDay.toFixed(8)}`);
+      if (enhancedJD.utcDetails) {
+        const verifyHour = typeof enhancedJD.utcDetails.hour === 'string' ? parseFloat(enhancedJD.utcDetails.hour) : enhancedJD.utcDetails.hour;
+        logger.info(`🎯 Julian Day Verification: JD=${enhancedJD.julianDay.toFixed(8)} should correspond to UTC ${enhancedJD.utcDetails.year}-${enhancedJD.utcDetails.month.toString().padStart(2, '0')}-${enhancedJD.utcDetails.day.toString().padStart(2, '0')} Hour=${verifyHour}`);
+      }
+      
       return enhancedJD.julianDay;
       
     } catch (error) {
@@ -161,7 +197,12 @@ class EnhancedSwissEphemerisService {
       }
     }
 
+    // CRITICAL: Log current Ayanamsa for this specific Julian Day
     try {
+      const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
+      logger.info(`📐 Ayanamsa (Lahiri) for JD ${julianDay.toFixed(8)}: ${currentAyanamsa.toFixed(6)}°`);
+      logger.info(`📐 Ayanamsa in DMS: ${this.formatDegree(currentAyanamsa)}`);
+      
       for (const [planetName, planetId] of Object.entries(this.planets)) {
         if (planetName === 'KETU') continue; // Handle Ketu separately
 
@@ -176,12 +217,30 @@ class EnhancedSwissEphemerisService {
         const latitude = result.latitude;
         const speed = result.longitudeSpeed;
         
-        // DEBUG: Log Moon calculation specifically
+        // ENHANCED: Detailed Moon calculation with boundary analysis
         if (planetName === 'MOON') {
-          logger.info(`🌙 DEBUG MOON - Raw longitude: ${longitude}°`);
-          logger.info(`🌙 DEBUG MOON - Sign number: ${Math.floor(longitude / 30) + 1}`);
-          logger.info(`🌙 DEBUG MOON - Degree in sign: ${longitude % 30}°`);
-          logger.info(`🌙 DEBUG MOON - Sign name: ${this.zodiacSigns[Math.floor(longitude / 30)]}`);
+          const moonSignNumber = Math.floor(longitude / 30);
+          const moonDegreeInSign = longitude % 30;
+          const moonSignName = this.zodiacSigns[moonSignNumber];
+          
+          logger.info(`🌙 ========== MOON DETAILED ANALYSIS ==========`);
+          logger.info(`🌙 Raw longitude: ${longitude.toFixed(8)}°`);
+          logger.info(`🌙 Sign boundary: ${moonSignNumber * 30}° to ${(moonSignNumber + 1) * 30}°`);
+          logger.info(`🌙 Distance from sign start: ${moonDegreeInSign.toFixed(6)}°`);
+          logger.info(`🌙 Distance from sign end: ${(30 - moonDegreeInSign).toFixed(6)}°`);
+          logger.info(`🌙 Current sign: ${moonSignName} (#${moonSignNumber + 1})`);
+          
+          // Check if Moon is near sign boundaries (within 2 degrees)
+          if (moonDegreeInSign < 2) {
+            const prevSign = moonSignNumber > 0 ? this.zodiacSigns[moonSignNumber - 1] : this.zodiacSigns[11];
+            logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${moonDegreeInSign.toFixed(4)}° from ${prevSign}/${moonSignName} boundary!`);
+          } else if (moonDegreeInSign > 28) {
+            const nextSign = moonSignNumber < 11 ? this.zodiacSigns[moonSignNumber + 1] : this.zodiacSigns[0];
+            logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${(30 - moonDegreeInSign).toFixed(4)}° from ${moonSignName}/${nextSign} boundary!`);
+          }
+          
+          logger.info(`🌙 Final determination: Moon in ${moonSignName}`);
+          logger.info(`🌙 ==========================================`);
         }
 
         // Calculate sign and degrees
@@ -257,7 +316,7 @@ class EnhancedSwissEphemerisService {
       
       const flags = swisseph.SEFLG_SIDEREAL;
       logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
-      const houses = swisseph.swe_houses(julianDay, latitude, longitude, 'P', flags);
+      const houses = swisseph.swe_houses_ex(julianDay, flags, latitude, longitude, 'P');
       
       if (!houses || houses.rflag < 0) {
         throw new Error('Failed to calculate houses/ascendant');
