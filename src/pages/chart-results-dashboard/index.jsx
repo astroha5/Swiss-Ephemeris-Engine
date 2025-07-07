@@ -308,7 +308,7 @@ const ChartResultsDashboard = () => {
                 <section id="lagna-chart" className="scroll-mt-32">
                   <ChartVisualization 
                     chartType="lagna" 
-                    chartData={chartData?.houses ? chartData : null}
+                    chartData={chartData}
                   />
                 </section>
 
@@ -316,7 +316,7 @@ const ChartResultsDashboard = () => {
                 <section id="navamsa-chart" className="scroll-mt-32">
                   <ChartVisualization 
                     chartType="navamsa" 
-                    chartData={chartData?.navamsa ? chartData.navamsa : null}
+                    chartData={chartData}
                   />
                 </section>
 
