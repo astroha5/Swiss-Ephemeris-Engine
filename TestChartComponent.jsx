@@ -46,16 +46,19 @@ const TestChartComponent = () => {
       <div className="bg-blue-50 p-6 rounded-lg">
         <h2 className="text-xl font-semibold mb-4">Test 1: Sagittarius Ascendant</h2>
         <div className="mb-4">
-          <h3 className="font-medium">Expected Positions:</h3>
+          <h3 className="font-medium">Expected Positions (Refined Layout):</h3>
           <ul className="text-sm space-y-1 mt-2">
-            <li>• <strong>Ketu</strong> in H1 (Center-Right) - Sagittarius Ascendant</li>
-            <li>• <strong>Saturn</strong> in H5 (Center-Left) - Aries</li>
-            <li>• <strong>Jupiter</strong> in H6 (Bottom-Left) - Taurus</li>
-            <li>• <strong>Rahu</strong> in H7 (Bottom-Center) - Gemini</li>
-            <li>• <strong>Mars</strong> in H9 (Inner Bottom-Right) - Leo</li>
-            <li>• <strong>Sun & Mercury</strong> in H10 (Inner Top-Right) - Virgo</li>
-            <li>• <strong>Moon & Venus</strong> in H11 (Inner Top-Left) - Libra</li>
+            <li>• <strong>Ketu 27°25'</strong> in H1 (Center-Right) - Sagittarius Ascendant</li>
+            <li>• <strong>Saturn 6°49'</strong> in H5 (Center-Left) - Aries</li>
+            <li>• <strong>Jupiter 17°22'</strong> in H6 (Bottom-Left) - Taurus</li>
+            <li>• <strong>Rahu 27°25'</strong> in H7 (Bottom-Center) - Gemini</li>
+            <li>• <strong>Mars 14°28'</strong> in H9 (Inner Bottom-Right) - Leo</li>
+            <li>• <strong>Sun 13°32' & Mercury 8°13'</strong> in H10 (Inner Top-Right) - Virgo</li>
+            <li>• <strong>Moon 14°28' & Venus 13°00'</strong> in H11 (Inner Top-Left) - Libra</li>
           </ul>
+          <div className="text-xs text-gray-600 mt-2">
+            <p>✅ <strong>Refinements:</strong> Bigger layout, no planet symbols, shortened degrees, smaller sign numbers</p>
+          </div>
         </div>
         <NorthIndianChart 
           chartData={testChartData}
