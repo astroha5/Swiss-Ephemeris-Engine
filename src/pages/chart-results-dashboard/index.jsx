@@ -5,6 +5,7 @@ import ProgressIndicator from '../../components/ui/ProgressIndicator';
 import ActionButtonCluster from '../../components/ui/ActionButtonCluster';
 import ErrorBoundaryNavigation from '../../components/ui/ErrorBoundaryNavigation';
 import Icon from '../../components/AppIcon';
+import api, { generateDasha } from '../../services/api';
 
 // Import all components
 import ChartOverview from './components/ChartOverview';
@@ -62,33 +63,10 @@ const ChartResultsDashboard = () => {
         setDashaLoading(true);
         setDashaError(null);
         try {
-          // Prepare the request body matching backend Joi schema
-          const requestBody = {
-            birthDate: birthDetails.dateOfBirth,
-            birthTime: birthDetails.timeOfBirth,
-            latitude: parseFloat(birthDetails.latitude),
-            longitude: parseFloat(birthDetails.longitude),
-            ...(birthDetails.timezone && { timezone: birthDetails.timezone }),
-            ...(birthDetails.name && { name: birthDetails.name }),
-            ...(birthDetails.placeOfBirth && { place: birthDetails.placeOfBirth })
-          };
+          console.log('🔄 Fetching Dasha data for:', birthDetails);
           
-          console.log('🔄 Sending Dasha request with body:', requestBody);
+          const data = await generateDasha(birthDetails);
           
-          const response = await fetch('/api/dasha', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestBody)
-          });
-          
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
-          }
-          
-          const data = await response.json();
           console.log('✅ Received Dasha data:', data);
           setDashaData(data);
         } catch (error) {

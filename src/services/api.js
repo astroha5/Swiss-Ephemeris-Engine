@@ -171,6 +171,98 @@ export const geocodeLocation = async (location) => {
 };
 
 /**
+ * Generate Dasha data from birth details
+ * @param {Object} birthDetails - Birth details for Dasha calculation
+ * @returns {Promise<Object>} Dasha data from backend
+ */
+export const generateDasha = async (birthDetails) => {
+  try {
+    // Convert birth details to backend API format
+    const requestData = {
+      birthDate: birthDetails.dateOfBirth || birthDetails.birthDate,
+      birthTime: birthDetails.timeOfBirth || birthDetails.birthTime,
+      latitude: parseFloat(birthDetails.latitude),
+      longitude: parseFloat(birthDetails.longitude),
+      ...(birthDetails.timezone && { timezone: birthDetails.timezone }),
+      ...(birthDetails.name && { name: birthDetails.name }),
+      ...(birthDetails.placeOfBirth && { place: birthDetails.placeOfBirth })
+    };
+
+    // Validate required fields
+    if (!requestData.birthDate || !requestData.birthTime) {
+      throw new Error('Birth date and time are required for Dasha calculation');
+    }
+
+    if (!requestData.latitude || !requestData.longitude) {
+      throw new Error('Location coordinates are required for Dasha calculation');
+    }
+
+    console.log('Generating Dasha with data:', requestData);
+
+    const response = await api.post('/api/dasha', requestData);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to generate Dasha data');
+    }
+
+    return response.data;
+
+  } catch (error) {
+    console.error('Dasha generation error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get current Dasha periods
+ * @param {Object} birthDetails - Birth details for current Dasha
+ * @returns {Promise<Object>} Current Dasha periods
+ */
+export const getCurrentDasha = async (birthDetails) => {
+  try {
+    const requestData = {
+      birthDate: birthDetails.dateOfBirth || birthDetails.birthDate,
+      birthTime: birthDetails.timeOfBirth || birthDetails.birthTime,
+      latitude: parseFloat(birthDetails.latitude),
+      longitude: parseFloat(birthDetails.longitude),
+      ...(birthDetails.timezone && { timezone: birthDetails.timezone })
+    };
+
+    const response = await api.post('/api/dasha/current', requestData);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to get current Dasha');
+    }
+
+    return response.data;
+
+  } catch (error) {
+    console.error('Current Dasha error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get Dasha periods reference
+ * @returns {Promise<Object>} Dasha periods reference data
+ */
+export const getDashaPeriods = async () => {
+  try {
+    const response = await api.get('/api/dasha/periods');
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to get Dasha periods');
+    }
+
+    return response.data;
+
+  } catch (error) {
+    console.error('Dasha periods error:', error);
+    throw error;
+  }
+};
+
+/**
  * Health check for backend API
  * @returns {Promise<boolean>} True if backend is healthy
  */
