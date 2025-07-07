@@ -376,16 +376,25 @@ class EnhancedSwissEphemerisService {
 
   /**
    * Calculate which house a planet is in
+   * Fixed to use sign-based calculation for accurate house placement
    */
   calculateHouseNumber(planetLongitude, ascendantLongitude) {
-    let houseDiff = planetLongitude - ascendantLongitude;
+    // Get the sign numbers for planet and ascendant
+    const planetSignNumber = Math.floor(planetLongitude / 30) + 1;
+    const ascendantSignNumber = Math.floor(ascendantLongitude / 30) + 1;
     
-    if (houseDiff < 0) {
-      houseDiff += 360;
+    // Calculate house number based on sign difference
+    let houseNumber = planetSignNumber - ascendantSignNumber + 1;
+    
+    // Adjust for wrap-around
+    if (houseNumber <= 0) {
+      houseNumber += 12;
+    }
+    if (houseNumber > 12) {
+      houseNumber -= 12;
     }
     
-    const houseNumber = Math.floor(houseDiff / 30) + 1;
-    return houseNumber > 12 ? houseNumber - 12 : houseNumber;
+    return houseNumber;
   }
 
   /**

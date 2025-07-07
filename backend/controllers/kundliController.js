@@ -76,10 +76,22 @@ function transformPlanetaryData(planetaryPositions, julianDay, latitude, longitu
 }
 
 function calculateHouseNumber(planet, ascendant) {
-  // Calculate house number based on ascendant (proper Vedic method)
-  let houseNumber = planet.signNumber - ascendant.signNumber + 1;
-  if (houseNumber <= 0) houseNumber += 12;
-  if (houseNumber > 12) houseNumber -= 12;
+  // Fixed to use sign-based calculation for accurate house placement
+  // This ensures consistency with the Vedic astrology house system
+  const planetSignNumber = Math.floor(planet.longitude / 30) + 1;
+  const ascendantSignNumber = Math.floor(ascendant.longitude / 30) + 1;
+  
+  // Calculate house number based on sign difference
+  let houseNumber = planetSignNumber - ascendantSignNumber + 1;
+  
+  // Adjust for wrap-around
+  if (houseNumber <= 0) {
+    houseNumber += 12;
+  }
+  if (houseNumber > 12) {
+    houseNumber -= 12;
+  }
+  
   return houseNumber;
 }
 
