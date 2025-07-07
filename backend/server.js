@@ -22,13 +22,17 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// Rate limiting
+// Rate limiting - exclude OPTIONS requests (CORS preflight)
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
+  max: 5000, // increased limit for production
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
+  },
+  skip: (req) => {
+    // Skip rate limiting for CORS preflight requests
+    return req.method === 'OPTIONS';
   }
 });
 app.use('/api/', limiter);
