@@ -230,7 +230,7 @@ const VimshottariDashaTable = ({ dashaData, isLoading, error }) => {
       {viewMode === 'timeline' && (
         <div className="space-y-4">
           {data.dashaSequence.map((period, index) => (
-            <div key={period.planet} className="relative">
+            <div key={`${period.planet}-${index}`} className="relative">
               {/* Timeline Line */}
               {index < data.dashaSequence.length - 1 && (
                 <div className="absolute left-6 top-12 w-0.5 h-16 bg-border-light"></div>
@@ -294,7 +294,7 @@ const VimshottariDashaTable = ({ dashaData, isLoading, error }) => {
                     <div className="space-y-2">
                       {period.subPeriods.map((subPeriod, subIndex) => (
                         <div 
-                          key={subIndex}
+                          key={`${period.planet}-${subPeriod.planet}-${subIndex}`}
                           className={`
                             flex items-center justify-between p-3 rounded-md
                             ${subPeriod.status === 'current' ?'bg-primary/10 border border-primary/20' :'bg-surface-secondary'
@@ -341,7 +341,7 @@ const VimshottariDashaTable = ({ dashaData, isLoading, error }) => {
             <tbody>
               {data.dashaSequence.map((period, index) => (
                 <tr 
-                  key={period.planet}
+                  key={`table-${period.planet}-${index}`}
                   className={`
                     border-b border-border-light transition-celestial
                     ${period.status === 'current' ? 'bg-primary/5' : 'hover:bg-surface-secondary'}
