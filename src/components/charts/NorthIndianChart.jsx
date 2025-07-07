@@ -18,24 +18,23 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     'Ketu': '☋'
   };
 
-  // Calculate house center points (centroids) for proper positioning
-  // UPDATED with new mapping: H5→H12, H6→H11, H7→H5, H8→H6, H9→H7, H11→H9, H12→H8
+  // House center positions optimized for planet placement
   const getHouseCenterPoints = () => {
     const centers = {};
     
-    // Apply the new house mapping
-    centers[1] = { x: mid + 80, y: mid - 80 };    // H1 unchanged
-    centers[2] = { x: mid, y: mid - 100 };        // H2 unchanged
-    centers[3] = { x: mid + 100, y: mid };        // H3 unchanged
-    centers[4] = { x: mid + 80, y: mid - 80 };    // H4 unchanged
-    centers[5] = { x: mid + 100, y: mid };        // H5 at H12 position
-    centers[6] = { x: mid + 80, y: mid + 80 };    // H6 at H11 position
-    centers[7] = { x: mid, y: mid + 100 };        // H7 at H5 position
-    centers[8] = { x: mid - 80, y: mid + 80 };    // H8 at H6 position
-    centers[9] = { x: mid - 100, y: mid };        // H9 at H7 position
-    centers[10] = { x: mid, y: mid + 100 };       // H10 unchanged
-    centers[11] = { x: mid - 80, y: mid + 80 };   // H11 at H9 position
-    centers[12] = { x: mid + 100, y: mid };       // H12 at H8 position
+    // Updated coordinates based on specified positions
+    centers[1] = { x: 300, y: 155 };   // H1 - Ketu position
+    centers[2] = { x: 150, y: 130 };   // H2 (left-top)
+    centers[3] = { x: 130, y: 150 };   // H3 (left-center-top)
+    centers[4] = { x: 450, y: 300 };   // H4 - Sun position
+    centers[5] = { x: 150, y: 540 };   // H5 - Jupiter position (y: 530) and Saturn (y: 550)
+    centers[6] = { x: 150, y: 470 };   // H6 (left-bottom-edge)
+    centers[7] = { x: 300, y: 450 };   // H7 - Rahu position
+    centers[8] = { x: 550, y: 450 };   // H8 - Mars position
+    centers[9] = { x: 470, y: 450 };   // H9 (right-bottom-center)
+    centers[10] = { x: 330, y: 300 };  // H10 (center-right)
+    centers[11] = { x: 550, y: 140 };  // H11 - Venus (y: 120), Moon (y: 150), Mercury (y: 180)
+    centers[12] = { x: 450, y: 130 };  // H12 (right-top-edge)
     
     return centers;
   };
@@ -56,21 +55,20 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 100, y: 150 }                  // Inner bottom-left (adjusted)
   };
   
-  // House number positions (H1-H12) - UPDATED with new mapping
-  // New Mapping: H5→H12, H6→H11, H7→H5, H8→H6, H9→H7, H11→H9, H12→H8
+  // House label positions matching exact browser coordinates
   const housePositions = {
-    1: { x: 300, y: 280 },    // H1 unchanged
-    2: { x: 150, y: 130 },    // H2 unchanged
-    3: { x: 130, y: 150 },    // H3 unchanged
-    4: { x: 280, y: 300 },    // H4 unchanged
-    5: { x: 130, y: 450 },    // H5 at H12 position
-    6: { x: 150, y: 470 },    // H6 at H11 position
-    7: { x: 300, y: 320 },    // H7 at H5 position
-    8: { x: 450, y: 470 },    // H8 at H6 position
-    9: { x: 470, y: 450 },    // H9 at H7 position
-    10: { x: 330, y: 300 },   // H10 unchanged
-    11: { x: 470, y: 150 },   // H11 at H9 position
-    12: { x: 450, y: 130 }    // H12 at H8 position
+    1: { x: 300, y: 280 },   // H1
+    2: { x: 150, y: 130 },   // H2
+    3: { x: 130, y: 150 },   // H3
+    4: { x: 280, y: 300 },   // H4
+    5: { x: 130, y: 450 },   // H5
+    6: { x: 150, y: 470 },   // H6
+    7: { x: 300, y: 320 },   // H7
+    8: { x: 450, y: 470 },   // H8
+    9: { x: 470, y: 450 },   // H9
+    10: { x: 320, y: 300 },  // H10
+    11: { x: 470, y: 150 },  // H11
+    12: { x: 450, y: 130 }   // H12
   };
 
   const houseCenters = getHouseCenterPoints();
@@ -79,9 +77,21 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     return chartData?.houses?.find((h) => h.number === houseNumber);
   };
 
-  const formatPlanetDisplay = (planet) => {
-    const symbol = planetSymbols[planet.name];
-    return symbol ? `${symbol} ${planet.name}` : planet.name;
+  const formatPlanetDisplay = (planet, houseData, planetIdx, planetCount = 1) => {
+    // Handle both string and object formats
+    const planetName = typeof planet === 'string' ? planet : planet.name;
+    const symbol = planetSymbols[planetName];
+    const degree = typeof planet === 'object' ? planet.degree : houseData?.degrees?.[planetIdx];
+    
+    // Compact format for crowded houses (3+ planets)
+    if (planetCount >= 3) {
+      const shortDegree = degree ? degree.split('°')[0] + '°' : '';
+      return symbol ? `${symbol} ${shortDegree}` : `${planetName} ${shortDegree}`;
+    }
+    
+    // Standard format for houses with 1-2 planets
+    const displayName = symbol ? `${symbol} ${planetName}` : planetName;
+    return degree ? `${displayName} ${degree}` : displayName;
   };
 
   return (
@@ -156,7 +166,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* House content - Properly spaced and layered */}
+          {/* House content - Dynamically spaced planets */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
             const house = getHouseData(houseNum);
@@ -164,28 +174,58 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             
             if (!center) return null;
             
-            const yHouseNumber = center.y - 25;  // House number above center
-            const ySignNumber = center.y;        // Sign number at center (large, bold)
-            const yPlanetsStart = center.y + 25; // Planets below center
+            // Dynamic spacing based on number of planets in house
+            const planetCount = house?.planets?.length || 0;
+            if (planetCount === 0) return null;
+            
+            // Calculate optimal spacing and positioning
+            const getOptimalSpacing = (count, houseNumber) => {
+              const baseSpacing = 18; // Base vertical spacing between planets
+              const maxSpacing = 25;  // Maximum spacing for houses with few planets
+              const minSpacing = 12;  // Minimum spacing for crowded houses
+              
+              // Adjust spacing based on planet count
+              let spacing = baseSpacing;
+              if (count <= 2) spacing = maxSpacing;
+              else if (count >= 4) spacing = minSpacing;
+              
+              // Calculate starting Y position to center the group
+              const totalHeight = (count - 1) * spacing;
+              const startY = center.y - (totalHeight / 2);
+              
+              return { spacing, startY };
+            };
+            
+            const { spacing, startY } = getOptimalSpacing(planetCount, houseNum);
             
             return (
               <g key={`house-${houseNum}`} onClick={() => onHouseClick?.(house)} className="cursor-pointer">
-                
-                {/* Planets - Medium, red, bottom, stacked with proper spacing */}
-                {house?.planets?.map((planet, planetIdx) => (
-                  <text
-                    key={`${houseNum}-${planet.name}-${planetIdx}`}
-                    x={center.x}
-                    y={yPlanetsStart + (planetIdx * 20)} // 20px line spacing
-                    fontSize="12"
-                    textAnchor="middle"
-                    fill="#dc2626"
-                    fontWeight="600"
-                    dominantBaseline="middle"
-                  >
-                    {formatPlanetDisplay(planet)} {planet.degree}°
-                  </text>
-                ))}
+                {/* Planets with dynamic spacing */}
+                {house?.planets?.map((planet, planetIdx) => {
+                  const planetName = typeof planet === 'string' ? planet : planet.name;
+                  
+                  // Calculate position for this planet
+                  const planetY = startY + (planetIdx * spacing);
+                  
+                  // Slight horizontal offset for crowded houses to improve readability
+                  const xOffset = planetCount > 3 ? (planetIdx % 2 === 0 ? -10 : 10) : 0;
+                  const planetX = center.x + xOffset;
+                  
+                  return (
+                    <text
+                      key={`${houseNum}-${planetName}-${planetIdx}`}
+                      x={planetX}
+                      y={planetY}
+                      fontSize={planetCount > 3 ? "10" : "12"} // Smaller font for crowded houses
+                      textAnchor="middle"
+                      fill="#dc2626"
+                      fontWeight="600"
+                      dominantBaseline="middle"
+                    >
+                      {formatPlanetDisplay(planet, house, planetIdx, planetCount)}
+                    </text>
+                  );
+                })}
               </g>
             );
           })}
