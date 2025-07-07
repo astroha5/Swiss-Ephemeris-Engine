@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Joi = require('joi');
 const dashaService = require('../services/dashaService');
-const swissEphemerisService = require('../services/swissEphemeris');
+const swissEphemerisService = require('../services/enhancedSwissEphemeris');
 const logger = require('../utils/logger');
 
 // Input validation schema
@@ -35,10 +35,18 @@ router.post('/', async (req, res) => {
     logger.info(`Calculating Dasha for birth: ${birthDate} ${birthTime} at ${latitude}, ${longitude}`);
 
     // First, calculate birth chart to get Moon's nakshatra
-    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone);
-    const planetaryPositions = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const coordinates = { lat: latitude, lng: longitude };
+    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone, place, coordinates);
+    const planetaryPositionsResult = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const planetaryPositions = planetaryPositionsResult.planets;
     
-    if (!planetaryPositions.moon) {
+    // Debug: Log the structure of planetaryPositions
+    logger.info('Planetary positions structure:', JSON.stringify(planetaryPositionsResult, null, 2));
+    logger.info('Available planet keys:', Object.keys(planetaryPositions || {}));
+    
+    if (!planetaryPositions || !planetaryPositions.moon) {
+      logger.error('Moon position not found in planetary positions');
+      logger.error('planetaryPositions:', planetaryPositions);
       throw new Error('Unable to calculate Moon position for Dasha calculation');
     }
 
@@ -101,7 +109,13 @@ router.post('/', async (req, res) => {
 router.post('/detailed', async (req, res) => {
   try {
     const detailedSchema = Joi.object({
-      ...dashaSchema.describe().keys,
+      birthDate: Joi.string().pattern(/^\d{4}-\d{2}-\d{2}$/).required(),
+      birthTime: Joi.string().pattern(/^\d{2}:\d{2}$/).required(),
+      latitude: Joi.number().min(-90).max(90).required(),
+      longitude: Joi.number().min(-180).max(180).required(),
+      timezone: Joi.string().default('Asia/Kolkata'),
+      name: Joi.string().optional(),
+      place: Joi.string().optional(),
       includeSubPeriods: Joi.boolean().default(true),
       includePratyantardasha: Joi.boolean().default(false)
     });
@@ -120,8 +134,15 @@ router.post('/detailed', async (req, res) => {
     } = value;
 
     // Calculate birth chart for Moon position
-    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone);
-    const planetaryPositions = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const coordinates = { lat: latitude, lng: longitude };
+    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone, place, coordinates);
+    const planetaryPositionsResult = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const planetaryPositions = planetaryPositionsResult.planets;
+    
+    // Check if Moon position is available
+    if (!planetaryPositions || !planetaryPositions.moon) {
+      throw new Error('Unable to calculate Moon position for Dasha calculation');
+    }
     
     const moonNakshatra = planetaryPositions.moon.nakshatra;
     const moonNakshatraProgress = ((planetaryPositions.moon.longitude % (360/27)) / (360/27)) * 100;
@@ -188,8 +209,15 @@ router.post('/current', async (req, res) => {
     const { birthDate, birthTime, latitude, longitude, timezone } = value;
 
     // Calculate Moon position
-    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone);
-    const planetaryPositions = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const coordinates = { lat: latitude, lng: longitude };
+    const julianDay = swissEphemerisService.getJulianDay(birthDate, birthTime, timezone, null, coordinates);
+    const planetaryPositionsResult = swissEphemerisService.getPlanetaryPositions(julianDay);
+    const planetaryPositions = planetaryPositionsResult.planets;
+    
+    // Check if Moon position is available
+    if (!planetaryPositions || !planetaryPositions.moon) {
+      throw new Error('Unable to calculate Moon position for Dasha calculation');
+    }
     
     const moonNakshatra = planetaryPositions.moon.nakshatra;
     const moonNakshatraProgress = ((planetaryPositions.moon.longitude % (360/27)) / (360/27)) * 100;

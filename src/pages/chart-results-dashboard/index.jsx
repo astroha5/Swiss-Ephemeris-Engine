@@ -20,6 +20,9 @@ const ChartResultsDashboard = () => {
   const [activeSection, setActiveSection] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const [dashaData, setDashaData] = useState(null);
+  const [dashaLoading, setDashaLoading] = useState(false);
+  const [dashaError, setDashaError] = useState(null);
 
   // Check if user came from birth details form or upload
   const sourceRoute = location.state?.from || '/home-landing-page';
@@ -52,6 +55,54 @@ const ChartResultsDashboard = () => {
     }
   }
   
+  // Fetch Dasha Data
+  useEffect(() => {
+    if (birthDetails) {
+      const fetchDashaData = async () => {
+        setDashaLoading(true);
+        setDashaError(null);
+        try {
+          // Prepare the request body matching backend Joi schema
+          const requestBody = {
+            birthDate: birthDetails.dateOfBirth,
+            birthTime: birthDetails.timeOfBirth,
+            latitude: parseFloat(birthDetails.latitude),
+            longitude: parseFloat(birthDetails.longitude),
+            ...(birthDetails.timezone && { timezone: birthDetails.timezone }),
+            ...(birthDetails.name && { name: birthDetails.name }),
+            ...(birthDetails.placeOfBirth && { place: birthDetails.placeOfBirth })
+          };
+          
+          console.log('🔄 Sending Dasha request with body:', requestBody);
+          
+          const response = await fetch('/api/dasha', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(requestBody)
+          });
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Network response was not ok: ${response.status} ${errorText}`);
+          }
+          
+          const data = await response.json();
+          console.log('✅ Received Dasha data:', data);
+          setDashaData(data);
+        } catch (error) {
+          console.error('❌ Failed to fetch dasha data:', error);
+          setDashaError(error.message);
+          setDashaData(null);
+        } finally {
+          setDashaLoading(false);
+        }
+      };
+      fetchDashaData();
+    }
+  }, [birthDetails]);
+
   // Transform backend planetary data to component format
   const transformPlanetaryData = (backendData) => {
     console.log('🔄 Transforming chart data:', backendData);
@@ -267,7 +318,11 @@ const ChartResultsDashboard = () => {
 
                 {/* Dasha Periods Section */}
                 <section id="dasha-periods" className="scroll-mt-32">
-                  <VimshottariDashaTable />
+                  <VimshottariDashaTable 
+                    dashaData={dashaData} 
+                    isLoading={dashaLoading}
+                    error={dashaError}
+                  />
                 </section>
 
                 {/* AI Interpretation Section */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 
-const VimshottariDashaTable = ({ dashaData }) => {
+const VimshottariDashaTable = ({ dashaData, isLoading, error }) => {
   const [expandedPeriod, setExpandedPeriod] = useState(null);
   const [viewMode, setViewMode] = useState('timeline'); // 'timeline' or 'table'
 
@@ -86,7 +86,8 @@ const VimshottariDashaTable = ({ dashaData }) => {
     ]
   };
 
-  const data = dashaData || mockDashaData;
+  // Use real data from backend if available, otherwise mock data for development
+  const data = dashaData?.data || mockDashaData;
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -117,6 +118,44 @@ const VimshottariDashaTable = ({ dashaData }) => {
   const toggleExpanded = (index) => {
     setExpandedPeriod(expandedPeriod === index ? null : index);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          <Icon name="Loader2" size={20} className="animate-spin text-primary" />
+          <h3 className="text-xl font-heading font-semibold text-text-primary">
+            Loading Vimshottari Dasha...
+          </h3>
+        </div>
+        <div className="animate-pulse space-y-4">
+          <div className="h-24 bg-surface-secondary rounded-lg"></div>
+          <div className="h-16 bg-surface-secondary rounded-lg"></div>
+          <div className="h-16 bg-surface-secondary rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <Icon name="AlertCircle" size={20} className="text-destructive" />
+          <h3 className="text-xl font-heading font-semibold text-text-primary">
+            Vimshottari Dasha
+          </h3>
+        </div>
+        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+          <p className="text-destructive text-sm">
+            Failed to load dasha data. Using sample data for demonstration.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
