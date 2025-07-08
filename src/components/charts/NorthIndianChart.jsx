@@ -238,6 +238,29 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
+          {/* Sign numbers (1-12) positioned below house labels */}
+          {Array.from({ length: 12 }, (_, i) => {
+            const houseNum = i + 1;
+            const pos = HOUSE_LABEL_COORDINATES[houseNum];
+            const house = getHouseData(houseNum);
+            if (!pos || !house) return null;
+            
+            return (
+              <text
+                key={`sign-number-${houseNum}`}
+                x={pos.x}
+                y={pos.y + 15} // Position 15px below house label
+                fontSize="9"
+                textAnchor="middle"
+                fill="#059669" // Green color to distinguish from house numbers
+                fontWeight="500"
+                dominantBaseline="middle"
+              >
+                {house.signNumber}
+              </text>
+            );
+          })}
+          
           {/* 🧭 IMPLEMENTING YOUR LOGIC: House content with planets positioned correctly */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
