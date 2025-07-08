@@ -18,17 +18,34 @@ const kundliSchema = Joi.object({
 
 // Helper functions (outside class to avoid context issues)
 function generateNavamsaHouses(navamsaChart, ascendant) {
+  // Calculate Navamsa ascendant from the Lagna ascendant
+  const navamsaAscendant = swissEphemerisService.calculateNavamsaPosition(ascendant.longitude);
+  
+  // Generate houses based on Navamsa ascendant (not Lagna ascendant)
   const houses = Array.from({ length: 12 }, (_, i) => ({
     number: i + 1,
-    sign: swissEphemerisService.zodiacSigns[(ascendant.signNumber - 1 + i) % 12],
+    sign: swissEphemerisService.zodiacSigns[(navamsaAscendant.signNumber - 1 + i) % 12],
+    signNumber: ((navamsaAscendant.signNumber - 1 + i) % 12) + 1,
     planets: [],
     degrees: []
   }));
 
+  // Place planets in houses based on their Navamsa positions
   for (const [planetKey, planet] of Object.entries(navamsaChart)) {
     if (!planet.navamsaSignNumber) continue;
     
-    const houseIndex = planet.navamsaSignNumber - 1;
+    // Calculate which house this planet should be in
+    let houseNumber = planet.navamsaSignNumber - navamsaAscendant.signNumber + 1;
+    
+    // Adjust for wrap-around
+    if (houseNumber <= 0) {
+      houseNumber += 12;
+    }
+    if (houseNumber > 12) {
+      houseNumber -= 12;
+    }
+    
+    const houseIndex = houseNumber - 1;
     houses[houseIndex].planets.push(planet.name);
     houses[houseIndex].degrees.push(planet.degreeFormatted);
   }
