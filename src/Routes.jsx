@@ -8,7 +8,7 @@ import ErrorHandlingPage from "pages/error-handling-page";
 import KundliUpload from "pages/kundli-upload";
 import BirthDetailsForm from "pages/birth-details-form";
 import ChartResultsDashboard from "pages/chart-results-dashboard";
-import ChartTestPage from "pages/chart-test";
+import ChartTestPage from "./pages/chart-test";
 import NotFound from "pages/NotFound";
 
 const Routes = () => {
