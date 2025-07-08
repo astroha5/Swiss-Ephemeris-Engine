@@ -42,6 +42,22 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     11: { x: 640, y: 175 },  // H11 - Moon, Mercury, Venus position (with spacing)
     12: { x: 525, y: 40 }    // H12 - Moon & Mars position (updated)
   };
+  
+  // Sign number coordinates (independent from house labels)
+  const SIGN_COORDINATES = {
+    1: { x: 350, y: 345 },   // H1 - 15px below house label
+    2: { x: 175, y: 165 },   // H2 - 15px below house label
+    3: { x: 150, y: 190 },   // H3 - 15px below house label
+    4: { x: 330, y: 365 },   // H4 - 15px below house label
+    5: { x: 150, y: 540 },   // H5 - 15px below house label
+    6: { x: 175, y: 565 },   // H6 - 15px below house label
+    7: { x: 350, y: 385 },   // H7 - 15px below house label
+    8: { x: 525, y: 565 },   // H8 - 15px below house label
+    9: { x: 550, y: 540 },   // H9 - 15px below house label
+    10: { x: 370, y: 365 },  // H10 - 15px below house label
+    11: { x: 550, y: 190 },  // H11 - 15px below house label
+    12: { x: 525, y: 165 }   // H12 - 15px below house label
+  };
 
   // Zodiac signs in order (1-indexed)
   const ZODIAC_SIGNS = [
@@ -238,10 +254,10 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* Sign numbers (1-12) positioned below house labels */}
+          {/* Sign numbers (1-12) positioned using SIGN_COORDINATES */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
-            const pos = HOUSE_LABEL_COORDINATES[houseNum];
+            const pos = SIGN_COORDINATES[houseNum];
             const house = getHouseData(houseNum);
             if (!pos || !house) return null;
             
@@ -249,7 +265,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
               <text
                 key={`sign-number-${houseNum}`}
                 x={pos.x}
-                y={pos.y + 15} // Position 15px below house label
+                y={pos.y}
                 fontSize="9"
                 textAnchor="middle"
                 fill="#059669" // Green color to distinguish from house numbers
