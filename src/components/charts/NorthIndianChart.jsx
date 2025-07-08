@@ -43,20 +43,20 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 525, y: 40 }    // H12 - Moon & Mars position (updated)
   };
   
-  // Sign number coordinates (fixed absolute positions)
+  // Sign number coordinates (positioned near house labels for North Indian chart)
   const SIGN_COORDINATES = {
-    1: { x: 15, y: 665 },
-    2: { x: 40, y: 685 },
-    3: { x: 350, y: 680 },
-    4: { x: 660, y: 685 },
-    5: { x: 685, y: 665 },
-    6: { x: 675, y: 350 },
-    7: { x: 685, y: 35 },
-    8: { x: 665, y: 15 },
-    9: { x: 350, y: 20 },
-    10: { x: 30, y: 15 },
-    11: { x: 15, y: 35 },
-    12: { x: 20, y: 350 }
+    1: { x: 350, y: 300 },   // H1 - top center (above house label)
+    2: { x: 175, y: 120 },   // H2 - top left
+    3: { x: 120, y: 175 },   // H3 - left
+    4: { x: 300, y: 350 },   // H4 - center left (left of house label)
+    5: { x: 120, y: 525 },   // H5 - bottom left
+    6: { x: 175, y: 580 },   // H6 - bottom left
+    7: { x: 350, y: 400 },   // H7 - bottom center (below house label)
+    8: { x: 525, y: 580 },   // H8 - bottom right
+    9: { x: 580, y: 525 },   // H9 - bottom right
+    10: { x: 400, y: 350 },  // H10 - center right (right of house label)
+    11: { x: 580, y: 175 },  // H11 - top right
+    12: { x: 525, y: 120 }   // H12 - top right
   };
 
   // Zodiac signs in order (1-indexed)
@@ -96,16 +96,16 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     return signToHouseMapping;
   };
 
-  // Step 3: Apply North Indian Chart Logic
-  const applyNorthIndianLogic = () => {
-    console.log('🧭 Applying North Indian Chart Logic...');
+  // Step 3: Use the chart data as-is (backend already applies North Indian logic)
+  const processChartData = () => {
+    console.log('🧭 Processing Chart Data...');
     
     if (!chartData?.houses || chartData.houses.length === 0) {
       console.warn('❌ No chart data available');
       return { houses: [], ascendantSignNumber: 9 }; // Default to Sagittarius
     }
 
-    // Find the Ascendant (House 1)
+    // Find the Ascendant (House 1) - backend has already positioned this correctly
     const ascendantHouse = chartData.houses.find(h => h.number === 1);
     if (!ascendantHouse) {
       console.warn('❌ No Ascendant house found');
@@ -115,51 +115,25 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     const ascendantSignNumber = ascendantHouse.signNumber;
     console.log('📍 Ascendant Sign Number:', ascendantSignNumber);
     console.log('📍 Ascendant Sign Name:', ascendantHouse.sign);
+    console.log('📍 Full Ascendant House:', ascendantHouse);
+    console.log('📍 All houses:', chartData.houses);
 
-    // Calculate which sign goes in which house
-    const signToHouseMapping = calculateSignToHouseMapping(ascendantSignNumber);
-    console.log('✅ Sign-to-house mapping:', signToHouseMapping);
+    // Use the houses as provided by backend (already in correct North Indian format)
+    const processedHouses = chartData.houses.map(house => ({
+      ...house,
+      coordinates: PLANET_COORDINATES[house.number]
+    }));
 
-    // Create properly positioned houses with planets
-    const repositionedHouses = [];
-    
-    for (let houseNumber = 1; houseNumber <= 12; houseNumber++) {
-      const houseMapping = signToHouseMapping[houseNumber];
-      
-      // Find planets that belong in this house (based on their sign)
-      const planetsInThisHouse = [];
-      const degreesInThisHouse = [];
-      
-      // Look through all original houses to find planets in this sign
-      chartData.houses.forEach(originalHouse => {
-        if (originalHouse.sign === houseMapping.signName && originalHouse.planets) {
-          originalHouse.planets.forEach((planet, index) => {
-            planetsInThisHouse.push(planet);
-            degreesInThisHouse.push(originalHouse.degrees?.[index] || '0°00\'');
-          });
-        }
-      });
-      
-      repositionedHouses.push({
-        number: houseNumber,
-        sign: houseMapping.signName,
-        signNumber: houseMapping.signNumber,
-        planets: planetsInThisHouse,
-        degrees: degreesInThisHouse,
-        coordinates: houseMapping.coordinates
-      });
-    }
-
-    console.log('✅ Repositioned houses with planets:', repositionedHouses);
+    console.log('✅ Processed houses:', processedHouses);
     
     return {
-      houses: repositionedHouses,
+      houses: processedHouses,
       ascendantSignNumber
     };
   };
 
   // Apply the logic
-  const { houses: processedHouses, ascendantSignNumber } = applyNorthIndianLogic();
+  const { houses: processedHouses, ascendantSignNumber } = processChartData();
   
   // Calculate sign-to-house mapping for use in rendering
   const signToHouseMapping = calculateSignToHouseMapping(ascendantSignNumber);
@@ -167,15 +141,14 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   const getHouseData = (houseNumber) => {
     const houseData = processedHouses.find((h) => h.number === houseNumber);
     
-    // Debug logging for house data
-    if (houseData && houseData.planets?.length > 0) {
-      console.log(`🏠 House ${houseNumber} (${houseData.sign}): ${houseData.planets.join(', ')}`);
-    }
+    // Debug logging for ALL house data
+    console.log(`🏠 House ${houseNumber}: Sign ${houseData?.signNumber} (${houseData?.sign}) - Planets: ${houseData?.planets?.join(', ') || 'None'}`);
     
     return houseData || { 
       number: houseNumber,
       planets: [], 
       sign: '', 
+      signNumber: null,
       degrees: [] 
     };
   };
@@ -256,34 +229,28 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
               </text>
             );
           })}
-          
-          {/* Sign numbers dynamically positioned using SIGN_COORDINATES mapped to houses */}
+          {/* Sign numbers positioned using fixed SIGN_COORDINATES with dynamic rotation */}
           {Array.from({ length: 12 }, (_, i) => {
-            const houseNum = i + 1;
-            const houseMapping = signToHouseMapping[houseNum];
-            
-            if (!houseMapping) return null;
-            
-            // Use SIGN_COORDINATES for the HOUSE position, not the sign number
-            // This way each house gets its designated SIGN_COORDINATES position
-            const signPos = SIGN_COORDINATES[houseNum];
-            if (!signPos) return null;
+              const houseNumber = i + 1;
+              // Fixed formula: House 1 gets ascendantSignNumber, House 2 gets next sign, etc.
+              const signNumber = ((ascendantSignNumber - 1 + houseNumber - 1) % 12) + 1;
+              const pos = SIGN_COORDINATES[houseNumber]; // Use houseNumber directly
 
-            return (
-              <text
-                key={`sign-${houseMapping.signNumber}`}
-                x={signPos.x}
-                y={signPos.y}
-                fontSize="12"
-                textAnchor="middle"
-                fill="#059669" // Green color to distinguish from house numbers
-                fontWeight="500"
-                dominantBaseline="middle"
-              >
-                {houseMapping.signNumber}
-              </text>
-            );
-          })}
+              return (
+                  <text
+                  key={`sign-${signNumber}`}
+                  x={pos.x}
+                  y={pos.y}
+                  fontSize="12"
+                  textAnchor="middle"
+                  fill="#059669"
+                  fontWeight="500"
+                  dominantBaseline="middle"
+               >
+                {signNumber}
+               </text>
+               );
+           })}
           
           {/* 🧭 IMPLEMENTING YOUR LOGIC: House content with planets positioned correctly */}
           {Array.from({ length: 12 }, (_, i) => {
