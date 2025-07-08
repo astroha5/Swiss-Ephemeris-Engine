@@ -43,20 +43,20 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     return centers;
   };
 
-  // House label positions matching the larger layout
+  // House label positions with corrected coordinates for larger layout
   const housePositions = {
-    1: { x: 525, y: 325 },   // H1
-    2: { x: 525, y: 150 },   // H2
-    3: { x: 350, y: 95 },    // H3
-    4: { x: 175, y: 150 },   // H4
-    5: { x: 175, y: 325 },   // H5
-    6: { x: 175, y: 550 },   // H6
-    7: { x: 350, y: 605 },   // H7
-    8: { x: 525, y: 550 },   // H8
-    9: { x: 445, y: 490 },   // H9
-    10: { x: 445, y: 210 },  // H10
-    11: { x: 255, y: 210 },  // H11
-    12: { x: 255, y: 490 }   // H12
+    1: { x: 350, y: 330 },   // H1 - Corrected position
+    2: { x: 175, y: 150 },   // H2 - Corrected position
+    3: { x: 150, y: 175 },   // H3 - Corrected position
+    4: { x: 330, y: 350 },   // H4 - Corrected position
+    5: { x: 150, y: 525 },   // H5 - Corrected position
+    6: { x: 175, y: 550 },   // H6 - Corrected position
+    7: { x: 350, y: 370 },   // H7 - Corrected position
+    8: { x: 525, y: 550 },   // H8 - Missing from your list, keeping original
+    9: { x: 550, y: 525 },   // H9 - Corrected position
+    10: { x: 370, y: 350 },  // H10 - Corrected position
+    11: { x: 550, y: 175 },  // H11 - Corrected position
+    12: { x: 525, y: 150 }   // H12 - Corrected position
   };
 
   const houseCenters = getHouseCenterPoints();
