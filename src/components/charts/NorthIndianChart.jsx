@@ -33,7 +33,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     2: { x: 175, y: 50 },    // H2 - Sun & Mercury position (updated)
     3: { x: 60, y: 175 },    // H3 - Jupiter position (updated)
     4: { x: 175, y: 350 },   // H4 - Venus position (updated)
-    5: { x: 150, y: 505 },   // H5 - positioned above house label
+    5: { x: 50, y: 545 },   // H5 - positioned above house label
     6: { x: 175, y: 620 },   // H6 - Jupiter & Saturn position (with spacing)
     7: { x: 350, y: 525 },   // H7 - Rahu position
     8: { x: 525, y: 570 },   // H8 - positioned below house label
