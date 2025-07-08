@@ -10,7 +10,9 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
 
   // 🧭 NORTH INDIAN CHART LOGIC - FIXED HOUSE COORDINATES
   // Step 1: Houses are FIXED (never move)
-  const FIXED_HOUSE_COORDINATES = {
+  
+  // House label coordinates (for H1, H2, etc. text)
+  const HOUSE_LABEL_COORDINATES = {
     1: { x: 350, y: 330 },   // H1 - always top center
     2: { x: 175, y: 150 },   // H2 
     3: { x: 150, y: 175 },   // H3
@@ -23,6 +25,22 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     10: { x: 370, y: 350 },  // H10
     11: { x: 550, y: 175 },  // H11
     12: { x: 525, y: 150 }   // H12
+  };
+  
+  // Planet coordinates (offset from house labels to prevent overlap)
+  const PLANET_COORDINATES = {
+    1: { x: 350, y: 310 },   // H1 - 20px above house label
+    2: { x: 175, y: 130 },   // H2 - 20px above house label
+    3: { x: 150, y: 195 },   // H3 - 20px below house label
+    4: { x: 310, y: 350 },   // H4 - 20px left of house label
+    5: { x: 150, y: 505 },   // H5 - 20px above house label
+    6: { x: 175, y: 570 },   // H6 - 20px below house label
+    7: { x: 350, y: 390 },   // H7 - 20px below house label
+    8: { x: 525, y: 570 },   // H8 - 20px below house label
+    9: { x: 570, y: 525 },   // H9 - 20px right of house label
+    10: { x: 390, y: 350 },  // H10 - 20px right of house label
+    11: { x: 570, y: 175 },  // H11 - 20px right of house label
+    12: { x: 525, y: 130 }   // H12 - 20px above house label
   };
 
   // Zodiac signs in order (1-indexed)
@@ -55,7 +73,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         houseNumber,
         signNumber,
         signName,
-        coordinates: FIXED_HOUSE_COORDINATES[houseNumber]
+        coordinates: PLANET_COORDINATES[houseNumber]
       };
     }
     
@@ -201,7 +219,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
           {/* House numbers (H1-H12) with FIXED positions */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
-            const pos = FIXED_HOUSE_COORDINATES[houseNum];
+            const pos = HOUSE_LABEL_COORDINATES[houseNum];
             if (!pos) return null;
             
             return (
@@ -224,7 +242,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
             const house = getHouseData(houseNum);
-            const center = FIXED_HOUSE_COORDINATES[houseNum];
+            const center = PLANET_COORDINATES[houseNum];
             
             if (!center) return null;
             
