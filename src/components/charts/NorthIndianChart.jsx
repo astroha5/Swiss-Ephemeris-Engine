@@ -27,20 +27,20 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 525, y: 150 }   // H12
   };
   
-  // Planet coordinates (offset from house labels to prevent overlap)
+  // Planet coordinates (optimized based on visual inspection)
   const PLANET_COORDINATES = {
-    1: { x: 350, y: 310 },   // H1 - 20px above house label
-    2: { x: 175, y: 130 },   // H2 - 20px above house label
-    3: { x: 150, y: 195 },   // H3 - 20px below house label
-    4: { x: 310, y: 350 },   // H4 - 20px left of house label
-    5: { x: 150, y: 505 },   // H5 - 20px above house label
-    6: { x: 175, y: 570 },   // H6 - 20px below house label
-    7: { x: 350, y: 390 },   // H7 - 20px below house label
-    8: { x: 525, y: 570 },   // H8 - 20px below house label
-    9: { x: 570, y: 525 },   // H9 - 20px right of house label
-    10: { x: 390, y: 350 },  // H10 - 20px right of house label
-    11: { x: 570, y: 175 },  // H11 - 20px right of house label
-    12: { x: 525, y: 130 }   // H12 - 20px above house label
+    1: { x: 350, y: 175 },   // H1 - Ketu position
+    2: { x: 175, y: 130 },   // H2 - positioned above house label
+    3: { x: 150, y: 195 },   // H3 - positioned below house label
+    4: { x: 310, y: 350 },   // H4 - positioned left of house label
+    5: { x: 150, y: 505 },   // H5 - positioned above house label
+    6: { x: 175, y: 620 },   // H6 - Jupiter & Saturn position (with spacing)
+    7: { x: 350, y: 525 },   // H7 - Rahu position
+    8: { x: 525, y: 570 },   // H8 - positioned below house label
+    9: { x: 640, y: 525 },   // H9 - Mars position
+    10: { x: 525, y: 350 },  // H10 - Sun position
+    11: { x: 640, y: 175 },  // H11 - Moon, Mercury, Venus position (with spacing)
+    12: { x: 525, y: 130 }   // H12 - positioned above house label
   };
 
   // Zodiac signs in order (1-indexed)
@@ -250,13 +250,24 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             const planetCount = house?.planets?.length || 0;
             if (planetCount === 0) return null;
             
-            // Calculate optimal spacing and positioning for larger layout
+            // Calculate optimal spacing and positioning based on your coordinates
             const getOptimalSpacing = (count, houseNumber) => {
-              const baseSpacing = 22; // Increased base spacing for larger layout
-              const maxSpacing = 30;  // Increased maximum spacing
-              const minSpacing = 16;  // Increased minimum spacing
+              // Special handling for houses with specific coordinate requirements
+              if (houseNumber === 6 && count >= 2) {
+                // H6: Jupiter at y=620, Saturn at y=650 (30px spacing)
+                return { spacing: 30, startY: 620 };
+              }
               
-              // Adjust spacing based on planet count
+              if (houseNumber === 11 && count >= 2) {
+                // H11: Moon at y=153, Mercury at y=175, Venus at y=197 (22px spacing)
+                return { spacing: 22, startY: 153 };
+              }
+              
+              // Default spacing for other houses
+              const baseSpacing = 22;
+              const maxSpacing = 30;
+              const minSpacing = 16;
+              
               let spacing = baseSpacing;
               if (count <= 2) spacing = maxSpacing;
               else if (count >= 4) spacing = minSpacing;
