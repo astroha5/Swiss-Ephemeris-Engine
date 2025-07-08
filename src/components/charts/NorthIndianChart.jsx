@@ -45,18 +45,18 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   
   // Sign number coordinates (independent from house labels)
   const SIGN_COORDINATES = {
-    1: { x: 350, y: 345 },   // H1 - 15px below house label
-    2: { x: 175, y: 165 },   // H2 - 15px below house label
-    3: { x: 150, y: 190 },   // H3 - 15px below house label
-    4: { x: 330, y: 365 },   // H4 - 15px below house label
-    5: { x: 150, y: 540 },   // H5 - 15px below house label
-    6: { x: 175, y: 565 },   // H6 - 15px below house label
-    7: { x: 350, y: 385 },   // H7 - 15px below house label
-    8: { x: 525, y: 565 },   // H8 - 15px below house label
-    9: { x: 550, y: 540 },   // H9 - 15px below house label
-    10: { x: 370, y: 365 },  // H10 - 15px below house label
-    11: { x: 550, y: 190 },  // H11 - 15px below house label
-    12: { x: 525, y: 165 }   // H12 - 15px below house label
+    1: { x: 15, y: 665 },   // H1 - 15px below house label
+    2: { x: 40, y: 685 },   // H2 - 15px below house label
+    3: { x: 350, y: 680 },   // H3 - 15px below house label
+    4: { x: 660, y: 685 },   // H4 - 15px below house label
+    5: { x: 685, y: 665 },   // H5 - 15px below house label
+    6: { x: 675, y: 350 },   // H6 - 15px below house label
+    7: { x: 685, y: 35 },   // H7 - 15px below house label
+    8: { x: 665, y: 15 },   // H8 - 15px below house label
+    9: { x: 550, y: 20 },   // H9 - 15px below house label
+    10: { x: 30, y: 15 },  // H10 - 15px below house label
+    11: { x: 15, y: 35 },  // H11 - 15px below house label
+    12: { x: 20, y: 350 }   // H12 - 15px below house label
   };
 
   // Zodiac signs in order (1-indexed)
