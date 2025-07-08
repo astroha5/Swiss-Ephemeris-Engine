@@ -161,6 +161,9 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   // Apply the logic
   const { houses: processedHouses, ascendantSignNumber } = applyNorthIndianLogic();
   
+  // Calculate sign-to-house mapping for use in rendering
+  const signToHouseMapping = calculateSignToHouseMapping(ascendantSignNumber);
+  
   const getHouseData = (houseNumber) => {
     const houseData = processedHouses.find((h) => h.number === houseNumber);
     
@@ -254,25 +257,29 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* Sign numbers (1-12) positioned using fixed SIGN_COORDINATES */}
+          {/* Sign numbers dynamically positioned using SIGN_COORDINATES */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
-            const pos = SIGN_COORDINATES[houseNum];
-            const house = getHouseData(houseNum);
-            if (!pos || !house) return null;
+            const houseMapping = signToHouseMapping[houseNum];
+            
+            if (!houseMapping) return null;
+            
+            // Use SIGN_COORDINATES for the sign number that belongs to this house
+            const signPos = SIGN_COORDINATES[houseMapping.signNumber];
+            if (!signPos) return null;
 
             return (
               <text
-                key={`sign-number-${houseNum}`}
-                x={pos.x}
-                y={pos.y}
+                key={`sign-${houseMapping.signNumber}`}
+                x={signPos.x}
+                y={signPos.y}
                 fontSize="12"
                 textAnchor="middle"
                 fill="#059669" // Green color to distinguish from house numbers
                 fontWeight="500"
                 dominantBaseline="middle"
               >
-                {house.signNumber}
+                {houseMapping.signNumber}
               </text>
             );
           })}
