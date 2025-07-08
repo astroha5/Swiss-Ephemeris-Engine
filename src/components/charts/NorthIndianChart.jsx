@@ -43,20 +43,20 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 525, y: 40 }    // H12 - Moon & Mars position (updated)
   };
   
-  // Sign number coordinates (positioned relative to house labels for better spacing)
-  const SIGN_NUMBER_OFFSETS = {
-    1: { x: 0, y: 20 },     // H1 - offset from house label
-    2: { x: -20, y: 20 },   // H2 - offset from house label  
-    3: { x: -20, y: 20 },   // H3 - offset from house label
-    4: { x: 0, y: 20 },     // H4 - offset from house label
-    5: { x: 20, y: 20 },    // H5 - offset from house label
-    6: { x: 20, y: 0 },     // H6 - offset from house label
-    7: { x: 0, y: -20 },    // H7 - offset from house label
-    8: { x: 20, y: -20 },   // H8 - offset from house label
-    9: { x: 20, y: -20 },   // H9 - offset from house label
-    10: { x: 0, y: -20 },   // H10 - offset from house label
-    11: { x: -20, y: -20 }, // H11 - offset from house label
-    12: { x: -20, y: 0 }    // H12 - offset from house label
+  // Sign number coordinates (fixed absolute positions)
+  const SIGN_COORDINATES = {
+    1: { x: 350, y: 350 },
+    2: { x: 180, y: 100 },
+    3: { x: 100, y: 180 },
+    4: { x: 310, y: 400 },
+    5: { x: 100, y: 520 },
+    6: { x: 180, y: 600 },
+    7: { x: 350, y: 520 },
+    8: { x: 520, y: 600 },
+    9: { x: 600, y: 520 },
+    10: { x: 400, y: 310 },
+    11: { x: 600, y: 180 },
+    12: { x: 520, y: 100 }
   };
 
   // Zodiac signs in order (1-indexed)
@@ -254,23 +254,19 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* Sign numbers (1-12) positioned using HOUSE_LABEL_COORDINATES + SIGN_NUMBER_OFFSETS */}
+          {/* Sign numbers (1-12) positioned using fixed SIGN_COORDINATES */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
-            const basePos = HOUSE_LABEL_COORDINATES[houseNum];
-            const offset = SIGN_NUMBER_OFFSETS[houseNum];
+            const pos = SIGN_COORDINATES[houseNum];
             const house = getHouseData(houseNum);
-            if (!basePos || !offset || !house) return null;
-            
-            const signX = basePos.x + offset.x;
-            const signY = basePos.y + offset.y;
-            
+            if (!pos || !house) return null;
+
             return (
               <text
                 key={`sign-number-${houseNum}`}
-                x={signX}
-                y={signY}
-                fontSize="9"
+                x={pos.x}
+                y={pos.y}
+                fontSize="12"
                 textAnchor="middle"
                 fill="#059669" // Green color to distinguish from house numbers
                 fontWeight="500"
