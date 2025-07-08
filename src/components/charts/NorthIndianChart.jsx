@@ -257,15 +257,16 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             );
           })}
           
-          {/* Sign numbers dynamically positioned using SIGN_COORDINATES */}
+          {/* Sign numbers dynamically positioned using SIGN_COORDINATES mapped to houses */}
           {Array.from({ length: 12 }, (_, i) => {
             const houseNum = i + 1;
             const houseMapping = signToHouseMapping[houseNum];
             
             if (!houseMapping) return null;
             
-            // Use SIGN_COORDINATES for the sign number that belongs to this house
-            const signPos = SIGN_COORDINATES[houseMapping.signNumber];
+            // Use SIGN_COORDINATES for the HOUSE position, not the sign number
+            // This way each house gets its designated SIGN_COORDINATES position
+            const signPos = SIGN_COORDINATES[houseNum];
             if (!signPos) return null;
 
             return (
