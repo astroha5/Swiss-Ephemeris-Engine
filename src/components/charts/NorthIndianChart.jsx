@@ -27,12 +27,12 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     12: { x: 525, y: 150 }   // H12
   };
   
-  // Planet coordinates (optimized based on visual inspection)
+  // Planet coordinates (updated with new specifications)
   const PLANET_COORDINATES = {
     1: { x: 350, y: 175 },   // H1 - Ketu position
-    2: { x: 175, y: 130 },   // H2 - positioned above house label
-    3: { x: 150, y: 195 },   // H3 - positioned below house label
-    4: { x: 310, y: 350 },   // H4 - positioned left of house label
+    2: { x: 175, y: 50 },    // H2 - Sun & Mercury position (updated)
+    3: { x: 60, y: 175 },    // H3 - Jupiter position (updated)
+    4: { x: 175, y: 350 },   // H4 - Venus position (updated)
     5: { x: 150, y: 505 },   // H5 - positioned above house label
     6: { x: 175, y: 620 },   // H6 - Jupiter & Saturn position (with spacing)
     7: { x: 350, y: 525 },   // H7 - Rahu position
@@ -40,7 +40,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     9: { x: 640, y: 525 },   // H9 - Mars position
     10: { x: 525, y: 350 },  // H10 - Sun position
     11: { x: 640, y: 175 },  // H11 - Moon, Mercury, Venus position (with spacing)
-    12: { x: 525, y: 130 }   // H12 - positioned above house label
+    12: { x: 525, y: 40 }    // H12 - Moon & Mars position (updated)
   };
 
   // Zodiac signs in order (1-indexed)
@@ -253,6 +253,11 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             // Calculate optimal spacing and positioning based on your coordinates
             const getOptimalSpacing = (count, houseNumber) => {
               // Special handling for houses with specific coordinate requirements
+              if (houseNumber === 2 && count >= 2) {
+                // H2: Sun at y=50, Mercury at y=60 (10px spacing)
+                return { spacing: 10, startY: 50 };
+              }
+              
               if (houseNumber === 6 && count >= 2) {
                 // H6: Jupiter at y=620, Saturn at y=650 (30px spacing)
                 return { spacing: 30, startY: 620 };
@@ -261,6 +266,11 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
               if (houseNumber === 11 && count >= 2) {
                 // H11: Moon at y=153, Mercury at y=175, Venus at y=197 (22px spacing)
                 return { spacing: 22, startY: 153 };
+              }
+              
+              if (houseNumber === 12 && count >= 2) {
+                // H12: Moon at y=40, Mars at y=60 (20px spacing)
+                return { spacing: 20, startY: 40 };
               }
               
               // Default spacing for other houses
