@@ -297,23 +297,12 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
                 {house?.planets?.map((planet, planetIdx) => {
                   const planetName = typeof planet === 'string' ? planet : planet.name;
                   
-                  // Special fixed coordinates for Rahu and Sun
-                  let planetX, planetY;
+                  // Calculate position for this planet
+                  const planetY = startY + (planetIdx * spacing);
                   
-                  if (planetName === 'Rahu') {
-                    planetX = 50;
-                    planetY = 525;
-                  } else if (planetName === 'Sun') {
-                    planetX = 525;
-                    planetY = 625;
-                  } else {
-                    // Calculate position for this planet (default logic)
-                    planetY = startY + (planetIdx * spacing);
-                    
-                    // Slight horizontal offset for crowded houses to improve readability
-                    const xOffset = planetCount > 3 ? (planetIdx % 2 === 0 ? -12 : 12) : 0;
-                    planetX = center.x + xOffset;
-                  }
+                  // Slight horizontal offset for crowded houses to improve readability
+                  const xOffset = planetCount > 3 ? (planetIdx % 2 === 0 ? -12 : 12) : 0;
+                  const planetX = center.x + xOffset;
                   
                   return (
                     <text
