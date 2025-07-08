@@ -101,7 +101,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         if (originalHouse.sign === houseMapping.signName && originalHouse.planets) {
           originalHouse.planets.forEach((planet, index) => {
             planetsInThisHouse.push(planet);
-            degreesInThisHouse.push(originalHouse.degrees?.[index] || '0°00\\'');
+            degreesInThisHouse.push(originalHouse.degrees?.[index] || '0°00\'');
           });
         }
       });
