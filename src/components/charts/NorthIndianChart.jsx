@@ -45,18 +45,18 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
   
   // Sign number coordinates (fixed absolute positions)
   const SIGN_COORDINATES = {
-    1: { x: 350, y: 350 },
-    2: { x: 180, y: 100 },
-    3: { x: 100, y: 180 },
-    4: { x: 310, y: 400 },
-    5: { x: 100, y: 520 },
-    6: { x: 180, y: 600 },
-    7: { x: 350, y: 520 },
-    8: { x: 520, y: 600 },
-    9: { x: 600, y: 520 },
-    10: { x: 400, y: 310 },
-    11: { x: 600, y: 180 },
-    12: { x: 520, y: 100 }
+    1: { x: 15, y: 665 },
+    2: { x: 40, y: 685 },
+    3: { x: 350, y: 680 },
+    4: { x: 660, y: 685 },
+    5: { x: 685, y: 665 },
+    6: { x: 675, y: 350 },
+    7: { x: 685, y: 35 },
+    8: { x: 665, y: 15 },
+    9: { x: 350, y: 20 },
+    10: { x: 30, y: 15 },
+    11: { x: 15, y: 35 },
+    12: { x: 20, y: 350 }
   };
 
   // Zodiac signs in order (1-indexed)
