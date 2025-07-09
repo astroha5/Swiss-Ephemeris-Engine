@@ -154,6 +154,40 @@ export const analyzeKundliImage = async (imageData, options = {}) => {
 };
 
 // Generate astrological interpretation based on chart data
+// Updated model sequence - removed problematic model and reordered
+const models = ["shisa-ai/shisa-v2-llama3.3-70b:free", "deepseek/deepseek-r1-distill-llama-70b:free", "meta-llama/llama-3.3-70b-instruct:free"];
+
+// Helper function to extract JSON from markdown-wrapped responses
+const extractJsonFromResponse = (response) => {
+  try {
+    // First try to parse as-is
+    return JSON.parse(response);
+  } catch (error) {
+    // If that fails, try to extract JSON from markdown code blocks
+    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (jsonMatch) {
+      try {
+        return JSON.parse(jsonMatch[1].trim());
+      } catch (parseError) {
+        console.warn('Failed to parse JSON from markdown:', parseError);
+      }
+    }
+    
+    // Try to find JSON object in the response
+    const jsonObjectMatch = response.match(/\{[\s\S]*\}/);
+    if (jsonObjectMatch) {
+      try {
+        return JSON.parse(jsonObjectMatch[0]);
+      } catch (parseError) {
+        console.warn('Failed to parse extracted JSON object:', parseError);
+      }
+    }
+    
+    // If all else fails, return null
+    return null;
+  }
+};
+
 export const generateAstrologicalInterpretation = async (chartData, options = {}) => {
   try {
     if (!DEEPSEEK_API_KEY) {
@@ -161,21 +195,11 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
     }
 
     const payload = {
-      model: 'deepseek/deepseek-r1',
+      model: models[0],
       messages: [
         {
           role: 'system',
-          content: `You are a highly knowledgeable Vedic astrologer with decades of experience in traditional Indian astrology (Jyotish Shastra). 
-          
-          Your expertise includes:
-          - Classical Sanskrit texts like Brihat Parashara Hora Shastra, Saravali, and Phaladeepika
-          - Traditional calculation methods and house systems
-          - Planetary periods (Vimshottari Dasha) and their effects
-          - Yogas, doshas, and remedial measures
-          - Practical guidance rooted in traditional wisdom
-          
-          Provide comprehensive, accurate, and insightful interpretations while maintaining respect for traditional astrological principles. 
-          Always offer constructive guidance and avoid overly negative predictions.`
+          content: `You are a Vedic astrologer. Provide friendly, insightful interpretations based on traditional Jyotish principles. Focus on constructive guidance and personal empowerment. Return only valid JSON.`
         },
         {
           role: 'user',
@@ -184,79 +208,43 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
           **Chart Analysis Data:**
           ${JSON.stringify(chartData, null, 2)}
 
-          Please provide interpretations in the following structured format as a JSON object:
-
-          {
-            "overall_personality": {
-              "title": "Personality & Life Path",
-              "content": "Detailed personality analysis based on ascendant and planetary positions",
-              "key_traits": ["trait1", "trait2", "trait3"],
-              "life_themes": ["theme1", "theme2"]
-            },
-            "career_profession": {
-              "title": "Career & Professional Life",
-              "content": "Career prospects and professional inclinations",
-              "suitable_fields": ["field1", "field2"],
-              "timing": "Career growth periods and challenges"
-            },
-            "relationships_marriage": {
-              "title": "Relationships & Marriage",
-              "content": "Relationship patterns and marriage prospects",
-              "compatibility_factors": ["factor1", "factor2"],
-              "marriage_timing": "Favorable marriage periods"
-            },
-            "health_wellness": {
-              "title": "Health & Wellness",
-              "content": "Health indications and wellness recommendations",
-              "health_strengths": ["strength1", "strength2"],
-              "areas_to_watch": ["area1", "area2"],
-              "remedial_measures": ["measure1", "measure2"]
-            },
-            "wealth_finance": {
-              "title": "Wealth & Financial Prospects",
-              "content": "Financial prospects and wealth accumulation potential",
-              "income_sources": ["source1", "source2"],
-              "investment_guidance": "Investment timing and strategies",
-              "wealth_periods": "Periods of financial growth"
-            },
-            "spirituality_growth": {
-              "title": "Spirituality & Personal Growth",
-              "content": "Spiritual inclinations and growth opportunities",
-              "spiritual_practices": ["practice1", "practice2"],
-              "growth_areas": ["area1", "area2"],
-              "moksha_path": "Path to spiritual liberation"
-            },
-            "dasha_analysis": {
-              "title": "Current Planetary Periods (Dasha)",
-              "content": "Analysis of current and upcoming planetary periods",
-              "current_period": "Current dasha effects",
-              "upcoming_changes": "What to expect in future periods",
-              "remedial_actions": ["action1", "action2"]
-            },
-            "remedial_measures": {
-              "title": "Remedial Measures & Recommendations",
-              "content": "Traditional remedies and suggestions for improvement",
-              "gemstones": ["gemstone1", "gemstone2"],
-              "mantras": ["mantra1", "mantra2"],
-              "donations": ["donation1", "donation2"],
-              "fasting": "Recommended fasting days",
-              "deity_worship": "Recommended deities for worship"
-            }
-          }
-
-          Ensure all interpretations are based on traditional Vedic astrology principles and provide practical, constructive guidance.`
+          Provide JSON with 6 sections: {"overview":{"content":"...","keyPoints":["..."]}, "career":{"content":"...","keyPoints":["..."]}, "relationships":{"content":"...","keyPoints":["..."]}, "health":{"content":"...","keyPoints":["..."]}, "wealth":{"content":"...","keyPoints":["..."]}, "spirituality":{"content":"...","keyPoints":["..."]}}. Return only valid JSON.`
         }
       ],
       max_tokens: 6000,
       temperature: 0.3,
-      stream: false,
+      stream: options.stream || false,
       ...options
     };
 
-    const response = await deepseekApi.post('/chat/completions', payload);
+    let response;
+    let lastError;
     
-    if (!response.data?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenRouter API');
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+      payload.model = model;
+      
+      try {
+        console.log(`Attempting to use model: ${model}`);
+        response = await deepseekApi.post('/chat/completions', payload);
+        if (response.data?.choices?.[0]?.message?.content) {
+          console.log(`Successfully used model: ${model}`);
+          break;
+        }
+      } catch (err) {
+        console.warn(`Model ${model} failed:`, err.message);
+        lastError = err;
+        
+        // Add delay before trying next model to avoid rate limiting
+        if (i < models.length - 1) {
+          console.log('Waiting 2 seconds before trying next model...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      }
+    }
+    
+    if (!response || !response.data?.choices?.[0]?.message?.content) {
+      throw new Error(lastError ? `All models failed. Last error: ${lastError.message}` : 'All models failed to generate an interpretation.');
     }
 
     return {

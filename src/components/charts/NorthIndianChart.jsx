@@ -339,14 +339,18 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         </svg>
       </div>
       
-      {/* Zodiac Sign Index */}
+      {/* Celestial Signs Reference */}
       <div className="mt-4 text-sm text-gray-600">
         <div className="text-center mb-2">
-          <strong>Zodiac Sign Index:</strong>
+          <strong className="text-primary flex items-center justify-center gap-2">
+            <span>🌟</span>
+            <span>Celestial Signs Reference</span>
+            <span>🌟</span>
+          </strong>
         </div>
-        <div className="text-xs space-y-1 text-center">
-          <p>1: Aries, 2: Taurus, 3: Gemini, 4: Cancer, 5: Leo, 6: Virgo</p>
-          <p>7: Libra, 8: Scorpio, 9: Sagittarius, 10: Capricorn, 11: Aquarius, 12: Pisces</p>
+        <div className="text-xs space-y-1 text-center text-gray-500">
+          <p className="font-medium">🐏 Aries • 🐂 Taurus • 👬 Gemini • 🦀 Cancer • 🦁 Leo • 👩 Virgo</p>
+          <p className="font-medium">⚖️ Libra • 🦂 Scorpio • 🏹 Sagittarius • 🐐 Capricorn • 🏺 Aquarius • 🐟 Pisces</p>
         </div>
       </div>
     </div>

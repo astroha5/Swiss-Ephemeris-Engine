@@ -338,7 +338,11 @@ const ChartResultsDashboard = () => {
 
                 {/* AI Interpretation Section */}
                 <section id="ai-interpretation" className="scroll-mt-32">
-                  <AIInterpretationSection />
+                  <AIInterpretationSection 
+                    chartData={chartData} 
+                    birthDetails={birthDetails}
+                    dashaData={dashaData}
+                  />
                 </section>
 
                 {/* Remedies Section */}

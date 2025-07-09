@@ -60,7 +60,7 @@ const HeroSection = () => {
           
           {/* Subtitle */}
           <p className="text-xl sm:text-2xl text-text-secondary font-body mb-4 max-w-3xl mx-auto leading-relaxed">
-            AI-Powered Vedic Astrology Platform
+            Wisdom of the Stars • Power of AI
           </p>
           
           {/* Description */}
