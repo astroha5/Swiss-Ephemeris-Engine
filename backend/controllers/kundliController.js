@@ -21,20 +21,39 @@ function generateNavamsaHouses(navamsaChart, ascendant) {
   // Calculate Navamsa ascendant from the Lagna ascendant
   const navamsaAscendant = swissEphemerisService.calculateNavamsaPosition(ascendant.longitude);
   
-  // Generate houses based on Navamsa ascendant (not Lagna ascendant)
+  console.log('🔍 Navamsa Ascendant Calculation:', {
+    lagnaAscendant: {
+      longitude: ascendant.longitude,
+      sign: ascendant.sign,
+      signNumber: ascendant.signNumber
+    },
+    navamsaAscendant: {
+      longitude: navamsaAscendant.longitude,
+      sign: navamsaAscendant.sign,
+      signNumber: navamsaAscendant.signNumber
+    }
+  });
+  
+  // Generate houses based on Navamsa ascendant (using same logic as Lagna chart)
   const houses = Array.from({ length: 12 }, (_, i) => ({
     number: i + 1,
     sign: swissEphemerisService.zodiacSigns[(navamsaAscendant.signNumber - 1 + i) % 12],
     signNumber: ((navamsaAscendant.signNumber - 1 + i) % 12) + 1,
     planets: [],
-    degrees: []
+    degrees: [],
+    signLord: ''
   }));
+
+  // Set sign lords for each house (same as Lagna)
+  houses.forEach(house => {
+    house.signLord = getSignLord(house.sign);
+  });
 
   // Place planets in houses based on their Navamsa positions
   for (const [planetKey, planet] of Object.entries(navamsaChart)) {
     if (!planet.navamsaSignNumber) continue;
     
-    // Calculate which house this planet should be in
+    // Calculate which house this planet should be in (using same logic as Lagna)
     let houseNumber = planet.navamsaSignNumber - navamsaAscendant.signNumber + 1;
     
     // Adjust for wrap-around
@@ -47,8 +66,16 @@ function generateNavamsaHouses(navamsaChart, ascendant) {
     
     const houseIndex = houseNumber - 1;
     houses[houseIndex].planets.push(planet.name);
-    houses[houseIndex].degrees.push(planet.degreeFormatted);
+    houses[houseIndex].degrees.push(swissEphemerisService.formatDegree(planet.navamsaDegree));
+    
+    console.log(`🏠 Navamsa Planet Placement: ${planet.name} -> House ${houseNumber} (${houses[houseIndex].sign})`);
   }
+
+  console.log('🎯 Final Navamsa Houses:', houses.map(h => ({ 
+    number: h.number, 
+    sign: h.sign, 
+    planets: h.planets 
+  })));
 
   return houses;
 }

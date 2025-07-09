@@ -398,46 +398,65 @@ class EnhancedSwissEphemerisService {
   }
 
   /**
-   * Calculate Navamsa chart (D-9)
+   * Calculate Navamsa chart (D-9) - Fixed to match Lagna chart structure
    */
   calculateNavamsa(planetaryPositions) {
     const navamsaChart = {};
+
+    console.log('🌟 Starting Navamsa calculations...');
 
     Object.entries(planetaryPositions).forEach(([planetKey, planet]) => {
       const navamsaPosition = this.calculateNavamsaPosition(planet.longitude);
       
       navamsaChart[planetKey] = {
         ...planet,
+        // Keep original position data for reference
+        originalLongitude: planet.longitude,
+        originalSign: planet.sign,
+        originalSignNumber: planet.signNumber,
+        // Add Navamsa position data
         navamsaLongitude: navamsaPosition.longitude,
         navamsaSign: navamsaPosition.sign,
         navamsaSignNumber: navamsaPosition.signNumber,
         navamsaDegree: navamsaPosition.degree,
         navamsaSignLord: this.getSignLord(navamsaPosition.sign)
       };
+      
+      console.log(`🔄 ${planet.name}: ${planet.sign} ${planet.degreeFormatted} -> Navamsa: ${navamsaPosition.sign} ${this.formatDegree(navamsaPosition.degree)}`);
     });
 
+    console.log('✅ Navamsa calculations completed');
     return navamsaChart;
   }
 
   /**
    * Calculate Navamsa position for a given longitude
+   * Fixed to use proper Vedic astrology Navamsa calculation
    */
   calculateNavamsaPosition(longitude) {
-    const signNumber = Math.floor(longitude / 30);
+    const signNumber = Math.floor(longitude / 30); // 0-indexed (0=Aries, 1=Taurus, etc.)
     const degreeInSign = longitude % 30;
     
-    // Navamsa calculation
-    const navamsaNumber = Math.floor(degreeInSign / (30/9));
+    // Each sign is divided into 9 Navamsas of 3°20' each
+    const navamsaNumber = Math.floor(degreeInSign / (30/9)); // 0-8
     
-    // Different calculation for odd and even signs
+    // Calculate navamsa sign based on sign element (proper Vedic method):
     let navamsaSignNumber;
-    if ((signNumber + 1) % 2 === 1) { // Odd signs
-      navamsaSignNumber = (signNumber + navamsaNumber) % 12;
-    } else { // Even signs
-      navamsaSignNumber = (signNumber + 8 + navamsaNumber) % 12;
+    
+    if ([0, 4, 8].includes(signNumber)) { // Fire signs: Aries, Leo, Sagittarius
+      navamsaSignNumber = (0 + navamsaNumber) % 12; // Start from Aries
+    } else if ([1, 5, 9].includes(signNumber)) { // Earth signs: Taurus, Virgo, Capricorn
+      navamsaSignNumber = (9 + navamsaNumber) % 12; // Start from Capricorn
+    } else if ([2, 6, 10].includes(signNumber)) { // Air signs: Gemini, Libra, Aquarius
+      navamsaSignNumber = (6 + navamsaNumber) % 12; // Start from Libra
+    } else { // Water signs: Cancer, Scorpio, Pisces
+      navamsaSignNumber = (3 + navamsaNumber) % 12; // Start from Cancer
     }
 
+    // Calculate degree within navamsa sign
     const navamsaDegree = (degreeInSign % (30/9)) * 9;
+
+    console.log(`🔄 Navamsa Position Calc: ${longitude}° -> ${this.zodiacSigns[signNumber]} ${degreeInSign.toFixed(2)}° -> Navamsa ${navamsaNumber + 1} -> ${this.zodiacSigns[navamsaSignNumber]} ${navamsaDegree.toFixed(2)}°`);
 
     return {
       longitude: navamsaSignNumber * 30 + navamsaDegree,
