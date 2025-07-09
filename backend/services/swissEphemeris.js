@@ -367,7 +367,7 @@ class SwissEphemerisService {
   }
 
   /**
-   * Calculate Navamsa chart (D9)
+   * Calculate Navamsa chart (D9) - Fixed according to proper Vedic astrology rules
    */
   calculateNavamsa(planetPositions) {
     const navamsaPositions = {};
@@ -375,20 +375,33 @@ class SwissEphemerisService {
     for (const [planetKey, planet] of Object.entries(planetPositions)) {
       if (planetKey === 'ascendant') continue;
 
-      // Navamsa calculation: Each sign is divided into 9 parts
-      const signNum = planet.signNumber - 1; // 0-indexed
+      // Navamsa calculation: Each sign is divided into 9 parts of 3°20' each
+      const signNum = planet.signNumber - 1; // 0-indexed (0=Aries, 1=Taurus, etc.)
       const degreeInSign = planet.degree;
       const navamsaPart = Math.floor(degreeInSign / (30/9)); // Which navamsa part (0-8)
       
-      // Calculate navamsa sign
-      let navamsaSign;
-      if ([0, 3, 6, 9].includes(signNum)) { // Movable signs
-        navamsaSign = (signNum + navamsaPart) % 12;
-      } else if ([1, 4, 7, 10].includes(signNum)) { // Fixed signs  
-        navamsaSign = (signNum + 8 + navamsaPart) % 12;
-      } else { // Dual signs
-        navamsaSign = (signNum + 4 + navamsaPart) % 12;
+      // Calculate navamsa sign based on sign element:
+      // Fire signs (Aries, Leo, Sagittarius): start from Aries
+      // Earth signs (Taurus, Virgo, Capricorn): start from Capricorn  
+      // Air signs (Gemini, Libra, Aquarius): start from Libra
+      // Water signs (Cancer, Scorpio, Pisces): start from Cancer
+      
+      let navamsaStartSign;
+      
+      if ([0, 4, 8].includes(signNum)) { // Fire signs: Aries, Leo, Sagittarius
+        navamsaStartSign = 0; // Start from Aries
+      } else if ([1, 5, 9].includes(signNum)) { // Earth signs: Taurus, Virgo, Capricorn
+        navamsaStartSign = 9; // Start from Capricorn
+      } else if ([2, 6, 10].includes(signNum)) { // Air signs: Gemini, Libra, Aquarius
+        navamsaStartSign = 6; // Start from Libra
+      } else { // Water signs: Cancer, Scorpio, Pisces
+        navamsaStartSign = 3; // Start from Cancer
       }
+      
+      // Calculate final navamsa sign
+      const navamsaSign = (navamsaStartSign + navamsaPart) % 12;
+      
+      logger.info(`🔄 Navamsa calculation for ${planet.name}: ${this.zodiacSigns[signNum]} ${degreeInSign.toFixed(2)}° → Part ${navamsaPart + 1} → ${this.zodiacSigns[navamsaSign]}`);
 
       navamsaPositions[planetKey] = {
         ...planet,
