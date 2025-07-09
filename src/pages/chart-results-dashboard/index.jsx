@@ -296,12 +296,14 @@ const ChartResultsDashboard = () => {
               <div className="space-y-8">
                 {/* Overview Section */}
                 <section id="overview" className="scroll-mt-32">
-                  <ChartOverview 
-                    birthDetails={birthDetails}
-                    chartData={chartData}
-                    isRealChart={!!chartData}
-                    realData={location.state}
-                  />
+                <ChartOverview 
+                  birthDetails={birthDetails}
+                  chartData={chartData}
+                  isRealChart={!!chartData}
+                  realData={location.state}
+                  dashaData={dashaData}
+                  dashaLoading={dashaLoading}
+                />
                 </section>
 
                 {/* Lagna Chart Section */}

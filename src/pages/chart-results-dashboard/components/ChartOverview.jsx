@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Icon from '../../../components/AppIcon';
 
-const ChartOverview = ({ chartData, birthDetails }) => {
+const ChartOverview = ({ chartData, birthDetails, dashaData, dashaLoading }) => {
   const [realData, setRealData] = useState(null);
   const [isRealChart, setIsRealChart] = useState(false);
 
@@ -95,10 +95,9 @@ const ChartOverview = ({ chartData, birthDetails }) => {
       moonSign: chartSummary.moonSign || mockChartSummary.moonSign,
       sunSign: chartSummary.sunSign || mockChartSummary.sunSign,
       currentDasha: {
-        mahadasha: vimshottariDasha.currentMahadasha?.planet || mockChartSummary.currentDasha.mahadasha,
-        antardasha: vimshottariDasha.currentAntardasha?.planet || mockChartSummary.currentDasha.antardasha,
-        remainingYears: vimshottariDasha.currentMahadasha?.remainingYears || mockChartSummary.currentDasha.remainingYears,
-        remainingMonths: vimshottariDasha.currentAntardasha?.remainingMonths || mockChartSummary.currentDasha.remainingMonths
+        mahadasha: dashaData?.data?.currentMahadasha?.planet || vimshottariDasha.currentMahadasha?.planet || mockChartSummary.currentDasha.mahadasha,
+        antardasha: dashaData?.data?.currentAntardasha?.planet || vimshottariDasha.currentAntardasha?.planet || mockChartSummary.currentDasha.antardasha,
+        remainingYears: dashaData?.data?.currentMahadasha?.remainingYears || vimshottariDasha.currentMahadasha?.remainingYears || mockChartSummary.currentDasha.remainingYears
       },
       yogas: chartSummary.yogas || [],
       doshas: chartSummary.doshas || []
@@ -189,7 +188,7 @@ const ChartOverview = ({ chartData, birthDetails }) => {
       </div>
 
       {/* Chart Summary */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Ascendant */}
         <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
           <div className="flex items-center space-x-3 mb-4">
@@ -248,11 +247,44 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           </div>
         </div>
 
+        {/* Sun Sign */}
+        <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-2 bg-warning/10 rounded-lg">
+              <Icon name="Sun" size={20} className="text-warning" />
+            </div>
+            <h4 className="font-heading font-semibold text-text-primary">Sun Sign</h4>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-text-muted font-caption">Sign:</span>
+              <span className="font-medium text-text-primary">{summary?.sunSign?.sign || 'Unknown'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted font-caption">Degree:</span>
+              <span className="font-mono text-sm text-text-secondary">{summary?.sunSign?.degree || 'Unknown'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted font-caption">Lord:</span>
+              <span className="font-medium text-text-primary">{summary?.sunSign?.lord || 'Unknown'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-text-muted font-caption">Nakshatra:</span>
+              <span className="font-medium text-text-primary">{summary?.sunSign?.nakshatra || 'Unknown'}</span>
+            </div>
+          </div>
+        </div>
+
         {/* Current Dasha */}
         <div className="bg-surface rounded-xl border border-border shadow-soft p-6">
           <div className="flex items-center space-x-3 mb-4">
             <div className="p-2 bg-accent/10 rounded-lg">
-              <Icon name="Clock" size={20} className="text-accent" />
+              {dashaLoading ? (
+                <Icon name="Loader2" size={20} className="text-accent animate-spin" />
+              ) : (
+                <Icon name="Clock" size={20} className="text-accent" />
+              )}
             </div>
             <h4 className="font-heading font-semibold text-text-primary">Current Dasha</h4>
           </div>
@@ -260,15 +292,21 @@ const ChartOverview = ({ chartData, birthDetails }) => {
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Mahadasha:</span>
-              <span className="font-medium text-text-primary">{summary?.currentDasha?.mahadasha || 'Unknown'}</span>
+              <span className="font-medium text-text-primary">
+                {dashaLoading ? 'Loading...' : (summary?.currentDasha?.mahadasha || 'Unknown')}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Antardasha:</span>
-              <span className="font-medium text-text-primary">{summary?.currentDasha?.antardasha || 'Unknown'}</span>
+              <span className="font-medium text-text-primary">
+                {dashaLoading ? 'Loading...' : (summary?.currentDasha?.antardasha || 'Unknown')}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-text-muted font-caption">Remaining:</span>
-              <span className="font-medium text-accent">{summary?.currentDasha?.remainingYears || 0}y</span>
+              <span className="font-medium text-accent">
+                {dashaLoading ? 'Loading...' : `${summary?.currentDasha?.remainingYears || 'Unknown'}y`}
+              </span>
             </div>
           </div>
         </div>

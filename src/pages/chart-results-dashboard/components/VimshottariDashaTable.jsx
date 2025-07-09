@@ -87,7 +87,7 @@ const VimshottariDashaTable = ({ dashaData, isLoading, error }) => {
   };
 
   // Use real data from backend if available, otherwise mock data for development
-  const data = dashaData?.data || mockDashaData;
+  const data = dashaData?.data || dashaData || mockDashaData;
 
   const getStatusColor = (status) => {
     switch (status) {

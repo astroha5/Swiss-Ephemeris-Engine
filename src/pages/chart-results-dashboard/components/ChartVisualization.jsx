@@ -82,8 +82,8 @@ const ChartVisualization = ({ chartData, chartType = 'lagna' }) => {
     <NorthIndianChart
       chartData={currentChart}
       title={chartTitle}
-      className="bg-surface rounded-xl border border-border shadow-soft p-6"
-    />
+      className="bg-surface rounded-xl border-golden shadow-strong p-6"
+    /e
   );
 };
 

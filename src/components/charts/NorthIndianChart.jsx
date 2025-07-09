@@ -184,27 +184,27 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
     <div className={`north-indian-chart text-center ${className}`}>
       <h2 className="font-heading text-xl font-semibold mb-6">{title}</h2>
       
-      <div className="bg-white rounded-lg shadow-lg p-4 max-w-[750px] mx-auto">
+      <div className="bg-white rounded-lg shadow-celestial border-golden p-4 max-w-[750px] mx-auto">
         <svg
           viewBox={`0 0 ${size} ${size}`}
           width="100%"
           className="w-full h-auto"
         >
           {/* Background */}
-          <rect x="0" y="0" width={size} height={size} fill="#fefefe" />
+          <rect x="0" y="0" width={size} height={size} fill="#FEFCF8" />
           
           {/* Outer square border */}
-          <rect x="0" y="0" width={size} height={size} fill="none" stroke="#1f2937" strokeWidth="2" />
+          <rect x="0" y="0" width={size} height={size} fill="none" stroke="#F4B942" strokeWidth="2" />
           
           {/* Main diagonals (X) */}
-          <line x1="0" y1="0" x2={size} y2={size} stroke="#1f2937" strokeWidth="1.5" />
-          <line x1={size} y1="0" x2="0" y2={size} stroke="#1f2937" strokeWidth="1.5" />
+          <line x1="0" y1="0" x2={size} y2={size} stroke="#F4B942" strokeWidth="1.5" />
+          <line x1={size} y1="0" x2="0" y2={size} stroke="#F4B942" strokeWidth="1.5" />
           
           {/* Central diamond */}
           <polygon 
             points={`${mid},0 ${size},${mid} ${mid},${size} 0,${mid}`}
             fill="none" 
-            stroke="#1f2937" 
+            stroke="#F4B942" 
             strokeWidth="1.5" 
           />
           
@@ -243,7 +243,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
                   y={pos.y}
                   fontSize="12"
                   textAnchor="middle"
-                  fill="#059669"
+                  fill="#D97706"
                   fontWeight="500"
                   dominantBaseline="middle"
                >
@@ -325,7 +325,7 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
                       y={planetY}
                       fontSize={planetCount > 3 ? "11" : "13"} // Slightly larger font for bigger layout
                       textAnchor="middle"
-                      fill="#dc2626"
+                      fill="#B45309"
                       fontWeight="600"
                       dominantBaseline="middle"
                     >
@@ -339,15 +339,14 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         </svg>
       </div>
       
-      {/* Logic Explanation */}
+      {/* Zodiac Sign Index */}
       <div className="mt-4 text-sm text-gray-600">
         <div className="text-center mb-2">
-          <strong>🧭 North Indian Chart Logic Applied:</strong>
+          <strong>Zodiac Sign Index:</strong>
         </div>
-        <div className="text-xs space-y-1">
-          <p>✅ Step 1: Houses are FIXED (never move)</p>
-          <p>✅ Step 2: Signs rotate based on Ascendant ({ZODIAC_SIGNS[ascendantSignNumber]})</p>
-          <p>✅ Step 3: Planets follow their signs</p>
+        <div className="text-xs space-y-1 text-center">
+          <p>1: Aries, 2: Taurus, 3: Gemini, 4: Cancer, 5: Leo, 6: Virgo</p>
+          <p>7: Libra, 8: Scorpio, 9: Sagittarius, 10: Capricorn, 11: Aquarius, 12: Pisces</p>
         </div>
       </div>
     </div>
