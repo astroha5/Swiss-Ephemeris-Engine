@@ -211,7 +211,7 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
           ${chartData.focus === 'remedies' ? 
             'Provide remedial measures in JSON format: {"gemstones":[{"name":"...","planet":"...","instruction":"..."}], "mantras":[{"name":"...","instruction":"..."}], "donations":[{"item":"...","instruction":"..."}], "fasting":[{"day":"...","instruction":"..."}]}' :
             'Provide JSON with 6 sections: {"overview":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "career":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "relationships":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "health":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "wealth":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "spirituality":{"content":"...","keyPoints":["..."],"recommendations":["..."]}}. Each section must include content, keyPoints, and recommendations.'
-          } Return only valid JSON.`
+          } Return only valid JSON.
         }
       ],
       max_tokens: 6000,

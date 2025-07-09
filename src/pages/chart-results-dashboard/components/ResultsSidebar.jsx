@@ -3,6 +3,7 @@ import Icon from '../../../components/AppIcon';
 
 const ResultsSidebar = ({ activeSection, onSectionChange, isMobile = false }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [viewedSections, setViewedSections] = useState(new Set(['overview']));
 
   const sections = [
     {
@@ -57,6 +58,9 @@ const ResultsSidebar = ({ activeSection, onSectionChange, isMobile = false }) =>
 
   const handleSectionClick = (sectionId) => {
     onSectionChange(sectionId);
+    
+    // Track viewed sections
+    setViewedSections(prev => new Set([...prev, sectionId]));
     
     // Scroll to section on mobile
     if (isMobile) {
@@ -162,12 +166,12 @@ const ResultsSidebar = ({ activeSection, onSectionChange, isMobile = false }) =>
         <div className="p-4 border-t border-border-light">
           <div className="flex items-center justify-between text-sm text-text-muted mb-2">
             <span className="font-caption">Sections Viewed</span>
-            <span className="font-mono">3/8</span>
+            <span className="font-mono">{viewedSections.size}/{sections.length}</span>
           </div>
           <div className="w-full bg-border-light rounded-full h-2">
             <div 
               className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: '37.5%' }}
+              style={{ width: `${(viewedSections.size / sections.length) * 100}%` }}
             ></div>
           </div>
         </div>
