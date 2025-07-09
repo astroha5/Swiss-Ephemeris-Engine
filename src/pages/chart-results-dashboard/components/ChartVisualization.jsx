@@ -83,7 +83,7 @@ const ChartVisualization = ({ chartData, chartType = 'lagna' }) => {
       chartData={currentChart}
       title={chartTitle}
       className="bg-surface rounded-xl border-golden shadow-strong p-6"
-    /e
+    />
   );
 };
 
