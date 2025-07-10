@@ -7,10 +7,12 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [showDegrees, setShowDegrees] = useState(true);
   const [showAspects, setShowAspects] = useState(true);
+  const [showHouses, setShowHouses] = useState(true);
 
   // Extract planets and aspects from the data
   const planets = planetaryData?.planets || planetaryData || [];
   const aspects = planetaryData?.aspects || [];
+  const houses = planetaryData?.charts?.lagna?.houses || [];
 
   // Planet symbols and colors for display
   const planetInfo = {
@@ -41,6 +43,34 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  // Function to get house number for a planet
+  const getPlanetHouse = (planet) => {
+    // Use house number from planet data if available
+    if (planet.house) {
+      return planet.house;
+    }
+    
+    // Fallback to searching in houses array
+    if (!houses || houses.length === 0) return 'N/A';
+    
+    for (let i = 0; i < houses.length; i++) {
+      const house = houses[i];
+      if (house.planets && house.planets.includes(planet.name)) {
+        return house.number;
+      }
+    }
+    return 'N/A';
+  };
+
+  // Function to get planetary aspects for a specific planet
+  const getPlanetAspects = (planetName) => {
+    if (!aspects || aspects.length === 0) return [];
+    
+    return aspects.filter(aspect => 
+      aspect.planet1 === planetName || aspect.planet2 === planetName
+    );
   };
 
   const sortedData = planets ? [...planets].sort((a, b) => {
@@ -140,7 +170,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
               iconName="RotateCw"
               iconPosition="left"
               className="text-xs"
-            >>
+            >
               {showDegrees ? 'Hide' : 'Show'} Degrees
             </Button>
             {aspects.length > 0 && (
@@ -215,8 +245,11 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
               <th className="px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
                 Motion
               </th>
-              <th className="hidden md:table-cell px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+<th className="px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface-secondary/50 transition-colors">
                 House
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                Aspects
               </th>
             </tr>
           </thead>
@@ -251,31 +284,45 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                     </span>
                   </td>
                   
-                  {showDegrees && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="text-sm font-mono text-text-primary">
-                        {planet.formatted}
-                      </span>
-                    </td>
-                  )}
-                  
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm">
-                      <div className="font-medium text-text-primary">
-                        {planet.nakshatra || 'N/A'}
-                      </div>
+{showDegrees && (
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="text-sm font-mono text-text-primary">
+                    {planet.formatted}
+                  </span>
+                </td>
+              )}
+
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm">
+                  <div className="font-medium text-text-primary">
+                    {planet.nakshatra || 'N/A'}
+                  </div>
+                </div>
+              </td>
+              
+              <td className="px-6 py-4 whitespace-nowrap">
+                {getRetrogradeBadge(planet.isRetrograde)}
+              </td>
+              
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                  {getPlanetHouse(planet)}
+                </span>
+              </td>
+              
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="space-y-1">
+                  {getPlanetAspects(planet.name).slice(0, 3).map((aspect, idx) => (
+                    <div key={idx} className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">
+                      {aspect.planet1 === planet.name ? aspect.planet2 : aspect.planet1} 
+                      <span className="text-text-muted">({aspect.aspect})</span>
                     </div>
-                  </td>
-                  
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {getRetrogradeBadge(planet.isRetrograde)}
-                  </td>
-                  
-                  <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      N/A
-                    </span>
-                  </td>
+                  ))}
+                  {getPlanetAspects(planet.name).length > 3 && (
+                    <div className="text-xs text-text-muted">+{getPlanetAspects(planet.name).length - 3} more</div>
+                  )}
+                </div>
+              </td>
                 </tr>
               );
             })}
@@ -376,7 +423,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                         </span>
                       </div>
                       <span className="text-xs font-mono bg-white/50 px-2 py-1 rounded">
-                        {aspect.orb.toFixed(1)}°
+                        {typeof aspect.orb === 'number' ? aspect.orb.toFixed(1) : '0.0'}°
                       </span>
                     </div>
                     
@@ -399,7 +446,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                     </div>
                     
                     <div className="mt-2 text-xs text-text-muted">
-                      Orb: {aspect.orb > 0 ? '+' : ''}{aspect.orb.toFixed(2)}° 
+                      Orb: {typeof aspect.orb === 'number' && aspect.orb > 0 ? '+' : ''}{typeof aspect.orb === 'number' ? aspect.orb.toFixed(2) : '0.00'}° 
                       {aspect.isApplying ? '(Applying)' : '(Separating)'}
                     </div>
                   </div>

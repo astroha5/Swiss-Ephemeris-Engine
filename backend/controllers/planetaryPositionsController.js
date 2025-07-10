@@ -89,15 +89,21 @@ const planetaryPositionsController = {
             nakshatra: ascendant.nakshatra,
             formatted: ascendant.degreeFormatted
           },
-          planets: Object.values(planetaryData.planets).map(planet => ({
-            name: planet.name,
-            degree: planet.degreeInSign,
-            sign: planet.sign,
-            nakshatra: planet.nakshatra,
-            isRetrograde: planet.isRetrograde,
-            formatted: planet.degreeFormatted,
-            longitude: planet.longitude
-          })),
+          planets: Object.values(planetaryData.planets).map(planet => {
+            // Calculate house number for this planet
+            const houseNumber = enhancedSwissEphemeris.calculateHouseNumber(planet.longitude, ascendant.longitude);
+            
+            return {
+              name: planet.name,
+              degree: planet.degreeInSign,
+              sign: planet.sign,
+              nakshatra: planet.nakshatra,
+              isRetrograde: planet.isRetrograde,
+              formatted: planet.degreeFormatted,
+              longitude: planet.longitude,
+              house: houseNumber
+            };
+          }),
           aspects: aspects,
           charts: {
             lagna: {
