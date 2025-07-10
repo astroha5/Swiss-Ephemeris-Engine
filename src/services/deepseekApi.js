@@ -199,7 +199,7 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
       messages: [
         {
           role: 'system',
-          content: `You are a Vedic astrologer. Provide friendly, insightful interpretations based on traditional Jyotish principles. Focus on constructive guidance and personal empowerment. Return only valid JSON.`
+          content: `You are a Vedic astrologer. Provide friendly, insightful interpretations based on traditional Jyotish principles. Focus on constructive guidance and personal empowerment. ${chartData.focus === 'remedies' ? 'For remedies, return ONLY valid JSON without any markdown formatting or additional text.' : 'Return only valid JSON.'}`
         },
         {
           role: 'user',
@@ -209,9 +209,30 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
           ${JSON.stringify(chartData, null, 2)}
 
           ${chartData.focus === 'remedies' ? 
-            'Provide remedial measures in JSON format: {"gemstones":[{"name":"...","planet":"...","instruction":"..."}], "mantras":[{"name":"...","instruction":"..."}], "donations":[{"item":"...","instruction":"..."}], "fasting":[{"day":"...","instruction":"..."}]}' :
+            `Provide remedial measures in JSON format only. No additional text or explanations. Return exactly this structure:
+            
+            {
+              "gemstones": [
+                {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"},
+                {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"}
+              ],
+              "mantras": [
+                {"name": "specific mantra name", "instruction": "how to chant and frequency"},
+                {"name": "specific mantra name", "instruction": "how to chant and frequency"}
+              ],
+              "donations": [
+                {"item": "specific items to donate", "instruction": "when and how to donate"},
+                {"item": "specific items to donate", "instruction": "when and how to donate"}
+              ],
+              "fasting": [
+                {"day": "specific day", "instruction": "purpose and benefits"},
+                {"day": "specific day", "instruction": "purpose and benefits"}
+              ]
+            }
+            
+            Return only the JSON object, no markdown formatting.` :
             'Provide JSON with 6 sections: {"overview":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "career":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "relationships":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "health":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "wealth":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "spirituality":{"content":"...","keyPoints":["..."],"recommendations":["..."]}}. Each section must include content, keyPoints, and recommendations.'
-          } Return only valid JSON.`
+          }`
         }
       ],
       max_tokens: 6000,
@@ -250,9 +271,20 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
       throw new Error(lastError ? `All models failed. Last error: ${lastError.message}` : 'All models failed to generate an interpretation.');
     }
 
+    const rawContent = response.data.choices[0].message.content;
+    
+    // For remedies requests, try to extract JSON
+    let processedContent = rawContent;
+    if (chartData.focus === 'remedies') {
+      const extractedJson = extractJsonFromResponse(rawContent);
+      if (extractedJson) {
+        processedContent = JSON.stringify(extractedJson);
+      }
+    }
+    
     return {
       success: true,
-      interpretation: response.data.choices[0].message.content,
+      interpretation: processedContent,
       usage: response.data.usage,
       model: response.data.model,
       timestamp: new Date().toISOString(),

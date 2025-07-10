@@ -67,6 +67,7 @@ const AIRemediesSection = ({ chartData, birthDetails, dashaData }) => {
       });
       
       if (result.success) {
+        console.log('Raw AI response for remedies:', result.interpretation);
         const parsedRemedies = parseRemediesResponse(result.interpretation);
         setRemedies(parsedRemedies);
         
@@ -87,18 +88,53 @@ const AIRemediesSection = ({ chartData, birthDetails, dashaData }) => {
 
   const parseRemediesResponse = (response) => {
     try {
-      // Try to parse as JSON first
-      const parsed = JSON.parse(response);
-      return {
-        gemstones: parsed.gemstones || mockRemedies.gemstones,
-        mantras: parsed.mantras || mockRemedies.mantras,
-        donations: parsed.donations || mockRemedies.donations,
-        fasting: parsed.fasting || mockRemedies.fasting
-      };
+      // First try to parse as-is (API layer should have already processed it)
+      let parsed;
+      try {
+        parsed = JSON.parse(response);
+      } catch (error) {
+        // If that fails, try to extract JSON from markdown code blocks
+        const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          try {
+            parsed = JSON.parse(jsonMatch[1].trim());
+          } catch (parseError) {
+            console.warn('Failed to parse JSON from markdown:', parseError);
+          }
+        }
+        
+        // Try to find JSON object in the response
+        if (!parsed) {
+          const jsonObjectMatch = response.match(/\{[\s\S]*\}/);
+          if (jsonObjectMatch) {
+            try {
+              parsed = JSON.parse(jsonObjectMatch[0]);
+            } catch (parseError) {
+              console.warn('Failed to parse extracted JSON object:', parseError);
+            }
+          }
+        }
+      }
+      
+      if (parsed && typeof parsed === 'object') {
+        // Validate that we have the required structure
+        const validRemedies = {
+          gemstones: Array.isArray(parsed.gemstones) ? parsed.gemstones : mockRemedies.gemstones,
+          mantras: Array.isArray(parsed.mantras) ? parsed.mantras : mockRemedies.mantras,
+          donations: Array.isArray(parsed.donations) ? parsed.donations : mockRemedies.donations,
+          fasting: Array.isArray(parsed.fasting) ? parsed.fasting : mockRemedies.fasting
+        };
+        
+        console.log('Successfully parsed remedies:', validRemedies);
+        return validRemedies;
+      }
     } catch (error) {
-      console.warn('Failed to parse remedies response as JSON, using mock data');
-      return mockRemedies;
+      console.warn('Failed to parse remedies response:', error);
     }
+    
+    console.warn('Failed to parse remedies response as JSON, using mock data');
+    console.log('Raw response:', response);
+    return mockRemedies;
   };
 
   const data = remedies || mockRemedies;

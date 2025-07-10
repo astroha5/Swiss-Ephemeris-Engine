@@ -268,18 +268,18 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
             const getOptimalSpacing = (count, houseNumber) => {
               // Special handling for houses with specific coordinate requirements
               if (houseNumber === 2 && count >= 2) {
-                // H2: Sun at y=50, Mercury at y=60 (10px spacing)
-                return { spacing: 10, startY: 50 };
+                // H2: Sun at y=50, Mercury at y=60 (20px spacing)
+                return { spacing: 20, startY: 50 };
               }
               
               if (houseNumber === 6 && count >= 2) {
-                // H6: Jupiter at y=620, Saturn at y=650 (30px spacing)
-                return { spacing: 30, startY: 620 };
+                // H6: Jupiter at y=620, Saturn at y=650 (20px spacing)
+                return { spacing: 20, startY: 620 };
               }
               
               if (houseNumber === 11 && count >= 2) {
-                // H11: Moon at y=153, Mercury at y=175, Venus at y=197 (22px spacing)
-                return { spacing: 22, startY: 153 };
+                // H11: Moon at y=153, Mercury at y=175, Venus at y=197 (20px spacing)
+                return { spacing: 20, startY: 153 };
               }
               
               if (houseNumber === 12 && count >= 2) {
@@ -339,18 +339,18 @@ const NorthIndianChart = ({ chartData, title = "Lagna Chart (D1)", className = "
         </svg>
       </div>
       
-      {/* Celestial Signs Reference */}
+      {/* Celestial Number Reference */}
       <div className="mt-4 text-sm text-gray-600">
         <div className="text-center mb-2">
           <strong className="text-primary flex items-center justify-center gap-2">
             <span>🌟</span>
-            <span>Celestial Signs Reference</span>
+            <span>Celestial Number Reference</span>
             <span>🌟</span>
           </strong>
         </div>
         <div className="text-xs space-y-1 text-center text-gray-500">
-          <p className="font-medium">🐏 Aries • 🐂 Taurus • 👬 Gemini • 🦀 Cancer • 🦁 Leo • 👩 Virgo</p>
-          <p className="font-medium">⚖️ Libra • 🦂 Scorpio • 🏹 Sagittarius • 🐐 Capricorn • 🏺 Aquarius • 🐟 Pisces</p>
+          <p className="font-medium">Aries (1) • Taurus (2) • Gemini (3) • Cancer (4) • Leo (5) • Virgo (6)</p>
+          <p className="font-medium">Libra (7) • Scorpio (8) • Sagittarius (9) • Capricorn (10) • Aquarius (11) • Pisces (12)</p>
         </div>
       </div>
     </div>
