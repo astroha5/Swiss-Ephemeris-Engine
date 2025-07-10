@@ -21,10 +21,10 @@ const Header = () => {
       tooltip: 'Create your personalized birth chart'
     },
     {
-      label: 'Upload Kundli',
-      path: '/kundli-upload',
-      icon: 'Upload',
-      tooltip: 'Upload existing kundli image'
+      label: 'Planetary Positions',
+      path: '/planetary-positions',
+      icon: 'Globe',
+      tooltip: 'View planetary positions for any date and location'
     },
     {
       label: 'Results',

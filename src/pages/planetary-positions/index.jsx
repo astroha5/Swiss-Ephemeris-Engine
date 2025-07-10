@@ -12,7 +12,7 @@ import TimeZoneWidget from './components/TimeZoneWidget';
 import BookmarkedDates from './components/BookmarkedDates';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
-import { generateKundli } from '../../services/api';
+import { getPlanetaryPositions } from '../../services/api';
 
 const PlanetaryPositions = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -97,13 +97,13 @@ const PlanetaryPositions = () => {
   };
 
   const setDefaultLocation = () => {
-    // Default to New Delhi, India
+    // Default to Kolkata, India
     setLocation({
-      latitude: 28.6139,
-      longitude: 77.2090,
+      latitude: 22.5726,
+      longitude: 88.3639,
       timezone: 'Asia/Kolkata',
-      formattedAddress: 'New Delhi, India',
-      city: 'New Delhi',
+      formattedAddress: 'Kolkata, West Bengal, India',
+      city: 'Kolkata',
       country: 'India'
     });
   };
@@ -128,7 +128,7 @@ const PlanetaryPositions = () => {
         place: location.formattedAddress
       };
 
-      const response = await generateKundli(requestData);
+      const response = await getPlanetaryPositions(requestData);
       
       if (response && response.success) {
         setPlanetaryData(response.data);
@@ -163,11 +163,11 @@ const PlanetaryPositions = () => {
       case 'today':
         setSelectedDate(today);
         break;
-      case 'yesterday':
+      case 'previousDay':
         newDate.setDate(today.getDate() - 1);
         setSelectedDate(newDate);
         break;
-      case 'tomorrow':
+      case 'nextDay':
         newDate.setDate(today.getDate() + 1);
         setSelectedDate(newDate);
         break;
@@ -328,7 +328,7 @@ const PlanetaryPositions = () => {
 
                     {/* Planetary Table */}
                     <PlanetaryTable 
-                      planetaryData={planetaryData.planetaryData}
+                      planetaryData={planetaryData}
                       selectedDate={selectedDate}
                       location={location}
                     />

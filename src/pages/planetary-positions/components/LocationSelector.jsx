@@ -7,7 +7,35 @@ const LocationSelector = ({ location, onLocationChange }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState(null);
+
+  // Predefined suggestions for common searches
+  const getSuggestions = (query) => {
+    const suggestions = [
+      'Kolkata, India', 'Mumbai, India', 'Delhi, India', 'Chennai, India', 'Bangalore, India',
+      'Hyderabad, India', 'Pune, India', 'Ahmedabad, India', 'Jaipur, India', 'Lucknow, India',
+      'New York, USA', 'Los Angeles, USA', 'Chicago, USA', 'Houston, USA', 'Phoenix, USA',
+      'London, UK', 'Manchester, UK', 'Birmingham, UK', 'Liverpool, UK', 'Leeds, UK',
+      'Sydney, Australia', 'Melbourne, Australia', 'Brisbane, Australia', 'Perth, Australia',
+      'Tokyo, Japan', 'Osaka, Japan', 'Kyoto, Japan', 'Yokohama, Japan',
+      'Dubai, UAE', 'Abu Dhabi, UAE', 'Singapore', 'Hong Kong', 'Seoul, South Korea',
+      'Bangkok, Thailand', 'Kuala Lumpur, Malaysia', 'Manila, Philippines'
+    ];
+    
+    if (!query || query.length < 2) return [];
+    
+    return suggestions.filter(suggestion => 
+      suggestion.toLowerCase().includes(query.toLowerCase())
+    ).slice(0, 5);
+  };
+
+  const handleSearchInputChange = (value) => {
+    setSearchQuery(value);
+    const suggestions = getSuggestions(value);
+    setSearchResults(suggestions);
+    setShowSuggestions(value.length >= 2 && suggestions.length > 0);
+  };
 
   const handleLocationSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -19,6 +47,35 @@ const LocationSelector = ({ location, onLocationChange }) => {
       const result = await geocodeLocation(searchQuery);
       
       // Format the result for our component
+      const locationData = {
+        latitude: result.latitude,
+        longitude: result.longitude,
+        timezone: result.timezone,
+        formattedAddress: result.formattedAddress,
+        city: result.city || 'Unknown',
+        country: result.country || 'Unknown'
+      };
+
+      onLocationChange(locationData);
+      setSearchQuery('');
+      setShowSuggestions(false);
+    } catch (error) {
+      console.error('Location search failed:', error);
+      setError(error.message || 'Failed to find location. Please try a different search term.');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSuggestionClick = async (suggestion) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+    try {
+      setIsSearching(true);
+      setError(null);
+      
+      const result = await geocodeLocation(suggestion);
+      
       const locationData = {
         latitude: result.latitude,
         longitude: result.longitude,
@@ -140,16 +197,44 @@ const LocationSelector = ({ location, onLocationChange }) => {
           Search Location
         </label>
         <div className="flex space-x-2">
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <input
               type="text"
               placeholder="Enter city, country..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchInputChange(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleLocationSearch()}
+              onFocus={() => {
+                if (searchQuery.length >= 2) {
+                  const suggestions = getSuggestions(searchQuery);
+                  setShowSuggestions(suggestions.length > 0);
+                }
+              }}
+              onBlur={() => {
+                // Delay hiding suggestions to allow clicks
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
               className="w-full p-2 border border-border rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm"
               disabled={isSearching}
             />
+            
+            {/* Search Suggestions Dropdown */}
+            {showSuggestions && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-border rounded-lg shadow-strong max-h-48 overflow-y-auto">
+                {searchResults.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-surface-secondary transition-colors border-b border-border last:border-b-0"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <Icon name="MapPin" size={12} className="text-text-muted" />
+                      <span>{suggestion}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Button
             variant="outline"
@@ -182,10 +267,16 @@ const LocationSelector = ({ location, onLocationChange }) => {
         </label>
         <div className="grid grid-cols-1 gap-1">
           {[
+            { name: 'Kolkata, India', lat: 22.5726, lng: 88.3639, tz: 'Asia/Kolkata' },
+            { name: 'Mumbai, India', lat: 19.0760, lng: 72.8777, tz: 'Asia/Kolkata' },
+            { name: 'Delhi, India', lat: 28.6139, lng: 77.2090, tz: 'Asia/Kolkata' },
+            { name: 'Chennai, India', lat: 13.0827, lng: 80.2707, tz: 'Asia/Kolkata' },
+            { name: 'Bangalore, India', lat: 12.9716, lng: 77.5946, tz: 'Asia/Kolkata' },
             { name: 'New York, USA', lat: 40.7128, lng: -74.0060, tz: 'America/New_York' },
             { name: 'London, UK', lat: 51.5074, lng: -0.1278, tz: 'Europe/London' },
-            { name: 'Mumbai, India', lat: 19.0760, lng: 72.8777, tz: 'Asia/Kolkata' },
-            { name: 'Sydney, Australia', lat: -33.8688, lng: 151.2093, tz: 'Australia/Sydney' }
+            { name: 'Sydney, Australia', lat: -33.8688, lng: 151.2093, tz: 'Australia/Sydney' },
+            { name: 'Tokyo, Japan', lat: 35.6762, lng: 139.6503, tz: 'Asia/Tokyo' },
+            { name: 'Dubai, UAE', lat: 25.2048, lng: 55.2708, tz: 'Asia/Dubai' }
           ].map((loc) => (
             <Button
               key={loc.name}

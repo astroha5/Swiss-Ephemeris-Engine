@@ -59,7 +59,7 @@ const TimeZoneWidget = ({ location }) => {
   if (!location) return null;
 
   return (
-    <div className="fixed top-20 right-4 z-40 bg-surface/95 backdrop-blur-sm border border-border rounded-lg shadow-strong p-3 min-w-[200px]">
+    <div className="hidden md:fixed md:top-20 md:right-4 md:z-40 md:block bg-surface/95 backdrop-blur-sm border border-border rounded-lg shadow-strong p-3 min-w-[200px]">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
           <Icon name="Globe" size={14} className="text-primary" />

@@ -142,10 +142,6 @@ const PlanetaryChart = ({ chartData, selectedDate, location }) => {
               <Icon name="Info" size={14} />
               <span>Chart shows exact planetary positions</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Icon name="Zap" size={14} />
-              <span>Using Swiss Ephemeris calculations</span>
-            </div>
           </div>
           
           <div className="flex items-center space-x-2">

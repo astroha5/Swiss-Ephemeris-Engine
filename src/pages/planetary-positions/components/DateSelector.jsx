@@ -25,8 +25,8 @@ const DateSelector = ({
 
   const quickButtons = [
     { label: 'Today', type: 'today', icon: 'Calendar' },
-    { label: 'Yesterday', type: 'yesterday', icon: 'ArrowLeft' },
-    { label: 'Tomorrow', type: 'tomorrow', icon: 'ArrowRight' },
+    { label: 'Previous Day', type: 'previousDay', icon: 'ArrowLeft' },
+    { label: 'Next Day', type: 'nextDay', icon: 'ArrowRight' },
     { label: 'Next Week', type: 'nextWeek', icon: 'FastForward' },
     { label: 'Previous Week', type: 'prevWeek', icon: 'Rewind' }
   ];

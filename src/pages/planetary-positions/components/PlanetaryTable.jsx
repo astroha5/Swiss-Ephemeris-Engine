@@ -6,6 +6,11 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
   const [sortBy, setSortBy] = useState('planet');
   const [sortOrder, setSortOrder] = useState('asc');
   const [showDegrees, setShowDegrees] = useState(true);
+  const [showAspects, setShowAspects] = useState(true);
+
+  // Extract planets and aspects from the data
+  const planets = planetaryData?.planets || planetaryData || [];
+  const aspects = planetaryData?.aspects || [];
 
   // Planet symbols and colors for display
   const planetInfo = {
@@ -38,13 +43,16 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
     });
   };
 
-  const sortedData = planetaryData ? [...planetaryData].sort((a, b) => {
+  const sortedData = planets ? [...planets].sort((a, b) => {
     let aValue = a[sortBy];
     let bValue = b[sortBy];
     
     if (sortBy === 'degree') {
-      aValue = parseFloat(aValue?.split('°')[0] || 0);
-      bValue = parseFloat(bValue?.split('°')[0] || 0);
+      aValue = parseFloat(a.degree || 0);
+      bValue = parseFloat(b.degree || 0);
+    } else if (sortBy === 'planet') {
+      aValue = a.name;
+      bValue = b.name;
     }
     
     const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
@@ -90,7 +98,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
     );
   };
 
-  if (!planetaryData || planetaryData.length === 0) {
+  if (!planets || planets.length === 0) {
     return (
       <div className="bg-surface border border-border rounded-xl shadow-strong p-8 text-center">
         <Icon name="Table" size={48} className="text-text-muted mx-auto mb-4" />
@@ -132,9 +140,21 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
               iconName="RotateCw"
               iconPosition="left"
               className="text-xs"
-            >
+            >>
               {showDegrees ? 'Hide' : 'Show'} Degrees
             </Button>
+            {aspects.length > 0 && (
+              <Button
+                variant={showAspects ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setShowAspects(!showAspects)}
+                iconName="Zap"
+                iconPosition="left"
+                className="text-xs"
+              >
+                {showAspects ? 'Hide' : 'Show'} Aspects
+              </Button>
+            )}
           </div>
         </div>
 
@@ -202,11 +222,11 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
           </thead>
           <tbody className="divide-y divide-border">
             {sortedData.map((planet, index) => {
-              const info = planetInfo[planet.planet] || { symbol: '●', color: 'text-text-muted', description: '' };
+              const info = planetInfo[planet.name] || { symbol: '●', color: 'text-text-muted', description: '' };
               
               return (
                 <tr 
-                  key={planet.planet}
+                  key={planet.name}
                   className="hover:bg-surface-secondary/30 transition-colors group"
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -216,7 +236,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                       </span>
                       <div>
                         <div className="text-sm font-medium text-text-primary">
-                          {planet.planet}
+                          {planet.name}
                         </div>
                         <div className="text-xs text-text-muted hidden md:block">
                           {info.description}
@@ -234,7 +254,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                   {showDegrees && (
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="text-sm font-mono text-text-primary">
-                        {planet.degree}
+                        {planet.formatted}
                       </span>
                     </td>
                   )}
@@ -244,11 +264,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                       <div className="font-medium text-text-primary">
                         {planet.nakshatra || 'N/A'}
                       </div>
-                      {planet.nakshatraPada && (
-                        <div className="text-xs text-text-muted">
-                          Pada {planet.nakshatraPada}
-                        </div>
-                      )}
                     </div>
                   </td>
                   
@@ -258,7 +273,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                   
                   <td className="hidden md:table-cell px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      {planet.house || 'N/A'}
+                      N/A
                     </span>
                   </td>
                 </tr>
@@ -274,8 +289,14 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
           <div className="flex items-center space-x-4 text-text-muted">
             <div className="flex items-center space-x-1">
               <Icon name="Info" size={14} />
-              <span>Total Planets: {planetaryData.length}</span>
+              <span>Total Planets: {planets.length}</span>
             </div>
+            {aspects.length > 0 && (
+              <div className="flex items-center space-x-1">
+                <Icon name="Zap" size={14} />
+                <span>Aspects: {aspects.length}</span>
+              </div>
+            )}
             <div className="flex items-center space-x-1">
               <Icon name="Zap" size={14} />
               <span>Calculations: Swiss Ephemeris</span>
@@ -295,6 +316,99 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
           </div>
         </div>
       </div>
+
+      {/* Aspects Section */}
+      {showAspects && aspects.length > 0 && (
+        <div className="border-t border-border bg-surface-secondary">
+          <div className="p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
+                <Icon name="Zap" size={16} className="text-accent" />
+              </div>
+              <div>
+                <h3 className="text-lg font-heading font-semibold text-text-primary">
+                  Planetary Aspects
+                </h3>
+                <p className="text-sm text-text-secondary">
+                  Major aspects between planets in this chart
+                </p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {aspects.map((aspect, index) => {
+                const getAspectColor = (aspectName) => {
+                  const colors = {
+                    'Conjunction': 'text-red-500 bg-red-50 border-red-200',
+                    'Opposition': 'text-blue-500 bg-blue-50 border-blue-200',
+                    'Trine': 'text-green-500 bg-green-50 border-green-200',
+                    'Square': 'text-orange-500 bg-orange-50 border-orange-200',
+                    'Sextile': 'text-purple-500 bg-purple-50 border-purple-200',
+                    'Quincunx': 'text-yellow-600 bg-yellow-50 border-yellow-200'
+                  };
+                  return colors[aspectName] || 'text-gray-500 bg-gray-50 border-gray-200';
+                };
+                
+                const getAspectSymbol = (aspectName) => {
+                  const symbols = {
+                    'Conjunction': '☌',
+                    'Opposition': '☍',
+                    'Trine': '△',
+                    'Square': '□',
+                    'Sextile': '⚹',
+                    'Quincunx': '⚻'
+                  };
+                  return symbols[aspectName] || '◯';
+                };
+                
+                return (
+                  <div 
+                    key={index}
+                    className={`p-4 rounded-lg border ${getAspectColor(aspect.aspect)}`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-lg font-semibold">
+                          {getAspectSymbol(aspect.aspect)}
+                        </span>
+                        <span className="font-medium text-sm">
+                          {aspect.aspect}
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono bg-white/50 px-2 py-1 rounded">
+                        {aspect.orb.toFixed(1)}°
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-1">
+                        <span className={planetInfo[aspect.planet1]?.color || 'text-text-primary'}>
+                          {planetInfo[aspect.planet1]?.symbol || '●'}
+                        </span>
+                        <span className="font-medium">{aspect.planet1}</span>
+                      </div>
+                      
+                      <Icon name="ArrowRight" size={12} className="text-text-muted" />
+                      
+                      <div className="flex items-center space-x-1">
+                        <span className={planetInfo[aspect.planet2]?.color || 'text-text-primary'}>
+                          {planetInfo[aspect.planet2]?.symbol || '●'}
+                        </span>
+                        <span className="font-medium">{aspect.planet2}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-text-muted">
+                      Orb: {aspect.orb > 0 ? '+' : ''}{aspect.orb.toFixed(2)}° 
+                      {aspect.isApplying ? '(Applying)' : '(Separating)'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

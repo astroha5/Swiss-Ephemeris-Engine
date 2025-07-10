@@ -183,6 +183,51 @@ export const geocodeLocation = async (location) => {
 };
 
 /**
+ * Get planetary positions for any date, time, and location
+ * @param {Object} params - Parameters for planetary positions
+ * @param {string} params.date - Date in YYYY-MM-DD format
+ * @param {string} params.time - Time in HH:MM format
+ * @param {number} params.latitude - Latitude coordinate
+ * @param {number} params.longitude - Longitude coordinate
+ * @param {string} [params.timezone] - Timezone (optional, defaults to Asia/Kolkata)
+ * @returns {Promise<Object>} Planetary positions data from backend
+ */
+export const getPlanetaryPositions = async (params) => {
+  try {
+    const requestData = {
+      date: params.date,
+      time: params.time,
+      latitude: params.latitude,
+      longitude: params.longitude,
+      timezone: params.timezone || 'Asia/Kolkata'
+    };
+
+    // Validate required fields
+    if (!requestData.date || !requestData.time) {
+      throw new Error('Date and time are required');
+    }
+
+    if (!requestData.latitude || !requestData.longitude) {
+      throw new Error('Location coordinates are required');
+    }
+
+    console.log('Getting planetary positions with data:', requestData);
+
+    const response = await api.post('/api/planetary-positions', requestData);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to get planetary positions');
+    }
+
+    return response.data;
+
+  } catch (error) {
+    console.error('Planetary positions error:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate Dasha data from birth details
  * @param {Object} birthDetails - Birth details for Dasha calculation
  * @returns {Promise<Object>} Dasha data from backend
