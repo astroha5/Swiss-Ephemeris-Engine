@@ -1,6 +1,6 @@
 const enhancedSwissEphemeris = require('../services/enhancedSwissEphemeris');
 
-const AspectsService = require('../services/AspectsService');
+const aspectsService = require('../services/aspectsService');
 
 const planetaryPositionsController = {
   async getPlanetaryPositions(req, res) {
@@ -69,7 +69,7 @@ const planetaryPositionsController = {
       const housePositions = enhancedSwissEphemeris.calculateHousePositions(planetaryData.planets, ascendant);
 
       // Calculate aspects
-      const aspects = AspectsService.calculateAspects(planetaryData.planets);
+      const aspects = aspectsService.calculateAspects(planetaryData.planets);
 
       // Format response with the correct data structure
       const response = {
