@@ -8,6 +8,7 @@ import ErrorHandlingPage from "pages/error-handling-page";
 import KundliUpload from "pages/kundli-upload";
 import BirthDetailsForm from "pages/birth-details-form";
 import ChartResultsDashboard from "pages/chart-results-dashboard";
+import PlanetaryPositions from "pages/planetary-positions";
 // import ChartTestPage from "pages/chart-test";
 import NotFound from "pages/NotFound";
 
@@ -24,6 +25,7 @@ const Routes = () => {
         <Route path="/kundli-upload" element={<KundliUpload />} />
         <Route path="/birth-details-form" element={<BirthDetailsForm />} />
         <Route path="/chart-results-dashboard" element={<ChartResultsDashboard />} />
+        <Route path="/planetary-positions" element={<PlanetaryPositions />} />
         {/* <Route path="/chart-test" element={<ChartTestPage />} /> */}
         <Route path="*" element={<NotFound />} />
       </RouterRoutes>

@@ -17,13 +17,13 @@ const ActionCards = () => {
       features: ['Date & Time Input', 'Location Search', 'Instant Processing']
     },
     {
-      id: 'upload-kundli',
-      title: 'Upload Kundli',
-      description: 'Upload your existing kundli image or PDF for AI-powered analysis',
-      icon: 'Upload',
-      route: '/kundli-upload',
+      id: 'planetary-positions',
+      title: 'Planetary Positions',
+      description: 'View real-time planetary positions with interactive charts and navigation',
+      icon: 'Globe',
+      route: '/planetary-positions',
       color: 'accent',
-      features: ['Image Recognition', 'PDF Support', 'Quick Analysis']
+      features: ['Live Positions', 'Historical Data', 'Interactive Charts']
     }
   ];
 
