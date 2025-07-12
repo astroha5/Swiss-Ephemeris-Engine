@@ -353,7 +353,7 @@ export const getMonthlyPredictions = async (requestData) => {
     const time = targetDate.toTimeString().split(' ')[0].slice(0, 5);
     
     // Get real planetary positions from backend
-    const planetaryResponse = await fetch('http://localhost:3001/api/planetary-positions', {
+    const planetaryResponse = await fetch(`${API_BASE_URL}/api/planetary-positions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -531,7 +531,7 @@ async function generateMonthlyInterpretation(planetaryData, month, year) {
  */
 export const getPlanetaryTransits = async (year, timezone = 'UTC') => {
   try {
-    const response = await fetch('http://localhost:3001/api/transits', {
+    const response = await fetch(`${API_BASE_URL}/api/transits`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -575,7 +575,7 @@ export const getPlanetaryTransits = async (year, timezone = 'UTC') => {
  */
 export const getMonthlyTransits = async (month, year, timezone = 'UTC') => {
   try {
-    const response = await fetch('http://localhost:3001/api/transits/month', {
+    const response = await fetch(`${API_BASE_URL}/api/transits/month`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
