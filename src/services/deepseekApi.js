@@ -155,7 +155,8 @@ export const analyzeKundliImage = async (imageData, options = {}) => {
 
 // Generate astrological interpretation based on chart data
 // Updated model sequence - removed problematic model and reordered
-const models = ["shisa-ai/shisa-v2-llama3.3-70b:free", "deepseek/deepseek-r1-distill-llama-70b:free", "meta-llama/llama-3.3-70b-instruct:free"];
+const chartInterpretationModels = ["shisa-ai/shisa-v2-llama3.3-70b:free", "deepseek/deepseek-r1-distill-llama-70b:free"];
+const monthlyPredictionModels = ["meta-llama/llama-3.3-70b-instruct:free", "deepseek/deepseek-r1-distill-llama-70b:free"];
 
 // Helper function to extract JSON from markdown-wrapped responses
 const extractJsonFromResponse = (response) => {
@@ -194,8 +195,12 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
       throw new Error('DeepSeek API key is not configured. Please add VITE_DEEPSEEK_API_KEY to your environment variables.');
     }
 
+    // Use different model lists based on the interpretation type
+    const isMonthlyPrediction = chartData.type === 'monthly_prediction' || options.focus === 'monthly_transits';
+    const modelsList = isMonthlyPrediction ? monthlyPredictionModels : chartInterpretationModels;
+
     const payload = {
-      model: models[0],
+      model: modelsList[0],
       messages: [
         {
           role: 'system',
@@ -244,8 +249,8 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
     let response;
     let lastError;
     
-    for (let i = 0; i < models.length; i++) {
-      const model = models[i];
+    for (let i = 0; i < modelsList.length; i++) {
+      const model = modelsList[i];
       payload.model = model;
       
       try {
@@ -260,7 +265,7 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
         lastError = err;
         
         // Add delay before trying next model to avoid rate limiting
-        if (i < models.length - 1) {
+        if (i < modelsList.length - 1) {
           console.log('Waiting 2 seconds before trying next model...');
           await new Promise(resolve => setTimeout(resolve, 2000));
         }

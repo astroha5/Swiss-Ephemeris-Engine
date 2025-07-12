@@ -126,12 +126,8 @@ class EnhancedSwissEphemerisService {
       // Enhanced UTC conversion logging
       logger.info(`🔄 Enhanced UTC Conversion Details:`);
       logger.info(`   📅 Original Local: ${date} ${time} (${timezone})`);
-      if (enhancedJD.localDetails) {
-        logger.info(`   📅 Parsed Local: ${enhancedJD.localDetails.year}-${(enhancedJD.localDetails.month || 0).toString().padStart(2, '0')}-${(enhancedJD.localDetails.day || 0).toString().padStart(2, '0')} ${(enhancedJD.localDetails.hour || 0).toString().padStart(2, '0')}:${(enhancedJD.localDetails.minute || 0).toString().padStart(2, '0')}`);
-      }
-      if (enhancedJD.offsetMinutes !== undefined) {
-        logger.info(`   ⏰ Timezone Offset: ${enhancedJD.offsetMinutes} minutes`);
-      }
+      // Note: localDetails and offsetMinutes properties don't exist in the enhanced JD object
+      // Only utcDetails, julianDay, isHistorical, and historicalOffset are available
       if (enhancedJD.utcDetails) {
         const utcHour = typeof enhancedJD.utcDetails.hour === 'string' ? parseFloat(enhancedJD.utcDetails.hour) : enhancedJD.utcDetails.hour;
         const utcMinute = enhancedJD.utcDetails.minute || 0;
@@ -173,22 +169,24 @@ class EnhancedSwissEphemerisService {
 
   /**
    * Calculate accurate planetary positions
+   * @param {number} julianDay - Julian Day Number
+   * @param {boolean} useTropical - Use tropical zodiac instead of sidereal (default: false)
    */
-  getPlanetaryPositions(julianDay) {
+  getPlanetaryPositions(julianDay, useTropical = false) {
     if (!this.useSwissEph) {
       throw new Error('Swiss Ephemeris not available for accurate calculations');
     }
 
     const positions = {};
-    const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
+    const flags = useTropical ? swisseph.SEFLG_SPEED : (swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED);
 
     // DEBUG: Log calculation parameters
     logger.info(`🔍 DEBUG - Julian Day: ${julianDay}`);
+    logger.info(`🔍 DEBUG - Calculation Type: ${useTropical ? 'TROPICAL' : 'SIDEREAL'}`);
     logger.info(`🔍 DEBUG - Flags: ${flags} (SEFLG_SIDEREAL: ${swisseph.SEFLG_SIDEREAL})`);
-    logger.info(`🔍 DEBUG - Sidereal mode initialized: ${this.isInitialized}`);
     
-    // CRITICAL: Re-verify and re-set Ayanamsa before calculations
-    if (this.useSwissEph && this.isInitialized) {
+    // CRITICAL: Re-verify and re-set Ayanamsa before calculations (only for sidereal)
+    if (!useTropical && this.useSwissEph && this.isInitialized) {
       try {
         swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
         logger.info(`🔄 Re-confirmed Lahiri Ayanamsa setting before planetary calculations`);
@@ -197,12 +195,20 @@ class EnhancedSwissEphemerisService {
       }
     }
 
-    // CRITICAL: Log current Ayanamsa for this specific Julian Day
-    try {
-      const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
-      logger.info(`📐 Ayanamsa (Lahiri) for JD ${julianDay.toFixed(8)}: ${currentAyanamsa.toFixed(6)}°`);
-      logger.info(`📐 Ayanamsa in DMS: ${this.formatDegree(currentAyanamsa)}`);
+    // CRITICAL: Log current Ayanamsa for this specific Julian Day (only for sidereal)
+    if (!useTropical) {
+      try {
+        const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
+        logger.info(`📐 Ayanamsa (Lahiri) for JD ${julianDay.toFixed(8)}: ${currentAyanamsa.toFixed(6)}°`);
+        logger.info(`📐 Ayanamsa in DMS: ${this.formatDegree(currentAyanamsa)}`);
+      } catch (error) {
+        logger.error('Error getting Ayanamsa:', error);
+      }
+    } else {
+      logger.info(`🌍 Using Tropical zodiac - no Ayanamsa applied`);
+    }
       
+    try {
       for (const [planetName, planetId] of Object.entries(this.planets)) {
         if (planetName === 'KETU') continue; // Handle Ketu separately
 
@@ -303,18 +309,24 @@ class EnhancedSwissEphemerisService {
 
   /**
    * Calculate accurate Ascendant (Lagna)
+   * @param {number} julianDay - Julian Day Number
+   * @param {number} latitude - Latitude in degrees
+   * @param {number} longitude - Longitude in degrees
+   * @param {boolean} useTropical - Use tropical zodiac instead of sidereal (default: false)
    */
-  calculateAscendant(julianDay, latitude, longitude) {
+  calculateAscendant(julianDay, latitude, longitude, useTropical = false) {
     if (!this.useSwissEph) {
       throw new Error('Swiss Ephemeris not available for ascendant calculation');
     }
 
     try {
-      // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation
-      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-      logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
+      // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation (only for sidereal)
+      if (!useTropical) {
+        swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+        logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
+      }
       
-      const flags = swisseph.SEFLG_SIDEREAL;
+      const flags = useTropical ? 0 : swisseph.SEFLG_SIDEREAL;
       logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
       const houses = swisseph.swe_houses_ex(julianDay, flags, latitude, longitude, 'P');
       

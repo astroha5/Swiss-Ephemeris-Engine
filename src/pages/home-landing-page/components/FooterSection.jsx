@@ -8,7 +8,6 @@ const FooterSection = () => {
   const footerLinks = {
     platform: [
       { label: 'Generate Chart', path: '/birth-details-form' },
-      { label: 'Upload Kundli', path: '/kundli-upload' },
       { label: 'View Results', path: '/chart-results-dashboard' },
       { label: 'Support', path: '/error-handling-page' }
     ],

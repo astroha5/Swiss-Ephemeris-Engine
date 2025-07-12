@@ -1,10 +1,18 @@
+node:internal/modules/cjs/loader:1408
+  throw err;
+  ^
 
-> astrova-backend@1.0.0 start
-> node server.js
+Error: Cannot find module '/Users/richardbelll/astrova/server.js'
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1405:15)
+    at defaultResolveImpl (node:internal/modules/cjs/loader:1061:19)
+    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1066:22)
+    at Function._load (node:internal/modules/cjs/loader:1215:37)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:151:5)
+    at node:internal/main/run_main_module:33:47 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
 
-[2025-07-08 19:39:09] [32minfo[39m: Swiss Ephemeris loaded successfully
-[2025-07-08 19:39:09] [32minfo[39m: 🔧 DEBUG - Setting Lahiri Ayanamsa: SE_SIDM_LAHIRI = 1
-[2025-07-08 19:39:09] [32minfo[39m: 🔧 DEBUG - Lahiri Ayanamsa set successfully
-[2025-07-08 19:39:09] [32minfo[39m: Enhanced Swiss Ephemeris initialized with Lahiri Ayanamsa
-[2025-07-08 19:39:09] [31merror[39m: Server startup error: listen EADDRINUSE: address already in use 0.0.0.0:3001
-[2025-07-08 19:39:09] [31merror[39m: Pipe 3001 is already in use
+Node.js v23.11.0

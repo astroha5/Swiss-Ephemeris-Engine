@@ -298,16 +298,6 @@ const BirthDetailsForm = () => {
                   >
                     Clear Form
                   </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate('/kundli-upload')}
-                    iconName="Upload"
-                    iconPosition="left"
-                    size="sm"
-                    fullWidth
-                  >
-                    Upload Kundli Instead
-                  </Button>
                 </div>
               </div>
 

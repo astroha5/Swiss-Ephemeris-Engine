@@ -5,10 +5,21 @@ const aspectsService = require('../services/aspectsService');
 const planetaryPositionsController = {
   async getPlanetaryPositions(req, res) {
     try {
+      console.log('🔍 DEBUG - Request body:', req.body);
+      console.log('🔍 DEBUG - Request headers:', req.headers);
+      
       const { date, time, latitude, longitude, timezone } = req.body;
+      
+      console.log('🔍 DEBUG - Extracted values:', { date, time, latitude, longitude, timezone });
 
       // Validate required fields
-      if (!date || !time || !latitude || !longitude) {
+      if (!date || !time || latitude === undefined || longitude === undefined) {
+        console.log('🔍 DEBUG - Validation failed:', {
+          hasDate: !!date,
+          hasTime: !!time,
+          hasLatitude: latitude !== undefined,
+          hasLongitude: longitude !== undefined
+        });
         return res.status(400).json({
           success: false,
           error: 'Missing required fields: date, time, latitude, longitude'
@@ -59,11 +70,12 @@ const planetaryPositionsController = {
       // Calculate Julian Day
       const julianDay = enhancedSwissEphemeris.getJulianDay(date, time, tz, null, { lat, lng });
 
-      // Calculate planetary positions
-      const planetaryData = enhancedSwissEphemeris.getPlanetaryPositions(julianDay);
+      // Calculate planetary positions (using sidereal for Vedic astrology)
+      const useTropical = req.body.zodiac === 'tropical'; // Default to sidereal unless explicitly requested as tropical
+      const planetaryData = enhancedSwissEphemeris.getPlanetaryPositions(julianDay, useTropical);
 
       // Calculate ascendant
-      const ascendant = enhancedSwissEphemeris.calculateAscendant(julianDay, lat, lng);
+      const ascendant = enhancedSwissEphemeris.calculateAscendant(julianDay, lat, lng, useTropical);
 
       // Calculate house positions for chart
       const housePositions = enhancedSwissEphemeris.calculateHousePositions(planetaryData.planets, ascendant);

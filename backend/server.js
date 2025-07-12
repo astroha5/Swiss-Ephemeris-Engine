@@ -14,6 +14,8 @@ const kundliRoutes = require('./routes/kundli');
 const panchangRoutes = require('./routes/panchang');
 const dashaRoutes = require('./routes/dasha');
 const planetaryPositionsRoutes = require('./routes/planetaryPositions');
+const transitRoutes = require('./routes/transits');
+const aiRoutes = require('./routes/ai');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -83,6 +85,8 @@ app.use('/api/kundli', kundliRoutes);
 app.use('/api/panchang', panchangRoutes);
 app.use('/api/dasha', dashaRoutes);
 app.use('/api/planetary-positions', planetaryPositionsRoutes);
+app.use('/api/transits', transitRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -95,6 +99,7 @@ app.get('/', (req, res) => {
       panchang: '/api/panchang',
       dasha: '/api/dasha',
       planetaryPositions: '/api/planetary-positions',
+      transits: '/api/transits',
       health: '/health'
     },
     documentation: 'https://github.com/astrova/backend#api-documentation'

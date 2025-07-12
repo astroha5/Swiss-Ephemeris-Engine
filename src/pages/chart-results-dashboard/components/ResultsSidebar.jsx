@@ -49,6 +49,12 @@ const ResultsSidebar = ({ activeSection, onSectionChange, isMobile = false }) =>
       description: 'Suggested remedial measures'
     },
     {
+      id: 'monthly-prediction',
+      label: 'Monthly Prediction',
+      icon: 'Calendar',
+      description: 'Current transits impact analysis'
+    },
+    {
       id: 'export-options',
       label: 'Export & Share',
       icon: 'Download',

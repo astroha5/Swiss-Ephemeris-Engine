@@ -14,6 +14,7 @@ import PlanetaryPositionsTable from './components/PlanetaryPositionsTable';
 import VimshottariDashaTable from './components/VimshottariDashaTable';
 import AIInterpretationSection from './components/AIInterpretationSection';
 import AIRemediesSection from './components/AIRemediesSection';
+import MonthlyPredictionSection from './components/MonthlyPredictionSection';
 import ResultsSidebar from './components/ResultsSidebar';
 
 const ChartResultsDashboard = () => {
@@ -466,6 +467,15 @@ const ChartResultsDashboard = () => {
                     chartData={chartData}
                     birthDetails={birthDetails}
                     dashaData={dashaData}
+                  />
+                </section>
+
+                {/* Monthly Prediction Section */}
+                <section id="monthly-prediction" className="scroll-mt-32">
+                  <MonthlyPredictionSection 
+                    chartData={chartData}
+                    currentDasha={dashaData}
+                    birthDetails={birthDetails}
                   />
                 </section>
 

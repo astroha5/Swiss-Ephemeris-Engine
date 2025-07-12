@@ -27,10 +27,10 @@ const Header = () => {
       tooltip: 'View planetary positions for any date and location'
     },
     {
-      label: 'Results',
-      path: '/chart-results-dashboard',
-      icon: 'BarChart3',
-      tooltip: 'View your astrological analysis'
+      label: 'Planet Transits',
+      path: '/planet-transits',
+      icon: 'Globe',
+      tooltip: 'View planetary transits and movements'
     },
     {
       label: 'Support',
