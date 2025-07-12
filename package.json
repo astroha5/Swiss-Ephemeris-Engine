@@ -31,6 +31,8 @@
   "scripts": {
     "start": "vite",
     "build": "vite build --sourcemap",
+    "build:spa": "npm run build && npm run spa-setup",
+    "spa-setup": "node scripts/postbuild.js",
     "serve": "vite preview"
   },
   "eslintConfig": {

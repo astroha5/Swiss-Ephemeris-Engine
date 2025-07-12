@@ -1,8 +1,3 @@
-# Redirects for Single Page Application (SPA) routing
-# This ensures all routes are handled by React Router
-
-# Handle all routes - redirect everything to index.html for client-side routing
-/*    /index.html   200
-
-# API routes should go to the backend (if needed)
-# /api/*  https://astrova-backend.onrender.com/api/:splat  200
+# This file is not needed for Render deployment
+# SPA routing is handled via render.yaml configuration
+# See routes section in render.yaml for SPA routing setup
