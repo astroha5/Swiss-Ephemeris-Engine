@@ -80,7 +80,13 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
       console.log('🤖 Making AI prediction request to backend...');
       
       // Call the AI service (using meta-llama/llama-3.3-70b-instruct:free)
-      const response = await fetch('/api/ai/monthly-prediction', {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || (
+        import.meta.env.PROD 
+          ? 'https://astrova-backend.onrender.com' 
+          : 'http://localhost:3001'
+      );
+      
+      const response = await fetch(`${API_BASE_URL}/api/ai/monthly-prediction`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
