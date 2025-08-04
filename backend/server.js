@@ -4,10 +4,12 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const logger = require('./utils/logger');
 const errorHandler = require('./utils/errorHandler');
+const connectDatabase = require('./config/database');
 
 // Import routes
 const kundliRoutes = require('./routes/kundli');
@@ -16,6 +18,13 @@ const dashaRoutes = require('./routes/dasha');
 const planetaryPositionsRoutes = require('./routes/planetaryPositions');
 const transitRoutes = require('./routes/transits');
 const aiRoutes = require('./routes/ai');
+const patternRecallRoutes = require('./routes/patternRecall');
+const planetaryEventsRoutes = require('./routes/planetaryEvents');
+const patternsRoutes = require('./routes/patterns');
+const analyticsRoutes = require('./routes/analytics');
+const majorPatternsRoutes = require('./routes/majorPatterns');
+const historicalEnrichmentRoutes = require('./routes/historicalEnrichment');
+const mlRoutes = require('./routes/ml');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -87,6 +96,13 @@ app.use('/api/dasha', dashaRoutes);
 app.use('/api/planetary-positions', planetaryPositionsRoutes);
 app.use('/api/transits', transitRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/pattern-recall', patternRecallRoutes);
+app.use('/api/planetary-events', planetaryEventsRoutes);
+app.use('/api/patterns', patternsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/major-patterns', majorPatternsRoutes);
+app.use('/api/historical-enrichment', historicalEnrichmentRoutes);
+app.use('/api/ml', mlRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -120,49 +136,62 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Graceful shutdown
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM received. Shutting down gracefully...');
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT received. Shutting down gracefully...');
   process.exit(0);
 });
 
-// Start server with error handling
-const server = app.listen(PORT, '0.0.0.0', () => {
-  logger.info(`🚀 Astrova Backend running on port ${PORT}`);
-  logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
-  logger.info(`📚 API docs: http://localhost:${PORT}/`);
-  
-  // Signal to Render that the server is ready
-  if (process.send) {
-    process.send('ready');
+// Connect to database and start server
+const startServer = async () => {
+  try {
+    await connectDatabase();
+    
+    const server = app.listen(PORT, '0.0.0.0', async () => {
+      logger.info(`🚀 Astrova Backend running on port ${PORT}`);
+      logger.info(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`🔗 Health check: http://localhost:${PORT}/health`);
+      logger.info(`📚 API docs: http://localhost:${PORT}/`);
+      
+      
+      // Signal to Render that the server is ready
+      if (process.send) {
+        process.send('ready');
+      }
+    });
+    
+    // Handle server startup errors
+    server.on('error', (error) => {
+      logger.error('Server startup error:', error);
+      if (error.syscall !== 'listen') {
+        throw error;
+      }
+      
+      const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
+      switch (error.code) {
+        case 'EACCES':
+          logger.error(bind + ' requires elevated privileges');
+          process.exit(1);
+          break;
+        case 'EADDRINUSE':
+          logger.error(bind + ' is already in use');
+          process.exit(1);
+          break;
+        default:
+          throw error;
+      }
+    });
+    
+  } catch (error) {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   }
-});
+};
 
-// Handle server startup errors
-server.on('error', (error) => {
-  logger.error('Server startup error:', error);
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-  
-  const bind = typeof PORT === 'string' ? 'Pipe ' + PORT : 'Port ' + PORT;
-  switch (error.code) {
-    case 'EACCES':
-      logger.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      logger.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-});
+startServer();
 
 module.exports = app;

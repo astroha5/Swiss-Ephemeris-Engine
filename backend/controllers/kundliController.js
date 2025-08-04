@@ -3,6 +3,7 @@ const swissEphemerisService = require('../services/enhancedSwissEphemeris');
 const yogaService = require('../services/yogaService');
 const doshaService = require('../services/doshaService');
 const dashaService = require('../services/dashaService');
+const aspectsService = require('../services/aspectsService');
 const logger = require('../utils/logger');
 
 // Input validation schema
@@ -217,6 +218,13 @@ class KundliController {
       const yogas = yogaService.calculateYogas(planetaryPositions, ascendant);
       const doshas = doshaService.calculateDoshas(planetaryPositions, ascendant);
 
+      // Calculate Vedic planetary aspects (Drishti)
+      // This includes both planet-to-planet aspects and planet-to-house aspects
+      const planetaryAspects = aspectsService.calculateAspects(planetaryPositions, ascendant.longitude);
+      const houseAspects = aspectsService.calculatePlanetaryAspectsToHouses(planetaryPositions, ascendant.longitude);
+      
+      logger.info(`🎯 Calculated ${planetaryAspects.length} planetary aspects and ${Object.keys(houseAspects).length} house aspect sets`);
+
       // Calculate Vimshottari Dasha
       let dashaTimeline = null;
       try {
@@ -290,6 +298,16 @@ class KundliController {
             },
             navamsa: {
               houses: navamsaHouses
+            }
+          },
+          aspects: {
+            planetaryAspects: planetaryAspects,
+            houseAspects: houseAspects,
+            strongestAspects: aspectsService.getStrongestAspects(planetaryAspects, 5),
+            summary: {
+              totalPlanetaryAspects: planetaryAspects.length,
+              planetsWithHouseAspects: Object.keys(houseAspects).length,
+              rahuKetuSpecialAspectsEnabled: process.env.ENABLE_RAHU_KETU_ASPECTS === 'true'
             }
           }
         },

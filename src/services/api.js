@@ -333,6 +333,221 @@ export const checkBackendHealth = async () => {
   }
 };
 
+// =====================================
+// PLANETARY EVENTS API
+// =====================================
+
+/**
+ * Get planetary events with optional filters
+ * @param {Object} filters - Filter parameters
+ * @returns {Promise<Object>} Events data
+ */
+export const getPlanetaryEvents = async (filters = {}) => {
+  try {
+    const queryParams = new URLSearchParams(
+      Object.fromEntries(Object.entries(filters).filter(([_, value]) => value))
+    );
+    
+    const response = await api.get(`/api/planetary-events/events?${queryParams}`);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to fetch planetary events');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Planetary events fetch error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get planetary events statistics
+ * @returns {Promise<Object>} Statistics data
+ */
+export const getPlanetaryEventsStatistics = async () => {
+  try {
+    const response = await api.get('/api/planetary-events/events/statistics');
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to fetch events statistics');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Events statistics fetch error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new planetary event
+ * @param {Object} eventData - Event data
+ * @returns {Promise<Object>} Created event data
+ */
+export const createPlanetaryEvent = async (eventData) => {
+  try {
+    const response = await api.post('/api/planetary-events/events', eventData);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to create event');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Event creation error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get today's risk assessment
+ * @param {number} latitude - Latitude for calculation
+ * @param {number} longitude - Longitude for calculation
+ * @returns {Promise<Object>} Risk assessment data
+ */
+export const getTodayRiskAssessment = async (latitude = 0, longitude = 0) => {
+  try {
+    const response = await api.get(`/api/planetary-events/today-risk?lat=${latitude}&lon=${longitude}`);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to get risk assessment');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Risk assessment fetch error:', error);
+    throw error;
+  }
+};
+
+
+// =====================================
+// ML ANALYTICS API
+// =====================================
+
+/**
+ * Get ML system status
+ * @returns {Promise<Object>} ML system status
+ */
+export const getMLStatus = async () => {
+  try {
+    const response = await api.get('/api/ml/status');
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to get ML status');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('ML status fetch error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get ML risk assessment for current planetary conditions
+ * @param {Object} params - Risk assessment parameters
+ * @returns {Promise<Object>} ML risk assessment
+ */
+export const getMLRiskAssessment = async (params = {}) => {
+  try {
+    const response = await api.post('/api/ml/risk-assessment', params);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to get ML risk assessment');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('ML risk assessment error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Predict astrological pattern success using ML
+ * @param {Object} patternData - Pattern data for prediction
+ * @returns {Promise<Object>} Pattern prediction result
+ */
+export const predictPatternSuccess = async (patternData) => {
+  try {
+    const response = await api.post('/api/ml/predict-pattern', patternData);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to predict pattern success');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Pattern prediction error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get ML models information
+ * @returns {Promise<Object>} ML models data
+ */
+export const getMLModels = async () => {
+  try {
+    const response = await api.get('/api/ml/models');
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to get ML models');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('ML models fetch error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get recent ML predictions
+ * @param {Object} params - Query parameters
+ * @returns {Promise<Object>} ML predictions data
+ */
+export const getMLPredictions = async (params = {}) => {
+  try {
+    const queryParams = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([_, value]) => value))
+    );
+    
+    const response = await api.get(`/api/ml/predictions?${queryParams}`);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to get ML predictions');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('ML predictions fetch error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Find patterns matching current planetary configuration
+ * @param {Object} params - Pattern matching parameters
+ * @returns {Promise<Object>} Matching patterns
+ */
+export const findMatchingPatterns = async (params) => {
+  try {
+    const response = await api.post('/api/ml/pattern-matching', params);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.error || 'Failed to find matching patterns');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('Pattern matching error:', error);
+    throw error;
+  }
+};
+
 /**
  * Get monthly predictions based on planetary transits
  * @param {Object} requestData - Month and year for predictions
@@ -352,6 +567,39 @@ export const getMonthlyPredictions = async (requestData) => {
     const date = targetDate.toISOString().split('T')[0];
     const time = targetDate.toTimeString().split(' ')[0].slice(0, 5);
     
+    // Get monthly prediction from backend
+    const monthlyPredictionResponse = await fetch(`${API_BASE_URL}/api/ai/monthly-prediction`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chartData: requestData.chartData,
+        dashaData: requestData.dashaData,
+        birthDetails: requestData.birthDetails,
+        planetaryTransits: requestData.planetaryTransits,
+        selectedMonth: requestData.month,
+        selectedYear: requestData.year
+      })
+    });
+
+    if (!monthlyPredictionResponse.ok) {
+      throw new Error(`HTTP error! status: ${monthlyPredictionResponse.status}`);
+    }
+
+    const predictionApiResponse = await monthlyPredictionResponse.json();
+
+    if (!predictionApiResponse.success) {
+      throw new Error('Failed to get AI prediction data: ' + predictionApiResponse.error);
+    }
+
+    const aiPredictionData = predictionApiResponse.data;
+
+    return {
+      success: true,
+      data: aiPredictionData
+    };
+
     // Get real planetary positions from backend
     const planetaryResponse = await fetch(`${API_BASE_URL}/api/planetary-positions`, {
       method: 'POST',
@@ -920,5 +1168,147 @@ function generateTransitDescription(planet, toSign) {
   return descriptions[planet]?.[toSign] || 
          `${planet} enters ${toSign}, bringing new influences and opportunities.`;
 }
+
+// Pattern Recall API functions
+export const patternRecallApi = {
+  /**
+   * Get all events by date range (beginner-friendly)
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @param {number} limit - Maximum number of events to return
+   * @returns {Promise<Object>} Events data
+   */
+  getAllEvents: async (startDate, endDate, limit = 50) => {
+    try {
+      const response = await api.get('/api/pattern-recall/all-events', {
+        params: { startDate, endDate, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall all events error:', error);
+      throw error;
+    }
+  },
+
+
+  /**
+   * Get events by planetary position
+   * @param {string} planet - Planet name (sun, moon, etc.)
+   * @param {string} sign - Zodiac sign
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @param {number} limit - Maximum number of events to return
+   * @returns {Promise<Object>} Events data
+   */
+  getByPlanetaryPosition: async (planet, sign, startDate, endDate, limit = 50) => {
+    try {
+      const response = await api.get('/api/pattern-recall/planetary-position', {
+        params: { planet, sign, startDate, endDate, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall planetary position error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get events by planetary aspects
+   * @param {string} planetA - First planet name
+   * @param {string} planetB - Second planet name
+   * @param {string} aspectType - Type of aspect (conjunction, opposition, etc.)
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @param {number} limit - Maximum number of events to return
+   * @returns {Promise<Object>} Events data
+   */
+  getByAspects: async (planetA, planetB, aspectType, startDate, endDate, limit = 50) => {
+    try {
+      const response = await api.get('/api/pattern-recall/aspects', {
+        params: { planetA, planetB, aspectType, startDate, endDate, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall aspects error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get events by location
+   * @param {number} lat - Latitude
+   * @param {number} lon - Longitude
+   * @param {number} radius - Search radius in kilometers
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @param {number} limit - Maximum number of events to return
+   * @returns {Promise<Object>} Events data
+   */
+  getByLocation: async (lat, lon, radius, startDate, endDate, limit = 50) => {
+    try {
+      const response = await api.get('/api/pattern-recall/location', {
+        params: { lat, lon, radius, startDate, endDate, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall location error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get events by tags
+   * @param {string} tags - Comma-separated tags
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @param {number} limit - Maximum number of events to return
+   * @returns {Promise<Object>} Events data
+   */
+  getByTags: async (tags, startDate, endDate, limit = 50) => {
+    try {
+      const response = await api.get('/api/pattern-recall/tags', {
+        params: { tags, startDate, endDate, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall tags error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get pattern analysis for a specific planetary position
+   * @param {string} planet - Planet name
+   * @param {string} sign - Zodiac sign
+   * @param {string} startDate - Start date in YYYY-MM-DD format
+   * @param {string} endDate - End date in YYYY-MM-DD format
+   * @returns {Promise<Object>} Pattern analysis data
+   */
+  getPatternAnalysis: async (planet, sign, startDate, endDate) => {
+    try {
+      const response = await api.get('/api/pattern-recall/pattern-analysis', {
+        params: { planet, sign, startDate, endDate }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Pattern analysis error:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get system statistics
+   * @returns {Promise<Object>} System statistics
+   */
+  getStats: async () => {
+    try {
+      const response = await api.get('/api/pattern-recall/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Pattern recall stats error:', error);
+      throw error;
+    }
+  }
+};
 
 export default api;

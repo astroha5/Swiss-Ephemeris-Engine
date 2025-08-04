@@ -27,9 +27,9 @@ const ActionButtonCluster = ({
             variant: 'primary'
           },
           secondary: {
-            label: 'Upload Kundli',
-            icon: 'Upload',
-            onClick: () => navigate('/kundli-upload'),
+            label: 'View Positions',
+            icon: 'MapPin',
+            onClick: () => navigate('/planetary-positions'),
             variant: 'secondary'
           }
         };
@@ -51,22 +51,6 @@ const ActionButtonCluster = ({
           }
         };
 
-      case '/kundli-upload':
-        return {
-          primary: {
-            label: 'Process Upload',
-            icon: 'Upload',
-            onClick: onPrimaryAction || (() => navigate('/chart-results-dashboard')),
-            variant: 'primary',
-            loading: isLoading
-          },
-          secondary: {
-            label: 'Manual Entry',
-            icon: 'Edit3',
-            onClick: onSecondaryAction || (() => navigate('/birth-details-form')),
-            variant: 'secondary'
-          }
-        };
 
       case '/chart-results-dashboard':
         return {

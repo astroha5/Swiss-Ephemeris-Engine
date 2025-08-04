@@ -4,12 +4,15 @@ import Button from '../../../components/ui/Button';
 import TypewriterText from '../../../components/ui/TypewriterText';
 import { getPlanetaryTransits } from '../../../services/api';
 
-const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => {
+const MonthlyPredictionSection = ({ chartData, dashaData, birthDetails }) => {
   const [predictions, setPredictions] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+
+  // Extract currentDasha from dashaData prop - handle different possible structures
+  const currentDasha = dashaData?.data || dashaData;
 
   const monthNames = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -26,34 +29,112 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
         throw new Error('Chart data and birth details are required to generate predictions');
       }
 
-      console.log('🔄 Generating monthly prediction with data:', {
+      // Ensure dashaData integrity
+      if (!currentDasha || !currentDasha.currentMahadasha) {
+        throw new Error('Incomplete Dasha data');
+      }
+
+      console.log('🔄 Generating monthly prediction with optimized data:', {
         hasChartData: !!chartData,
         hasBirthDetails: !!birthDetails,
         hasCurrentDasha: !!currentDasha,
         selectedMonth,
-        selectedYear,
-        chartData: chartData ? Object.keys(chartData) : null,
-        birthDetails: birthDetails ? Object.keys(birthDetails) : null
+        selectedYear
+      });
+      
+      // Get current transits for the selected month (limit to essential data)
+      const transitResponse = await getPlanetaryTransits(selectedYear, 'UTC');
+      const currentTransits = transitResponse.success ? 
+        transitResponse.data.transits.slice(0, 9) : []; // Limit to 9 main planets only
+
+      // Ensure essential transit data
+      if (currentTransits.length === 0) {
+        throw new Error('Failed to retrieve actual planetary transits');
+      }
+
+      console.log('🔍 DEBUG - Final Extracted Dasha Data for AI:', {
+        mainPeriod: currentDasha?.currentMahadasha?.planet,
+        subPeriod: currentDasha?.currentAntardasha?.planet
       });
 
-      // Get current transits for the selected month
-      const transitResponse = await getPlanetaryTransits(selectedYear, 'UTC');
-      const currentTransits = transitResponse.success ? transitResponse.data.transits : [];
+      // Lagna Planetary Data - Generate planets list
+      let planetsList = [];
 
-      // Prepare data for AI analysis
-      const analysisData = {
-        birthDetails: birthDetails,
-        chartData: chartData,
-        currentDasha: currentDasha,
-        currentTransits: currentTransits,
-        selectedMonth: selectedMonth,
-        selectedYear: selectedYear,
-        natalChart: {
-          ascendant: chartData?.ascendant || 'Aries',
-          moonSign: chartData?.moonSign || 'Aries',
-          sunSign: chartData?.sunSign || 'Aries',
-          planets: chartData?.planets || []
+      if (chartData?.houses && Array.isArray(chartData.houses)) {
+        chartData.houses.forEach(house => {
+          if (house.planets && Array.isArray(house.planets)) {
+            house.planets.forEach((planet, idx) => {
+              planetsList.push({
+                name: typeof planet === 'string' ? planet : planet.name,
+                sign: house.sign
+              });
+            });
+          }
+        });
+      }
+
+      // Include Ascendant (house 1 sign) explicitly
+      const ascendantHouse = chartData?.houses?.find(h => h.number === 1);
+      if (ascendantHouse) {
+        planetsList.push({
+          name: 'Ascendant',
+          sign: ascendantHouse.sign
+        });
+      }
+
+      // Ensure Moon is included (may already be included, but do a check)
+      const moonAlreadyIncluded = planetsList.some(p => p.name === 'Moon');
+      if (!moonAlreadyIncluded && chartData?.houses && Array.isArray(chartData.houses)) {
+        // Try to find Moon from houses, add if found
+        for (const house of chartData.houses) {
+          if (house.planets && house.planets.includes('Moon')) {
+            planetsList.push({
+              name: 'Moon',
+              sign: house.sign
+            });
+            break;
+          }
         }
+      }
+
+      // Limit to 9 main planets only
+      planetsList = planetsList.slice(0, 9);
+
+      // Refactored Payload - Include only essentials
+      const analysisData = {
+        // Essential birth details only
+        birthDetails: {
+          name: birthDetails.name || 'User',
+          dateOfBirth: birthDetails.dateOfBirth || birthDetails.birthDate,
+          timeOfBirth: birthDetails.timeOfBirth || birthDetails.birthTime,
+          placeOfBirth: birthDetails.placeOfBirth || birthDetails.birthLocation
+        },
+
+        // Lagna Planetary Data
+        planets: planetsList,
+
+        // Dasha Timeline - extract the correct current dasha values
+        // Access currentDasha data properly from the API response structure
+        currentDasha: currentDasha ? {
+          mainPeriod: currentDasha?.currentMahadasha?.planet || 'Unknown',
+          subPeriod: currentDasha?.currentAntardasha?.planet || 'Unknown', 
+          startDate: currentDasha?.currentMahadasha?.startDate || null,
+          endDate: currentDasha?.currentMahadasha?.endDate || null
+        } : {
+          mainPeriod: 'Unknown',
+          subPeriod: 'Unknown',
+          startDate: null,
+          endDate: null
+        },
+
+        // Current transits - essential data only
+        currentTransits: currentTransits.map(transit => ({
+          planet: transit.planet,
+          sign: transit.toSign || transit.sign
+        })).slice(0, 9),  // Limit to 9 main planets
+
+        selectedMonth: selectedMonth,
+        selectedYear: selectedYear
       };
 
       // Call AI service for monthly prediction
@@ -79,7 +160,7 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
       
       console.log('🤖 Making AI prediction request to backend...');
       
-      // Call the AI service (using meta-llama/llama-3.3-70b-instruct:free)
+// Call the AI service (using OpenRouter with Llama-3.3-70B)
       const API_BASE_URL = import.meta.env.VITE_API_URL || (
         import.meta.env.PROD 
           ? 'https://astrova-backend.onrender.com' 
@@ -92,12 +173,14 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-70b-instruct:free', // Use meta-llama for Monthly Prediction
           prompt: prompt,
-          chartData: data.chartData,
-          dashaData: data.currentDasha,
-          birthDetails: data.birthDetails,
-          planetaryTransits: data.currentTransits,
+          // Send only essential data - dramatically reduced payload
+          chartData: {
+            planets: data.planets // Essential planetary positions only
+          },
+          dashaData: data.currentDasha, // Already optimized
+          birthDetails: data.birthDetails, // Already optimized
+          planetaryTransits: data.currentTransits, // Already optimized
           selectedMonth: data.selectedMonth,
           selectedYear: data.selectedYear
         })
@@ -122,12 +205,17 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
       
       // Check if result has prediction data
       if (result.prediction) {
+        // Log the actual prediction data to debug
+        console.log('🔍 Raw AI prediction data:', result.prediction);
+        
         // Transform backend response to match frontend expectations
         const transformedData = transformBackendPrediction(result.prediction, data);
         // Mark as real AI data
         transformedData.isAIGenerated = true;
         transformedData.note = result.note;
-        
+
+        console.log('🔍 Transformed AI data:', transformedData);
+
         return {
           success: true,
           data: transformedData
@@ -149,40 +237,94 @@ const MonthlyPredictionSection = ({ chartData, currentDasha, birthDetails }) => 
   };
 
   const createPredictionPrompt = (data) => {
-    return `
-As an expert Vedic astrologer, analyze the following birth chart and current transits to provide a comprehensive monthly prediction for ${monthNames[data.selectedMonth - 1]} ${data.selectedYear}.
+    // Create a concise, optimized prompt to reduce token usage
+    const planetaryText = data.planets.map(p => `${p.name} in ${p.sign}`).join(', ');
+    const transitText = data.currentTransits.map(t => `${t.planet} in ${t.sign}`).join(', ');
+    
+    // Debug log to verify current dasha data and ensure accuracy
+    console.log('🔍 DEBUG - Current Dasha in Prompt:', {
+      mainPeriod: data.currentDasha?.mainPeriod,
+      subPeriod: data.currentDasha?.subPeriod,
+      fullData: data.currentDasha
+    });
+    
+    // Validate that we have correct dasha data before sending to AI
+    if (!data.currentDasha?.mainPeriod || data.currentDasha.mainPeriod === 'Unknown') {
+      console.warn('⚠️ WARNING: Invalid or missing Mahadasha data being sent to AI');
+    }
+    
+    return `Generate monthly prediction for ${monthNames[data.selectedMonth - 1]} ${data.selectedYear}:
 
-BIRTH DETAILS:
-- Ascendant (Lagna): ${data.natalChart.ascendant}
-- Moon Sign (Rashi): ${data.natalChart.moonSign}
-- Sun Sign: ${data.natalChart.sunSign}
-- Birth Date: ${data.birthDetails?.birthDate || 'Not available'}
-- Birth Time: ${data.birthDetails?.birthTime || 'Not available'}
-- Birth Location: ${data.birthDetails?.birthLocation || 'Not available'}
+BIRTH: ${data.birthDetails.name}, ${data.birthDetails.dateOfBirth}, ${data.birthDetails.timeOfBirth}, ${data.birthDetails.placeOfBirth}
+PLANETS: ${planetaryText}
 
-CURRENT DASHA:
-- Main Period: ${data.currentDasha?.mainPeriod || 'Not available'}
-- Sub Period: ${data.currentDasha?.subPeriod || 'Not available'}
-- Duration: ${data.currentDasha?.duration || 'Not available'}
+**CURRENT VIMSHOTTARI DASHA PERIODS (Swiss Ephemeris Calculation):**
+- Current Mahadasha: ${data.currentDasha?.mainPeriod || 'Unknown'}
+- Current Antardasha: ${data.currentDasha?.subPeriod || 'Unknown'} 
+- Period: ${data.currentDasha?.startDate || 'Unknown'} to ${data.currentDasha?.endDate || 'Unknown'}
 
-CURRENT TRANSITS:
-${data.currentTransits.map(transit => 
-  `- ${transit.planet}: ${transit.fromSign} → ${transit.toSign} (${transit.ingressDate})`
-).join('\n')}
+**CRITICAL: Use ONLY these Vimshottari Dasha periods in your analysis. Do NOT calculate different dasha periods.**
 
-Please provide a detailed monthly prediction covering:
-1. Overall theme and energy for the month (at least 3-4 sentences)
-2. Career and profession prospects (detailed description with specific opportunities and challenges)
-3. Relationships and personal life (romantic, family, friendships with specific advice)
-4. Health and wellness guidance (physical and mental health with specific recommendations)
-5. Financial outlook (income, expenses, investments, savings with specific advice)
-6. Spiritual and personal growth (growth opportunities, practices, insights)
-7. Favorable dates for general activities, career, relationships, health, and finances
-8. Daily, weekly, and monthly remedies including gemstones, colors, and mantras
-9. Dasha impact analysis based on current planetary periods
+TRANSITS: ${transitText}
 
-Be very specific and detailed in each section. Provide at least 2-3 sentences for each area description and 3-5 key points for each category. Include practical, actionable advice that the person can implement.
-    `;
+Return ONLY a valid JSON object with this exact structure:
+{
+  "overview": "overall monthly analysis",
+  "career": {
+    "outlook": "career outlook",
+    "keyAreas": ["area1", "area2", "area3"],
+    "challenges": "challenges",
+    "opportunities": "opportunities"
+  },
+  "relationships": {
+    "romantic": "romantic relationships",
+    "family": "family relationships",
+    "friendships": "friendships",
+    "advice": "relationship advice"
+  },
+  "health": {
+    "physical": "physical health",
+    "mental": "mental health",
+    "recommendations": ["rec1", "rec2", "rec3"],
+    "warningAreas": "areas to watch"
+  },
+  "finances": {
+    "income": "income prospects",
+    "expenses": "expense guidance",
+    "investments": "investment advice",
+    "savings": "savings guidance",
+    "advice": "financial advice"
+  },
+  "spiritual": {
+    "growth": "spiritual growth",
+    "practices": "recommended practices",
+    "insights": "spiritual insights",
+    "connections": "spiritual connections"
+  },
+  "favorableDates": {
+    "general": ["date1", "date2", "date3"],
+    "career": ["date1", "date2"],
+    "relationships": ["date1", "date2"],
+    "health": ["date1", "date2"],
+    "financial": ["date1", "date2"]
+  },
+  "remedies": {
+    "daily": ["remedy1", "remedy2", "remedy3"],
+    "weekly": ["remedy1", "remedy2"],
+    "monthly": ["remedy1", "remedy2"],
+    "gemstones": "gemstone recommendation",
+    "colors": "color recommendation",
+    "mantras": "mantra recommendation"
+  },
+  "dashaImpact": {
+    "period": "${data.currentDasha?.mainPeriod || 'Current'} Mahadasha - ${data.currentDasha?.subPeriod || 'Current'} Antardasha",
+    "influence": "How the current ${data.currentDasha?.mainPeriod || 'planetary'} Mahadasha specifically influences this month",
+    "duration": "Timeline effects based on the ${data.currentDasha?.mainPeriod || 'current'} Mahadasha period",
+    "effects": "Specific effects of ${data.currentDasha?.mainPeriod || 'current'} Mahadasha and ${data.currentDasha?.subPeriod || 'current'} Antardasha combination"
+  }
+}
+
+Focus on practical Vedic guidance. Be concise but insightful.`;
   };
 
   const transformBackendPrediction = (backendPrediction, data) => {
@@ -193,6 +335,13 @@ Be very specific and detailed in each section. Provide at least 2-3 sentences fo
     ];
 
     console.log('🔍 Transforming backend prediction:', backendPrediction);
+    console.log('🔍 Available prediction fields:', Object.keys(backendPrediction));
+    
+    // Check if we have actual AI data or if it's empty/null
+    const hasValidOverview = backendPrediction.overview && backendPrediction.overview.trim() !== '';
+    const hasValidCareer = backendPrediction.career && Object.keys(backendPrediction.career).length > 0;
+    
+    console.log('🔍 Data validation:', { hasValidOverview, hasValidCareer });
 
     return {
       monthlyOverview: {
@@ -272,9 +421,29 @@ favorableDates: (() => {
           // Handle formats like "July 3", "3", etc.
           const dayMatch = dateStr.match(/\d+/);
           if (dayMatch) {
-            const day = parseInt(dayMatch[0]);
+            let day = parseInt(dayMatch[0]);
+            
+            // Get the maximum days for the selected month and year
+            const maxDaysInMonth = new Date(data.selectedYear, data.selectedMonth, 0).getDate();
+            
+            // Clamp the day to be within valid range for the month
+            if (day > maxDaysInMonth) {
+              day = maxDaysInMonth;
+            }
+            if (day < 1) {
+              day = 1;
+            }
+            
+            const dateStr = `${data.selectedYear}-${data.selectedMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            
+            // Validate that the constructed date is valid
+            const testDate = new Date(dateStr);
+            if (isNaN(testDate.getTime())) {
+              return null; // Invalid date
+            }
+            
             return {
-              date: `${data.selectedYear}-${data.selectedMonth.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`,
+              date: dateStr,
               activity: activity
             };
           }
@@ -311,12 +480,7 @@ favorableDates: (() => {
             if (parsed) dates.push(parsed);
           });
         }
-        
-        return dates.length > 0 ? dates.slice(0, 5) : [
-          { date: `${data.selectedYear}-${data.selectedMonth.toString().padStart(2, '0')}-07`, activity: "Important meetings and decisions" },
-          { date: `${data.selectedYear}-${data.selectedMonth.toString().padStart(2, '0')}-15`, activity: "Financial transactions and investments" },
-          { date: `${data.selectedYear}-${data.selectedMonth.toString().padStart(2, '0')}-23`, activity: "Relationship discussions and proposals" }
-        ];
+        return dates.length > 0 ? dates.slice(0, 5) : [];
       })(),
       remedies: [
         ...(backendPrediction.remedies?.daily || []),
@@ -327,13 +491,27 @@ favorableDates: (() => {
         backendPrediction.remedies?.colors || "Donate to charitable causes"
       ].filter(Boolean).slice(0, 6),
       dashaInfluence: {
-        title: backendPrediction.dashaImpact?.period || `${data.currentDasha?.mainPeriod || 'Current'} Dasha Impact`,
-        description: backendPrediction.dashaImpact?.influence || 'The current dasha period brings specific influences that shape your monthly experience.',
+        title: backendPrediction.dashaImpact?.period || 
+               (data.currentDasha?.mainPeriod !== 'Unknown' ? 
+                 `${data.currentDasha?.mainPeriod} Mahadasha - ${data.currentDasha?.subPeriod || 'Current'} Antardasha` :
+                 'Current Dasha Period'),
+        description: backendPrediction.dashaImpact?.influence || 
+                    (data.currentDasha?.mainPeriod !== 'Unknown' ? 
+                      `The current ${data.currentDasha?.mainPeriod} Mahadasha and ${data.currentDasha?.subPeriod || 'planetary'} Antardasha combination brings specific influences that shape your monthly experience according to Vimshottari Dasha system.` :
+                      'The current dasha period influences are being calculated based on your birth chart. Planetary transits will still have an impact on your life during this month according to Vedic astrology principles.'),
         effects: [
-          backendPrediction.dashaImpact?.effects || "Focus on personal growth and positive karma",
-          backendPrediction.dashaImpact?.duration || "Effects vary based on planetary periods",
-          "Maintain spiritual practices",
-          "Practice patience and understanding"
+          backendPrediction.dashaImpact?.effects || 
+            (data.currentDasha?.mainPeriod !== 'Unknown' ? 
+              `${data.currentDasha?.mainPeriod} Mahadasha effects are prominent this month` :
+              'Planetary transits and their effects are considered for this month\'s predictions'),
+          backendPrediction.dashaImpact?.duration || 
+            (data.currentDasha?.subPeriod !== 'Unknown' ? 
+              `${data.currentDasha?.subPeriod} Antardasha modifies the overall planetary influence` :
+              'Current transits modify the general cosmic influences'),
+          data.currentDasha?.mainPeriod !== 'Unknown' ? 
+            "Consider the combined effect of both planetary periods" :
+            "Transit effects are analyzed for practical guidance",
+          "Practice patience and positive karma during this planetary period"
         ].filter(Boolean)
       }
     };
@@ -345,7 +523,7 @@ favorableDates: (() => {
       data: {
         monthlyOverview: {
           title: `${monthNames[data.selectedMonth - 1]} ${data.selectedYear} Overview`,
-          description: `This month brings a blend of opportunities and challenges for ${data.natalChart.ascendant} Ascendant individuals. The current transits suggest a period of transformation and growth.`,
+          description: `This month brings a blend of opportunities and challenges based on your birth chart. The current transits suggest a period of transformation and growth.`,
           overallRating: 4,
           keyTheme: "Transformation and New Beginnings"
         },
@@ -424,31 +602,43 @@ favorableDates: (() => {
           "Meditate for 15 minutes daily during sunset"
         ],
         dashaInfluence: {
-          title: `${data.currentDasha?.mainPeriod || 'Current'} Dasha Impact`,
-          description: `The current dasha period brings specific influences that shape your monthly experience. Understanding these planetary periods helps in making informed decisions.`,
+          title: `${data.currentDasha?.mainPeriod || 'Current'} Mahadasha - ${data.currentDasha?.subPeriod || 'Current'} Antardasha Impact`,
+          description: `The current ${data.currentDasha?.mainPeriod || 'planetary'} Mahadasha and ${data.currentDasha?.subPeriod || 'planetary'} Antardasha combination brings specific influences according to Vimshottari Dasha system. These planetary periods shape your monthly experience and help in understanding the timing of events.`,
           effects: [
-            "Enhanced intuition and psychic abilities",
-            "Focus on long-term planning and goals",
-            "Increased responsibility in professional life",
-            "Need for patience in personal relationships"
+            `${data.currentDasha?.mainPeriod || 'Current'} Mahadasha brings its characteristic influences`,
+            `${data.currentDasha?.subPeriod || 'Current'} Antardasha modifies the main period effects`,
+            "Understanding dasha timing helps in planning important decisions",
+            "Practice remedies specific to the ruling planets"
           ]
         }
       }
     };
   };
-
   useEffect(() => {
-    // Only generate prediction if we have required data
-    if (chartData && birthDetails) {
-      console.log('🔄 Triggering monthly prediction generation');
-      generateMonthlyPrediction();
-    } else {
-      console.warn('⚠️ Skipping monthly prediction - missing required data:', {
+    // Only start monthly prediction after all required data is available
+    // This ensures Dasha data extraction is complete before starting prediction
+    let debounceTimer;
+    
+    if (chartData && birthDetails && (currentDasha || dashaData)) {
+      console.log('🔄 All required data available - triggering monthly prediction generation:', {
         hasChartData: !!chartData,
-        hasBirthDetails: !!birthDetails
+        hasBirthDetails: !!birthDetails,
+        hasCurrentDasha: !!currentDasha,
+        extractedMahadasha: currentDasha?.currentMahadasha?.planet,
+        extractedAntardasha: currentDasha?.currentAntardasha?.planet,
+        selectedMonth,
+        selectedYear
       });
+      
+      debounceTimer = setTimeout(() => {
+        generateMonthlyPrediction();
+      }, 500);  // 500ms debounce to ensure data is fully processed
     }
-  }, [selectedMonth, selectedYear]); // Remove chartData and birthDetails to prevent infinite loop
+    
+    return () => clearTimeout(debounceTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashaData, currentDasha, selectedMonth, selectedYear]);  // Dependencies that should trigger regeneration
+  
 
   const getRatingColor = (rating) => {
     if (rating >= 4) return 'text-green-500';
@@ -518,7 +708,16 @@ favorableDates: (() => {
         </div>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State for dasha data */}
+      {!currentDasha && !isLoading && (
+        <div className="bg-surface border border-border rounded-xl p-8 text-center">
+          <Icon name="Clock" size={32} className="text-primary mx-auto mb-4" />
+          <p className="text-text-secondary">Loading Dasha data...</p>
+          <p className="text-sm text-text-muted mt-2">Waiting for planetary period calculations to complete</p>
+        </div>
+      )}
+
+      {/* Loading State for prediction generation */}
       {isLoading && (
         <div className="bg-surface border border-border rounded-xl p-8 text-center">
           <Icon name="Loader2" size={32} className="text-primary mx-auto mb-4 animate-spin" />

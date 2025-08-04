@@ -13,8 +13,11 @@ import ChartVisualization from './components/ChartVisualization';
 import PlanetaryPositionsTable from './components/PlanetaryPositionsTable';
 import VimshottariDashaTable from './components/VimshottariDashaTable';
 import AIInterpretationSection from './components/AIInterpretationSection';
+import AstrologicalQASection from './components/AstrologicalQASection';
 import AIRemediesSection from './components/AIRemediesSection';
 import MonthlyPredictionSection from './components/MonthlyPredictionSection';
+
+// TODO: Add AI Engine Toggle in UI settings
 import ResultsSidebar from './components/ResultsSidebar';
 
 const ChartResultsDashboard = () => {
@@ -100,8 +103,10 @@ const ChartResultsDashboard = () => {
           
           const data = await generateDasha(birthDetails);
           
-          console.log('✅ Received Dasha data:', data);
-          setDashaData(data);
+          console.log('✅ Received Dasha API response:', data);
+          console.log('✅ Extracted Dasha data object:', data.data);
+          // Extract only the dasha data object, not the full API response
+          setDashaData(data.data);
         } catch (error) {
           console.error('❌ Failed to fetch dasha data:', error);
           setDashaError(error.message);
@@ -118,15 +123,21 @@ const ChartResultsDashboard = () => {
   const transformPlanetaryData = (backendData) => {
     console.log('🔄 Transforming chart data:', backendData);
     
-    // Check if backend already has planetaryData array (new format)
+    // Check if backend already has planetaryData array (correct API structure)
+    if (backendData?.data?.planetaryData && Array.isArray(backendData.data.planetaryData)) {
+      console.log('✅ Using direct planetaryData from backend:', backendData.data.planetaryData);
+      return backendData.data.planetaryData;
+    }
+    
+    // Fallback for legacy structure
     if (backendData?.planetaryData && Array.isArray(backendData.planetaryData)) {
-      console.log('✅ Using direct planetaryData from backend:', backendData.planetaryData);
+      console.log('✅ Using legacy planetaryData from backend:', backendData.planetaryData);
       return backendData.planetaryData;
     }
     
-    // Fallback: Try to transform from charts.lagna.houses format
-    if (backendData?.charts?.lagna?.houses) {
-      const houses = backendData.charts.lagna.houses;
+    // Fallback: Try to transform from charts.lagna.houses format  
+    const houses = backendData?.data?.charts?.lagna?.houses || backendData?.charts?.lagna?.houses;
+    if (houses) {
       const planetaryData = [];
       
       // Planet symbols mapping
@@ -164,6 +175,23 @@ const ChartResultsDashboard = () => {
   };
   
   const planetaryData = chartData ? transformPlanetaryData(chartData) : null;
+  
+  // Extract aspects data from chart data
+  const aspectsData = useMemo(() => {
+    if (!chartData) return null;
+    
+    // Try different possible paths for aspects data
+    const aspects = chartData?.data?.aspects || chartData?.aspects;
+    
+    console.log('🎯 Extracting aspects data:', {
+      chartData: !!chartData,
+      aspectsPath1: !!chartData?.data?.aspects,
+      aspectsPath2: !!chartData?.aspects,
+      extractedAspects: aspects
+    });
+    
+    return aspects;
+  }, [chartData]);
   
   // Debug: Log what data we're working with
   useEffect(() => {
@@ -440,7 +468,10 @@ const ChartResultsDashboard = () => {
 
                 {/* Planetary Positions Section */}
                 <section id="planetary-positions" className="scroll-mt-32">
-                  <PlanetaryPositionsTable planetaryData={planetaryData} />
+                  <PlanetaryPositionsTable 
+                    planetaryData={planetaryData} 
+                    aspectsData={aspectsData}
+                  />
                 </section>
 
                 {/* Dasha Periods Section */}
@@ -461,6 +492,15 @@ const ChartResultsDashboard = () => {
                   />
                 </section>
 
+                {/* Astrological Q&A Section */}
+                <section id="astrological-qa" className="scroll-mt-32">
+                  <AstrologicalQASection 
+                    chartData={chartData}
+                    birthDetails={birthDetails}
+                    dashaData={dashaData}
+                  />
+                </section>
+
                 {/* Remedies Section */}
                 <section id="remedies" className="scroll-mt-32">
                   <AIRemediesSection 
@@ -474,7 +514,7 @@ const ChartResultsDashboard = () => {
                 <section id="monthly-prediction" className="scroll-mt-32">
                   <MonthlyPredictionSection 
                     chartData={chartData}
-                    currentDasha={dashaData}
+                    dashaData={dashaData}
                     birthDetails={birthDetails}
                   />
                 </section>

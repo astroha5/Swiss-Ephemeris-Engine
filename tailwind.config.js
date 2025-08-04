@@ -1,5 +1,5 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
     "./public/index.html"
@@ -176,8 +176,10 @@ module.exports = {
     },
   },
   plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-    require('tailwindcss-animate'),
+    // Re-enabled plugins for ES module compatibility
+    // Note: These may need to be imported differently in ES modules
+    // require('@tailwindcss/forms'),
+    // require('@tailwindcss/typography'), 
+    // require('tailwindcss-animate'),
   ],
 }

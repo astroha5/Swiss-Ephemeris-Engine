@@ -74,6 +74,9 @@ const ChartOverview = ({ chartData, birthDetails, dashaData, dashaLoading }) => 
   const extractedChartData = chartData || realData?.chartData;
   const extractedBirthDetails = birthDetails || realData;
   
+  // Check if we have real dasha data from API
+  const hasRealDashaData = dashaData && (dashaData.currentMahadasha || dashaData.data);
+  
   if (extractedChartData) {
     // Extract birth details from real data
     details = {
@@ -90,22 +93,55 @@ const ChartOverview = ({ chartData, birthDetails, dashaData, dashaLoading }) => 
     const chartSummary = extractedChartData.chartSummary || {};
     const vimshottariDasha = extractedChartData.vimshottariDasha || {};
     
+    // Extract real dasha data - prioritize API data over embedded chart data
+    let realCurrentDasha = {};
+    
+    if (hasRealDashaData) {
+      // Use real dasha data from API
+      const dashaApiData = dashaData.data || dashaData;
+      realCurrentDasha = {
+        mahadasha: dashaApiData?.currentMahadasha?.planet || 'Loading...',
+        antardasha: dashaApiData?.currentAntardasha?.planet || 'Loading...',
+        remainingYears: dashaApiData?.currentMahadasha?.remainingYears || 'Loading...'
+      };
+    } else if (vimshottariDasha.currentMahadasha) {
+      // Fallback to embedded chart data
+      realCurrentDasha = {
+        mahadasha: vimshottariDasha.currentMahadasha?.planet || 'Unknown',
+        antardasha: vimshottariDasha.currentAntardasha?.planet || 'Unknown',
+        remainingYears: vimshottariDasha.currentMahadasha?.remainingYears || 'Unknown'
+      };
+    } else {
+      // Only use mock data if no real data is available
+      realCurrentDasha = mockChartSummary.currentDasha;
+    }
+    
     summary = {
       ascendant: chartSummary.ascendant || mockChartSummary.ascendant,
       moonSign: chartSummary.moonSign || mockChartSummary.moonSign,
       sunSign: chartSummary.sunSign || mockChartSummary.sunSign,
-      currentDasha: {
-        mahadasha: dashaData?.data?.currentMahadasha?.planet || vimshottariDasha.currentMahadasha?.planet || mockChartSummary.currentDasha.mahadasha,
-        antardasha: dashaData?.data?.currentAntardasha?.planet || vimshottariDasha.currentAntardasha?.planet || mockChartSummary.currentDasha.antardasha,
-        remainingYears: dashaData?.data?.currentMahadasha?.remainingYears || vimshottariDasha.currentMahadasha?.remainingYears || mockChartSummary.currentDasha.remainingYears
-      },
+      currentDasha: realCurrentDasha,
       yogas: chartSummary.yogas || [],
       doshas: chartSummary.doshas || []
     };
   } else {
     // Fallback to provided props or mock data
     details = extractedBirthDetails || mockBirthDetails;
-    summary = mockChartSummary; // Always use mock summary as fallback
+    
+    // Even in fallback, use real dasha data if available
+    if (hasRealDashaData) {
+      const dashaApiData = dashaData.data || dashaData;
+      summary = {
+        ...mockChartSummary,
+        currentDasha: {
+          mahadasha: dashaApiData?.currentMahadasha?.planet || mockChartSummary.currentDasha.mahadasha,
+          antardasha: dashaApiData?.currentAntardasha?.planet || mockChartSummary.currentDasha.antardasha,
+          remainingYears: dashaApiData?.currentMahadasha?.remainingYears || mockChartSummary.currentDasha.remainingYears
+        }
+      };
+    } else {
+      summary = mockChartSummary; // Use mock summary only as last resort
+    }
   }
 
   const formatDate = (dateString) => {

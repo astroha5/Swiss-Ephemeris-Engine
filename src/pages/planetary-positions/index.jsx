@@ -332,6 +332,7 @@ const PlanetaryPositions = () => {
                       selectedDate={selectedDate}
                       location={location}
                     />
+
                   </>
                 ) : (
                   <div className="bg-surface border border-border rounded-lg p-12 text-center">

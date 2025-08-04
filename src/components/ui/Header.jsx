@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../AppIcon';
 import Button from './Button';
+import UserAvatar from '../auth/UserAvatar';
+import LoginModal from '../auth/LoginModal';
+import SignupModal from '../auth/SignupModal';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const location = useLocation();
 
   const navigationItems = [
@@ -33,6 +38,12 @@ const Header = () => {
       tooltip: 'View planetary transits and movements'
     },
     {
+      label: 'Event Correlations',
+      path: '/planetary-events',
+      icon: 'TrendingUp',
+      tooltip: 'Explore correlations between world events and planetary positions'
+    },
+    {
       label: 'Support',
       path: '/error-handling-page',
       icon: 'HelpCircle',
@@ -50,6 +61,21 @@ const Header = () => {
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  const openLoginModal = () => {
+    setIsLoginModalOpen(true);
+    setIsSignupModalOpen(false);
+  };
+
+  const openSignupModal = () => {
+    setIsSignupModalOpen(true);
+    setIsLoginModalOpen(false);
+  };
+
+  const closeModals = () => {
+    setIsLoginModalOpen(false);
+    setIsSignupModalOpen(false);
   };
 
   const Logo = () => (
@@ -140,6 +166,14 @@ const Header = () => {
             ))}
           </nav>
 
+          {/* User Avatar / Auth Buttons */}
+          <div className="hidden md:block">
+            <UserAvatar 
+              onOpenLogin={openLoginModal}
+              onOpenSignup={openSignupModal}
+            />
+          </div>
+
           {/* Mobile Menu Button */}
           <div className="md:hidden">
             <Button
@@ -182,9 +216,29 @@ const Header = () => {
                 </div>
               </Link>
             ))}
+            
+            {/* Mobile Auth Section */}
+            <div className="mt-4 pt-4 border-t border-border">
+              <UserAvatar 
+                onOpenLogin={openLoginModal}
+                onOpenSignup={openSignupModal}
+              />
+            </div>
           </div>
         </div>
       )}
+      
+      {/* Auth Modals */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={closeModals}
+        onSwitchToSignup={openSignupModal}
+      />
+      <SignupModal
+        isOpen={isSignupModalOpen}
+        onClose={closeModals}
+        onSwitchToLogin={openLoginModal}
+      />
     </header>
   );
 };

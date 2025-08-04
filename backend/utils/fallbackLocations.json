@@ -1,0 +1,247 @@
+{
+  "1918 Spanish Flu": {
+    "latitude": 39.0458,
+    "longitude": -96.6917,
+    "location_name": "Fort Riley, Kansas",
+    "source": "fallback_manual",
+    "reason": "Widely believed origin point of 1918 influenza pandemic"
+  },
+  "Bitcoin Genesis Block": {
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "location_name": "London, UK",
+    "source": "fallback_manual",
+    "reason": "Satoshi Nakamoto's timezone and linguistic patterns suggest UK origin"
+  },
+  "Lewis and Clark": {
+    "latitude": 38.813,
+    "longitude": -90.115,
+    "location_name": "Camp Dubois, Illinois",
+    "source": "fallback_manual",
+    "reason": "Starting point of Lewis and Clark expedition"
+  },
+  "Lewis and Clark expedition": {
+    "latitude": 38.813,
+    "longitude": -90.115,
+    "location_name": "Camp Dubois, Illinois",
+    "source": "fallback_manual",
+    "reason": "Starting point of Lewis and Clark expedition"
+  },
+  "Black Monday": {
+    "latitude": 40.7128,
+    "longitude": -74.0060,
+    "location_name": "New York, NY",
+    "source": "fallback_manual",
+    "reason": "1987 stock market crash centered in Wall Street"
+  },
+  "Peace of Longjumeau": {
+    "latitude": 48.6958,
+    "longitude": 2.2939,
+    "location_name": "Longjumeau, France",
+    "source": "fallback_manual",
+    "reason": "Treaty signed in Longjumeau during French Wars of Religion"
+  },
+  "Strategic Defense Initiative": {
+    "latitude": 38.9072,
+    "longitude": -77.0369,
+    "location_name": "Washington, DC",
+    "source": "fallback_manual",
+    "reason": "Reagan's SDI proposal announced from White House"
+  },
+  "Deep Impact collider": {
+    "latitude": 34.2052,
+    "longitude": -118.1715,
+    "location_name": "Pasadena, CA",
+    "source": "fallback_manual",
+    "reason": "NASA JPL mission control location"
+  },
+  "Space Shuttle": {
+    "latitude": 28.6139,
+    "longitude": -80.6034,
+    "location_name": "Kennedy Space Center, FL",
+    "source": "fallback_manual",
+    "reason": "Primary Space Shuttle launch facility"
+  },
+  "Discovery launches STS-121": {
+    "latitude": 28.6139,
+    "longitude": -80.6034,
+    "location_name": "Kennedy Space Center, FL",
+    "source": "fallback_manual",
+    "reason": "Space Shuttle launch location"
+  },
+  "Columbia lands at Edwards": {
+    "latitude": 34.9054,
+    "longitude": -117.8840,
+    "location_name": "Edwards Air Force Base, CA",
+    "source": "fallback_manual",
+    "reason": "Space Shuttle landing facility"
+  },
+  "Lockheed Vega": {
+    "latitude": 34.0522,
+    "longitude": -118.2437,
+    "location_name": "Los Angeles, CA",
+    "source": "fallback_manual",
+    "reason": "Lockheed aircraft manufacturing location"
+  },
+  "William Shockley": {
+    "latitude": 37.4419,
+    "longitude": -122.1430,
+    "location_name": "Palo Alto, CA",
+    "source": "fallback_manual",
+    "reason": "Bell Labs and later Shockley Semiconductor location"
+  },
+  "Higgs boson": {
+    "latitude": 46.2044,
+    "longitude": 6.1430,
+    "location_name": "CERN, Geneva",
+    "source": "fallback_manual",
+    "reason": "CERN Large Hadron Collider location"
+  },
+  "CERN": {
+    "latitude": 46.2044,
+    "longitude": 6.1430,
+    "location_name": "CERN, Geneva",
+    "source": "fallback_manual",
+    "reason": "European particle physics laboratory"
+  },
+  "Astana": {
+    "latitude": 51.1694,
+    "longitude": 71.4491,
+    "location_name": "Nur-Sultan, Kazakhstan",
+    "source": "fallback_manual",
+    "reason": "Capital city of Kazakhstan, renamed to Nur-Sultan"
+  },
+  "Nur-Sultan": {
+    "latitude": 51.1694,
+    "longitude": 71.4491,
+    "location_name": "Nur-Sultan, Kazakhstan",
+    "source": "fallback_manual",
+    "reason": "Capital city of Kazakhstan"
+  },
+  "Ebola": {
+    "latitude": 7.9465,
+    "longitude": -1.0232,
+    "location_name": "Guinea",
+    "source": "fallback_manual",
+    "reason": "2014 Ebola outbreak originated in Guinea"
+  },
+  "Ebola outbreak": {
+    "latitude": 7.9465,
+    "longitude": -1.0232,
+    "location_name": "Guinea",
+    "source": "fallback_manual",
+    "reason": "2014 Ebola outbreak originated in Guinea"
+  },
+  "Walt Whitman": {
+    "latitude": 40.6782,
+    "longitude": -73.9442,
+    "location_name": "Brooklyn, NY",
+    "source": "fallback_manual",
+    "reason": "Leaves of Grass published in Brooklyn"
+  },
+  "Leaves of Grass": {
+    "latitude": 40.6782,
+    "longitude": -73.9442,
+    "location_name": "Brooklyn, NY",
+    "source": "fallback_manual",
+    "reason": "Walt Whitman's poetry collection published in Brooklyn"
+  },
+  "Alice's Adventures in Wonderland": {
+    "latitude": 51.7520,
+    "longitude": -1.2577,
+    "location_name": "Oxford, England",
+    "source": "fallback_manual",
+    "reason": "Lewis Carroll told the story while at Oxford"
+  },
+  "Lewis Carroll": {
+    "latitude": 51.7520,
+    "longitude": -1.2577,
+    "location_name": "Oxford, England",
+    "source": "fallback_manual",
+    "reason": "Lewis Carroll was at Oxford when he told Alice the story"
+  },
+  "Walden Pond": {
+    "latitude": 42.4403,
+    "longitude": -71.3369,
+    "location_name": "Concord, Massachusetts",
+    "source": "fallback_manual",
+    "reason": "Thoreau's cabin at Walden Pond"
+  },
+  "Henry David Thoreau": {
+    "latitude": 42.4403,
+    "longitude": -71.3369,
+    "location_name": "Concord, Massachusetts",
+    "source": "fallback_manual",
+    "reason": "Thoreau's Walden Pond cabin location"
+  },
+  "Grand Junction Railway": {
+    "latitude": 52.4862,
+    "longitude": -1.8904,
+    "location_name": "Birmingham, England",
+    "source": "fallback_manual",
+    "reason": "Railway between Birmingham and Liverpool"
+  },
+  "Iowa Territory": {
+    "latitude": 41.5868,
+    "longitude": -93.6250,
+    "location_name": "Iowa",
+    "source": "fallback_manual",
+    "reason": "Iowa Territory organization"
+  },
+  "Louisiana Purchase": {
+    "latitude": 39.7837,
+    "longitude": -100.4458,
+    "location_name": "United States",
+    "source": "fallback_manual",
+    "reason": "Louisiana Purchase territory in central US"
+  },
+  "Flag Act of 1818": {
+    "latitude": 38.9072,
+    "longitude": -77.0369,
+    "location_name": "Washington, DC",
+    "source": "fallback_manual",
+    "reason": "US federal legislation enacted in Washington"
+  },
+  "John Neal": {
+    "latitude": 43.6591,
+    "longitude": -70.2568,
+    "location_name": "Portland, Maine",
+    "source": "fallback_manual",
+    "reason": "John Neal's hometown and lecture location"
+  },
+  "Yankee Stadium": {
+    "latitude": 40.8296,
+    "longitude": -73.9262,
+    "location_name": "Bronx, NY",
+    "source": "fallback_manual",
+    "reason": "Lou Gehrig's farewell speech location"
+  },
+  "Lou Gehrig": {
+    "latitude": 40.8296,
+    "longitude": -73.9262,
+    "location_name": "Yankee Stadium, NY",
+    "source": "fallback_manual",
+    "reason": "Lou Gehrig's famous farewell speech"
+  },
+  "Philippine–American War": {
+    "latitude": 14.5995,
+    "longitude": 120.9842,
+    "location_name": "Philippines",
+    "source": "fallback_manual",
+    "reason": "War fought in the Philippines"
+  },
+  "Western Samoa": {
+    "latitude": -13.7590,
+    "longitude": -172.1046,
+    "location_name": "Samoa",
+    "source": "fallback_manual",
+    "reason": "International Date Line change in Samoa"
+  },
+  "Samoa": {
+    "latitude": -13.7590,
+    "longitude": -172.1046,
+    "location_name": "Samoa",
+    "source": "fallback_manual",
+    "reason": "Pacific island nation"
+  }
+}

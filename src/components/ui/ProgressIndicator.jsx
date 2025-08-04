@@ -16,7 +16,7 @@ const ProgressIndicator = () => {
     {
       id: 'input',
       label: 'Input',
-      paths: ['/birth-details-form', '/kundli-upload'],
+      paths: ['/birth-details-form'],
       icon: 'Edit3',
       description: 'Enter Details'
     },
@@ -40,7 +40,7 @@ const ProgressIndicator = () => {
     const currentPath = location.pathname;
     
     if (currentPath === '/home-landing-page') return 0;
-    if (currentPath === '/birth-details-form' || currentPath === '/kundli-upload') return 1;
+    if (currentPath === '/birth-details-form') return 1;
     if (currentPath === '/chart-results-dashboard') return 3;
     
     return -1;

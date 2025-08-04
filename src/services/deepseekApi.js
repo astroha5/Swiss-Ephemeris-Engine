@@ -1,24 +1,53 @@
 import axios from 'axios';
 
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
-const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
+// Backend API configuration
+const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
-// Create axios instance with OpenRouter configuration
-const deepseekApi = axios.create({
-  baseURL: OPENROUTER_BASE_URL,
+// Cloud AI configuration (ready for OpenRouter integration)
+const CLOUD_AI_CONFIG = {
+  model: 'anthropic/claude-3-haiku',
+  provider: 'openrouter',
+  maxTokens: 4000,
+  temperature: 0.4
+};
+
+// Create axios instance for backend API
+const backendApi = axios.create({
+  baseURL: BACKEND_BASE_URL,
   headers: {
-    'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
     'Content-Type': 'application/json',
-    'HTTP-Referer': window?.location?.origin || 'https://astrova.app',
-    'X-Title': 'Astrova - AI Vedic Astrology',
   },
-  timeout: 120000, // 2 minutes timeout for image processing
+  timeout: 180000, // 3 minutes timeout for AI processing to match backend
 });
 
+// Helper function to call backend AI service
+const callBackendAI = async (prompt, options = {}) => {
+  try {
+    console.log('Backend AI service call initiated');
+    
+    const response = await backendApi.post('/api/ai/chat', {
+      prompt,
+      model: options.model || CLOUD_AI_CONFIG.model,
+      temperature: options.temperature || CLOUD_AI_CONFIG.temperature,
+      maxTokens: options.maxTokens || CLOUD_AI_CONFIG.maxTokens
+    });
+    
+    if (response.data && response.data.response) {
+      console.log('Successfully received response from backend AI');
+      return response.data.response;
+    }
+    
+    throw new Error('Empty response from backend AI service');
+  } catch (error) {
+    console.error('Backend AI call failed:', error);
+    throw new Error(`Backend AI service error: ${error.message}`);
+  }
+};
+
 // Request interceptor for logging
-deepseekApi.interceptors.request.use(
+backendApi.interceptors.request.use(
   (config) => {
-    console.log('OpenRouter API Request:', {
+    console.log('Backend AI API Request:', {
       url: config.url,
       method: config.method,
       timestamp: new Date().toISOString()
@@ -26,15 +55,15 @@ deepseekApi.interceptors.request.use(
     return config;
   },
   (error) => {
-    console.error('OpenRouter API Request Error:', error);
+    console.error('Backend AI API Request Error:', error);
     return Promise.reject(error);
   }
 );
 
 // Response interceptor for error handling
-deepseekApi.interceptors.response.use(
+backendApi.interceptors.response.use(
   (response) => {
-    console.log('OpenRouter API Response:', {
+    console.log('Backend AI API Response:', {
       status: response.status,
       url: response.config.url,
       timestamp: new Date().toISOString()
@@ -42,116 +71,31 @@ deepseekApi.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('OpenRouter API Response Error:', {
+    console.error('Backend AI API Response Error:', {
       status: error.response?.status,
-      message: error.response?.data?.error?.message || error.message,
+      message: error.response?.data?.error || error.message,
       url: error.config?.url,
       timestamp: new Date().toISOString()
     });
     
     // Handle specific error cases
-    if (error.response?.status === 401) {
-      throw new Error('Invalid API key. Please check your OpenRouter API configuration.');
-    } else if (error.response?.status === 429) {
-      throw new Error('Rate limit exceeded. Please try again later.');
-    } else if (error.response?.status === 402) {
-      throw new Error('Insufficient credits. Please check your OpenRouter account balance.');
+    if (error.response?.status === 404) {
+      throw new Error('AI service endpoint not found. Please check backend configuration.');
     } else if (error.response?.status >= 500) {
-      throw new Error('OpenRouter API service is temporarily unavailable. Please try again later.');
+      throw new Error('Backend AI service is temporarily unavailable. Please try again later.');
     }
     
     return Promise.reject(error);
   }
 );
 
-// Analyze kundli image using DeepSeek VL R1 0528 model via OpenRouter
+// Note: Image analysis is not supported by local Ollama integration
 export const analyzeKundliImage = async (imageData, options = {}) => {
-  try {
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error('DeepSeek API key is not configured. Please add VITE_DEEPSEEK_API_KEY to your environment variables.');
-    }
-
-    // Ensure image data is properly formatted for OpenRouter
-    const imageUrl = imageData.startsWith('data:') ? imageData : `data:image/jpeg;base64,${imageData}`;
-
-    const payload = {
-      model: 'deepseek/deepseek-r1',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `You are an expert Vedic astrologer with deep knowledge of traditional Indian astrology charts. 
-              
-              Analyze this Vedic astrology birth chart (kundli) image and extract the following information in a structured JSON format:
-
-              1. **Chart Identification**:
-                 - Chart Type (D1/Lagna, D9/Navamsa, or other divisional chart)
-                 - Chart Style (North Indian, South Indian, or East Indian)
-                 - Overall chart quality and readability
-
-              2. **Planetary Positions**:
-                 - Extract positions of all 9 planets: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Rahu, Ketu
-                 - Include house numbers (1-12) for each planet
-                 - Include degrees if visible and readable
-                 - Note any planetary conjunctions
-
-              3. **Ascendant & Houses**:
-                 - Identify the Lagna (Ascendant) sign and house
-                 - Note the house system being used
-                 - Identify any special house placements
-
-              4. **Astrological Features**:
-                 - Identify any visible yogas (Raja Yoga, Dhana Yoga, etc.)
-                 - Note significant planetary aspects
-                 - Identify any doshas (Mangal Dosha, Kaal Sarp Dosha, etc.)
-
-              5. **Text & Symbols**:
-                 - Extract any visible text, numbers, or Sanskrit symbols
-                 - Note any additional information provided in the chart
-
-              Please respond with a detailed JSON object containing all extracted information. Be precise and only include information that is clearly visible in the chart. If something is unclear or not visible, mark it as "not_visible" or "unclear".`
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: imageUrl
-              }
-            }
-          ]
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.1,
-      stream: false,
-      ...options
-    };
-
-    const response = await deepseekApi.post('/chat/completions', payload);
-    
-    if (!response.data?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenRouter API');
-    }
-
-    return {
-      success: true,
-      analysis: response.data.choices[0].message.content,
-      usage: response.data.usage,
-      model: response.data.model,
-      timestamp: new Date().toISOString(),
-      provider: 'OpenRouter'
-    };
-
-  } catch (error) {
-    console.error('DeepSeek API Error:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to analyze kundli image',
-      timestamp: new Date().toISOString()
-    };
-  }
-};
+  return {
+    success: false,
+    error: 'Image analysis is not supported with the current local AI integration. Please use manual chart data entry instead.',
+    timestamp: new Date().toISOString()
+  };};
 
 // Generate astrological interpretation based on chart data
 // Updated model sequence - removed problematic model and reordered
@@ -191,113 +135,111 @@ const extractJsonFromResponse = (response) => {
 
 export const generateAstrologicalInterpretation = async (chartData, options = {}) => {
   try {
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error('DeepSeek API key is not configured. Please add VITE_DEEPSEEK_API_KEY to your environment variables.');
-    }
+    // Create enhanced Vedic astrology prompt
+    const prompt = `You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles. 
 
-    // Use different model lists based on the interpretation type
-    const isMonthlyPrediction = chartData.type === 'monthly_prediction' || options.focus === 'monthly_transits';
-    const modelsList = isMonthlyPrediction ? monthlyPredictionModels : chartInterpretationModels;
+IMPORTANT: Your response must be ONLY valid JSON. Do not include any text before or after the JSON object. Do not use markdown formatting. Start your response directly with { and end with }.
 
-    const payload = {
-      model: modelsList[0],
-      messages: [
-        {
-          role: 'system',
-          content: `You are a Vedic astrologer. Provide friendly, insightful interpretations based on traditional Jyotish principles. Focus on constructive guidance and personal empowerment. ${chartData.focus === 'remedies' ? 'For remedies, return ONLY valid JSON without any markdown formatting or additional text.' : 'Return only valid JSON.'}`
-        },
-        {
-          role: 'user',
-          content: `Based on the following birth chart analysis, provide a detailed Vedic astrological interpretation:
+Based on Vedic astrology using sidereal zodiac with Lahiri Ayanamsa, interpret the chart using:
 
-          **Chart Analysis Data:**
-          ${JSON.stringify(chartData, null, 2)}
+- House lords and their placements
+- Planetary dignity (own sign, exalted, debilitated)
+- Aspects (drishti) from key planets
+- Nakshatra of Moon and Ascendant
+- Current Mahadasha and Antardasha effects
+- Do not use generic or Western-style interpretations
+- Mention any relevant yogas or doshas if present
+- Focus on specific planetary lordships and their house placements
+- Consider planetary strengths and weaknesses based on sign placement
+- Analyze aspects between planets according to Vedic principles
 
-          ${chartData.focus === 'remedies' ? 
-            `Provide remedial measures in JSON format only. No additional text or explanations. Return exactly this structure:
-            
-            {
-              "gemstones": [
-                {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"},
-                {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"}
-              ],
-              "mantras": [
-                {"name": "specific mantra name", "instruction": "how to chant and frequency"},
-                {"name": "specific mantra name", "instruction": "how to chant and frequency"}
-              ],
-              "donations": [
-                {"item": "specific items to donate", "instruction": "when and how to donate"},
-                {"item": "specific items to donate", "instruction": "when and how to donate"}
-              ],
-              "fasting": [
-                {"day": "specific day", "instruction": "purpose and benefits"},
-                {"day": "specific day", "instruction": "purpose and benefits"}
-              ]
-            }
-            
-            Return only the JSON object, no markdown formatting.` :
-            'Provide JSON with 6 sections: {"overview":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "career":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "relationships":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "health":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "wealth":{"content":"...","keyPoints":["..."],"recommendations":["..."]}, "spirituality":{"content":"...","keyPoints":["..."],"recommendations":["..."]}}. Each section must include content, keyPoints, and recommendations.'
-          }`
-        }
-      ],
-      max_tokens: 6000,
-      temperature: 0.3,
-      stream: options.stream || false,
-      ...options
-    };
+**Chart Analysis Data:**
+${JSON.stringify(chartData, null, 2)}
 
-    let response;
-    let lastError;
+${chartData.focus === 'remedies' ? 
+  `Provide remedial measures in JSON format only. No additional text or explanations. Return exactly this structure:
+  
+  {
+    "gemstones": [
+      {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"},
+      {"name": "specific gemstone name", "planet": "ruling planet", "instruction": "how to wear and when"}
+    ],
+    "mantras": [
+      {"name": "specific mantra name", "instruction": "how to chant and frequency"},
+      {"name": "specific mantra name", "instruction": "how to chant and frequency"}
+    ],
+    "donations": [
+      {"item": "specific items to donate", "instruction": "when and how to donate"},
+      {"item": "specific items to donate", "instruction": "when and how to donate"}
+    ],
+    "fasting": [
+      {"day": "specific day", "instruction": "purpose and benefits"},
+      {"day": "specific day", "instruction": "purpose and benefits"}
+    ]
+  }
+  
+  Return only the JSON object, no markdown formatting.` :
+  `Provide interpretations for 6 areas: Overview, Career, Health, Relationships, Wealth, Spirituality.
+
+Return results in this exact JSON format:
+{
+  "overview": {
+    "content": "Analysis based on Lagna lord placement, Moon nakshatra, and key planetary combinations. Mention specific house lordships and their effects.",
+    "keyPoints": ["Specific Vedic insights based on planetary lordships", "Nakshatra influences", "Dasha effects"],
+    "recommendations": ["Specific actions based on planetary positions", "Timing considerations based on current dasha"]
+  },
+  "career": {
+    "content": "Analysis of 10th house, 10th lord placement, aspects to 10th house, and relevant yogas for profession.",
+    "keyPoints": ["10th lord analysis", "Planetary influences on career", "Professional strengths"],
+    "recommendations": ["Career directions based on planetary positions", "Timing for career moves"]
+  },
+  "relationships": {
+    "content": "Analysis of 7th house, 7th lord, Venus placement, and marriage/partnership indicators.",
+    "keyPoints": ["7th lord placement effects", "Venus analysis", "Partnership compatibility factors"],
+    "recommendations": ["Relationship guidance based on planetary positions", "Timing for partnerships"]
+  },
+  "health": {
+    "content": "Analysis of 6th house, 6th lord, Ascendant strength, and planetary influences on health.",
+    "keyPoints": ["Health indicators from planetary positions", "Areas of strength/weakness", "Preventive measures"],
+    "recommendations": ["Health practices based on chart analysis", "Preventive care timing"]
+  },
+  "wealth": {
+    "content": "Analysis of 2nd house, 11th house, their lords, and dhana yogas for wealth accumulation.",
+    "keyPoints": ["Wealth-generating combinations", "Income sources indicated", "Financial stability factors"],
+    "recommendations": ["Financial strategies based on planetary positions", "Investment timing"]
+  },
+  "spirituality": {
+    "content": "Analysis of 9th house, 12th house, Jupiter placement, and spiritual indicators in the chart.",
+    "keyPoints": ["Spiritual inclinations shown", "Dharmic path indicators", "Moksha karaka influences"],
+    "recommendations": ["Spiritual practices suited to chart", "Growth opportunities"]
+  }
+}
+
+Each section must include content, keyPoints, and recommendations based on actual Vedic principles.`
+}`;
+
+    const rawContent = await callBackendAI(prompt);
     
-    for (let i = 0; i < modelsList.length; i++) {
-      const model = modelsList[i];
-      payload.model = model;
-      
-      try {
-        console.log(`Attempting to use model: ${model}`);
-        response = await deepseekApi.post('/chat/completions', payload);
-        if (response.data?.choices?.[0]?.message?.content) {
-          console.log(`Successfully used model: ${model}`);
-          break;
-        }
-      } catch (err) {
-        console.warn(`Model ${model} failed:`, err.message);
-        lastError = err;
-        
-        // Add delay before trying next model to avoid rate limiting
-        if (i < modelsList.length - 1) {
-          console.log('Waiting 2 seconds before trying next model...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-      }
-    }
-    
-    if (!response || !response.data?.choices?.[0]?.message?.content) {
-      throw new Error(lastError ? `All models failed. Last error: ${lastError.message}` : 'All models failed to generate an interpretation.');
-    }
-
-    const rawContent = response.data.choices[0].message.content;
-    
-    // For remedies requests, try to extract JSON
+    // Always try to extract JSON from the response
     let processedContent = rawContent;
-    if (chartData.focus === 'remedies') {
-      const extractedJson = extractJsonFromResponse(rawContent);
-      if (extractedJson) {
-        processedContent = JSON.stringify(extractedJson);
-      }
+    const extractedJson = extractJsonFromResponse(rawContent);
+    if (extractedJson) {
+      processedContent = JSON.stringify(extractedJson);
+    } else {
+      // If JSON extraction fails, try to clean up the response
+      processedContent = rawContent.replace(/^.*?\{/, '{').replace(/\}[^}]*$/, '}');
     }
     
     return {
       success: true,
       interpretation: processedContent,
-      usage: response.data.usage,
-      model: response.data.model,
+      model: CLOUD_AI_CONFIG.model,
       timestamp: new Date().toISOString(),
-      provider: 'OpenRouter'
+      provider: 'OpenRouter (Cloud) - Pending Configuration'
     };
 
   } catch (error) {
-    console.error('DeepSeek API Error:', error);
+    console.error('Backend AI Error:', error);
     return {
       success: false,
       error: error.message || 'Failed to generate astrological interpretation',
@@ -306,54 +248,41 @@ export const generateAstrologicalInterpretation = async (chartData, options = {}
   }
 };
 
-// Validate API key with OpenRouter
+// Validate API connectivity with backend AI service
 export const validateApiKey = async () => {
   try {
-    if (!DEEPSEEK_API_KEY) {
-      return {
-        valid: false,
-        error: 'API key not configured'
-      };
-    }
-
-    // Test the API key with a simple request
-    const response = await deepseekApi.get('/models');
+    // Test the backend AI service with a simple request
+    const testPrompt = 'Hello';
+    await callBackendAI(testPrompt);
     
     return {
       valid: true,
-      models: response.data?.data || [],
+      model: CLOUD_AI_CONFIG.model,
       timestamp: new Date().toISOString(),
-      provider: 'OpenRouter'
+      provider: 'OpenRouter (Cloud) - Pending Configuration'
     };
 
   } catch (error) {
     return {
       valid: false,
-      error: error.message || 'Failed to validate API key',
+      error: error.message || 'Failed to validate backend AI connection',
       timestamp: new Date().toISOString()
     };
   }
 };
 
-// Get API usage statistics from OpenRouter
+// Get API usage statistics (cloud AI ready for configuration)
 export const getApiUsage = async () => {
   try {
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error('API key not configured');
-    }
-
-    // OpenRouter provides usage info in response headers
-    const response = await deepseekApi.get('/models');
-    
     return {
       success: true,
       usage: {
-        credits_used: response.headers['x-ratelimit-remaining-requests'] || 'unknown',
-        credits_remaining: response.headers['x-ratelimit-limit-requests'] || 'unknown',
-        reset_time: response.headers['x-ratelimit-reset-requests'] || 'unknown'
+        note: 'Cloud AI integration ready - configure OpenRouter API key',
+        model: CLOUD_AI_CONFIG.model,
+        rate_limit: 'Cloud provider rate limits apply'
       },
       timestamp: new Date().toISOString(),
-      provider: 'OpenRouter'
+      provider: 'OpenRouter (Cloud) - Pending Configuration'
     };
 
   } catch (error) {
@@ -366,126 +295,103 @@ export const getApiUsage = async () => {
   }
 };
 
-// Generate birth chart data from manual input
+// Generate birth chart data from manual input using local AI
 export const generateBirthChart = async (birthDetails, options = {}) => {
   try {
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error('DeepSeek API key is not configured.');
-    }
-
     const { name, dateOfBirth, timeOfBirth, placeOfBirth } = birthDetails;
 
-    const payload = {
-      model: 'deepseek/deepseek-r1',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert Vedic astrologer with comprehensive knowledge of:
-          - Astronomical calculations for planetary positions
-          - Ayanamsa calculations (Lahiri Ayanamsa preferred)
-          - Traditional Vedic house systems
-          - Vimshottari Dasha calculations
-          - Chart construction principles
-          
-          Calculate birth chart details accurately based on the provided birth information.`
-        },
-        {
-          role: 'user',
-          content: `Calculate a comprehensive Vedic birth chart (Janma Kundli) for the following birth details:
-
-          **Birth Information:**
-          - Name: ${name}
-          - Date of Birth: ${dateOfBirth}
-          - Time of Birth: ${timeOfBirth}
-          - Place of Birth: ${placeOfBirth}
-
-          Please provide the calculations in the following JSON format:
-
-          {
-            "birth_details": {
-              "name": "${name}",
-              "date_of_birth": "${dateOfBirth}",
-              "time_of_birth": "${timeOfBirth}",
-              "place_of_birth": "${placeOfBirth}",
-              "coordinates": "latitude, longitude (if determinable)",
-              "timezone": "local timezone"
-            },
-            "lagna_chart": {
-              "ascendant": {
-                "sign": "ascendant sign",
-                "degree": "degree and minutes",
-                "house": 1
-              },
-              "planetary_positions": {
-                "Sun": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Moon": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Mars": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Mercury": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Jupiter": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Venus": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Saturn": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Rahu": {"sign": "sign", "degree": "degree", "house": "house_number"},
-                "Ketu": {"sign": "sign", "degree": "degree", "house": "house_number"}
-              }
-            },
-            "navamsa_chart": {
-              "planetary_positions": {
-                "Sun": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Moon": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Mars": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Mercury": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Jupiter": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Venus": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Saturn": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Rahu": {"sign": "navamsa_sign", "house": "navamsa_house"},
-                "Ketu": {"sign": "navamsa_sign", "house": "navamsa_house"}
-              }
-            },
-            "vimshottari_dasha": {
-              "current_mahadasha": {
-                "planet": "current ruling planet",
-                "start_date": "start date",
-                "end_date": "end date",
-                "remaining_years": "years remaining"
-              },
-              "current_antardasha": {
-                "planet": "current sub-period planet",
-                "start_date": "start date",
-                "end_date": "end date"
-              },
-              "dasha_sequence": [
-                {"planet": "planet1", "duration": "duration in years", "start_date": "date", "end_date": "date"},
-                {"planet": "planet2", "duration": "duration in years", "start_date": "date", "end_date": "date"}
-              ]
-            },
-            "special_yogas": [
-              {"name": "yoga name", "description": "brief description", "effects": "positive/negative effects"}
-            ],
-            "calculation_notes": "Any important notes about the calculations or assumptions made"
-          }
-
-          Provide accurate calculations based on standard Vedic astrology principles using Lahiri Ayanamsa.`
-        }
-      ],
-      max_tokens: 5000,
-      temperature: 0.1,
-      stream: false,
-      ...options
-    };
-
-    const response = await deepseekApi.post('/chat/completions', payload);
+    const prompt = `You are an expert Vedic astrologer with comprehensive knowledge of:
+    - Astronomical calculations for planetary positions
+    - Ayanamsa calculations (Lahiri Ayanamsa preferred)
+    - Traditional Vedic house systems
+    - Vimshottari Dasha calculations
+    - Chart construction principles
     
-    if (!response.data?.choices?.[0]?.message?.content) {
-      throw new Error('Invalid response format from OpenRouter API');
+    Calculate birth chart details accurately based on the provided birth information.
+
+    Calculate a comprehensive Vedic birth chart (Janma Kundli) for the following birth details:
+
+    **Birth Information:**
+    - Name: ${name}
+    - Date of Birth: ${dateOfBirth}
+    - Time of Birth: ${timeOfBirth}
+    - Place of Birth: ${placeOfBirth}
+
+    Please provide the calculations in the following JSON format:
+
+    {
+      "birth_details": {
+        "name": "${name}",
+        "date_of_birth": "${dateOfBirth}",
+        "time_of_birth": "${timeOfBirth}",
+        "place_of_birth": "${placeOfBirth}",
+        "coordinates": "latitude, longitude (if determinable)",
+        "timezone": "local timezone"
+      },
+      "lagna_chart": {
+        "ascendant": {
+          "sign": "ascendant sign",
+          "degree": "degree and minutes",
+          "house": 1
+        },
+        "planetary_positions": {
+          "Sun": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Moon": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Mars": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Mercury": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Jupiter": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Venus": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Saturn": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Rahu": {"sign": "sign", "degree": "degree", "house": "house_number"},
+          "Ketu": {"sign": "sign", "degree": "degree", "house": "house_number"}
+        }
+      },
+      "navamsa_chart": {
+        "planetary_positions": {
+          "Sun": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Moon": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Mars": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Mercury": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Jupiter": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Venus": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Saturn": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Rahu": {"sign": "navamsa_sign", "house": "navamsa_house"},
+          "Ketu": {"sign": "navamsa_sign", "house": "navamsa_house"}
+        }
+      },
+      "vimshottari_dasha": {
+        "current_mahadasha": {
+          "planet": "current ruling planet",
+          "start_date": "start date",
+          "end_date": "end date",
+          "remaining_years": "years remaining"
+        },
+        "current_antardasha": {
+          "planet": "current sub-period planet",
+          "start_date": "start date",
+          "end_date": "end date"
+        },
+        "dasha_sequence": [
+          {"planet": "planet1", "duration": "duration in years", "start_date": "date", "end_date": "date"},
+          {"planet": "planet2", "duration": "duration in years", "start_date": "date", "end_date": "date"}
+        ]
+      },
+      "special_yogas": [
+        {"name": "yoga name", "description": "brief description", "effects": "positive/negative effects"}
+      ],
+      "calculation_notes": "Any important notes about the calculations or assumptions made"
     }
+
+    Provide accurate calculations based on standard Vedic astrology principles using Lahiri Ayanamsa.`;
+
+    const chartData = await callBackendAI(prompt);
 
     return {
       success: true,
-      chartData: response.data.choices[0].message.content,
-      usage: response.data.usage,
-      model: response.data.model,
+      chartData: chartData,
+      model: CLOUD_AI_CONFIG.model,
       timestamp: new Date().toISOString(),
-      provider: 'OpenRouter'
+      provider: 'OpenRouter (Cloud) - Pending Configuration'
     };
 
   } catch (error) {
@@ -498,4 +404,4 @@ export const generateBirthChart = async (birthDetails, options = {}) => {
   }
 };
 
-export default deepseekApi;
+export default backendApi;

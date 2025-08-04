@@ -1,20 +1,25 @@
 import React, { useState } from 'react';
 import Icon from '../../../components/AppIcon';
 import Button from '../../../components/ui/Button';
+import PlanetaryAspects from './PlanetaryAspects';
 
 const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
+  // Debug logging to identify the issue
+  console.log('🪐 PlanetaryTable received planetaryData:', planetaryData);
+  console.log('🎯 Aspects data structure:', {
+    hasAspects: !!planetaryData?.aspects,
+    aspectsKeys: planetaryData?.aspects ? Object.keys(planetaryData.aspects) : [],
+    planetaryAspects: planetaryData?.aspects?.planetaryAspects,
+    planetaryAspectsLength: planetaryData?.aspects?.planetaryAspects?.length || 0,
+    houseAspects: planetaryData?.aspects?.houseAspects,
+    strongestAspects: planetaryData?.aspects?.strongestAspects
+  });
   const [sortBy, setSortBy] = useState('planet');
   const [sortOrder, setSortOrder] = useState('asc');
   const [showDegrees, setShowDegrees] = useState(true);
-  const [showAspects, setShowAspects] = useState(true);
-  const [showHouses, setShowHouses] = useState(true);
-
-  // Extract planets and aspects from the data
-  const planets = planetaryData?.planets || planetaryData || [];
-  const aspects = planetaryData?.aspects || [];
+  const planets = Array.isArray(planetaryData) ? planetaryData : (planetaryData?.planets || []);
   const houses = planetaryData?.charts?.lagna?.houses || [];
-
-  // Planet symbols and colors for display
+  
   const planetInfo = {
     'Sun': { symbol: '☉', color: 'text-orange-500', description: 'Soul, ego, vitality' },
     'Moon': { symbol: '☽', color: 'text-blue-400', description: 'Mind, emotions, intuition' },
@@ -27,15 +32,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
     'Ketu': { symbol: '☋', color: 'text-gray-500', description: 'Liberation, past karma' }
   };
 
-  // Nakshatra information
-  const nakshatras = [
-    'Ashwini', 'Bharani', 'Krittika', 'Rohini', 'Mrigashira', 'Ardra',
-    'Punarvasu', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Uttara Phalguni',
-    'Hasta', 'Chitra', 'Swati', 'Vishakha', 'Anuradha', 'Jyeshtha',
-    'Moola', 'Purva Ashadha', 'Uttara Ashadha', 'Shravana', 'Dhanishta', 'Shatabhisha',
-    'Purva Bhadrapada', 'Uttara Bhadrapada', 'Revati'
-  ];
-
   const formatDate = (date) => {
     return date.toLocaleDateString('en-US', {
       weekday: 'long',
@@ -45,16 +41,11 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
     });
   };
 
-  // Function to get house number for a planet
   const getPlanetHouse = (planet) => {
-    // Use house number from planet data if available
     if (planet.house) {
       return planet.house;
     }
-    
-    // Fallback to searching in houses array
     if (!houses || houses.length === 0) return 'N/A';
-    
     for (let i = 0; i < houses.length; i++) {
       const house = houses[i];
       if (house.planets && house.planets.includes(planet.name)) {
@@ -62,15 +53,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
       }
     }
     return 'N/A';
-  };
-
-  // Function to get planetary aspects for a specific planet
-  const getPlanetAspects = (planetName) => {
-    if (!aspects || aspects.length === 0) return [];
-    
-    return aspects.filter(aspect => 
-      aspect.planet1 === planetName || aspect.planet2 === planetName
-    );
   };
 
   const sortedData = planets ? [...planets].sort((a, b) => {
@@ -142,7 +124,7 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
     );
   }
 
-  return (
+return (
     <div className="bg-surface border border-border rounded-xl shadow-strong overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-accent/5 to-primary/5 border-b border-border p-6">
@@ -173,18 +155,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
             >
               {showDegrees ? 'Hide' : 'Show'} Degrees
             </Button>
-            {aspects.length > 0 && (
-              <Button
-                variant={showAspects ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={() => setShowAspects(!showAspects)}
-                iconName="Zap"
-                iconPosition="left"
-                className="text-xs"
-              >
-                {showAspects ? 'Hide' : 'Show'} Aspects
-              </Button>
-            )}
           </div>
         </div>
 
@@ -248,9 +218,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
 <th className="px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider cursor-pointer hover:bg-surface-secondary/50 transition-colors">
                 House
               </th>
-              <th className="px-6 py-4 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Aspects
-              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -309,20 +276,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
                   {getPlanetHouse(planet)}
                 </span>
               </td>
-              
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="space-y-1">
-                  {getPlanetAspects(planet.name).slice(0, 3).map((aspect, idx) => (
-                    <div key={idx} className="text-xs bg-accent/10 text-accent px-2 py-1 rounded">
-                      {aspect.planet1 === planet.name ? aspect.planet2 : aspect.planet1} 
-                      <span className="text-text-muted">({aspect.aspect})</span>
-                    </div>
-                  ))}
-                  {getPlanetAspects(planet.name).length > 3 && (
-                    <div className="text-xs text-text-muted">+{getPlanetAspects(planet.name).length - 3} more</div>
-                  )}
-                </div>
-              </td>
                 </tr>
               );
             })}
@@ -338,12 +291,6 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
               <Icon name="Info" size={14} />
               <span>Total Planets: {planets.length}</span>
             </div>
-            {aspects.length > 0 && (
-              <div className="flex items-center space-x-1">
-                <Icon name="Zap" size={14} />
-                <span>Aspects: {aspects.length}</span>
-              </div>
-            )}
             <div className="flex items-center space-x-1">
               <Icon name="Zap" size={14} />
               <span>Calculations: Swiss Ephemeris</span>
@@ -364,97 +311,12 @@ const PlanetaryTable = ({ planetaryData, selectedDate, location }) => {
         </div>
       </div>
 
-      {/* Aspects Section */}
-      {showAspects && aspects.length > 0 && (
-        <div className="border-t border-border bg-surface-secondary">
-          <div className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-8 h-8 bg-accent/10 rounded-full flex items-center justify-center">
-                <Icon name="Zap" size={16} className="text-accent" />
-              </div>
-              <div>
-                <h3 className="text-lg font-heading font-semibold text-text-primary">
-                  Planetary Aspects
-                </h3>
-                <p className="text-sm text-text-secondary">
-                  Major aspects between planets in this chart
-                </p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {aspects.map((aspect, index) => {
-                const getAspectColor = (aspectName) => {
-                  const colors = {
-                    'Conjunction': 'text-red-500 bg-red-50 border-red-200',
-                    'Opposition': 'text-blue-500 bg-blue-50 border-blue-200',
-                    'Trine': 'text-green-500 bg-green-50 border-green-200',
-                    'Square': 'text-orange-500 bg-orange-50 border-orange-200',
-                    'Sextile': 'text-purple-500 bg-purple-50 border-purple-200',
-                    'Quincunx': 'text-yellow-600 bg-yellow-50 border-yellow-200'
-                  };
-                  return colors[aspectName] || 'text-gray-500 bg-gray-50 border-gray-200';
-                };
-                
-                const getAspectSymbol = (aspectName) => {
-                  const symbols = {
-                    'Conjunction': '☌',
-                    'Opposition': '☍',
-                    'Trine': '△',
-                    'Square': '□',
-                    'Sextile': '⚹',
-                    'Quincunx': '⚻'
-                  };
-                  return symbols[aspectName] || '◯';
-                };
-                
-                return (
-                  <div 
-                    key={index}
-                    className={`p-4 rounded-lg border ${getAspectColor(aspect.aspect)}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg font-semibold">
-                          {getAspectSymbol(aspect.aspect)}
-                        </span>
-                        <span className="font-medium text-sm">
-                          {aspect.aspect}
-                        </span>
-                      </div>
-                      <span className="text-xs font-mono bg-white/50 px-2 py-1 rounded">
-                        {typeof aspect.orb === 'number' ? aspect.orb.toFixed(1) : '0.0'}°
-                      </span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm">
-                      <div className="flex items-center space-x-1">
-                        <span className={planetInfo[aspect.planet1]?.color || 'text-text-primary'}>
-                          {planetInfo[aspect.planet1]?.symbol || '●'}
-                        </span>
-                        <span className="font-medium">{aspect.planet1}</span>
-                      </div>
-                      
-                      <Icon name="ArrowRight" size={12} className="text-text-muted" />
-                      
-                      <div className="flex items-center space-x-1">
-                        <span className={planetInfo[aspect.planet2]?.color || 'text-text-primary'}>
-                          {planetInfo[aspect.planet2]?.symbol || '●'}
-                        </span>
-                        <span className="font-medium">{aspect.planet2}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-2 text-xs text-text-muted">
-                      Orb: {typeof aspect.orb === 'number' && aspect.orb > 0 ? '+' : ''}{typeof aspect.orb === 'number' ? aspect.orb.toFixed(2) : '0.00'}° 
-                      {aspect.isApplying ? '(Applying)' : '(Separating)'}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+      {/* Unified Planetary Aspects Section */}
+      {planetaryData?.aspects?.houseAspects && Object.keys(planetaryData.aspects.houseAspects).length > 0 && (
+        <PlanetaryAspects planetaryData={{
+          houseAspects: planetaryData.aspects.houseAspects,
+          planets: planets
+        }} />
       )}
     </div>
   );

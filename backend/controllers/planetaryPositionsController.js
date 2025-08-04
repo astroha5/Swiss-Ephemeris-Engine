@@ -80,8 +80,10 @@ const planetaryPositionsController = {
       // Calculate house positions for chart
       const housePositions = enhancedSwissEphemeris.calculateHousePositions(planetaryData.planets, ascendant);
 
-      // Calculate aspects
-      const aspects = aspectsService.calculateAspects(planetaryData.planets);
+      // Calculate aspects using Vedic system
+      const planetaryAspects = aspectsService.calculateAspects(planetaryData.planets, ascendant.longitude);
+      const houseAspects = aspectsService.calculatePlanetaryAspectsToHouses(planetaryData.planets, ascendant.longitude);
+      const strongestAspects = aspectsService.getStrongestAspects(planetaryAspects, 10);
 
       // Format response with the correct data structure
       const response = {
@@ -116,7 +118,16 @@ const planetaryPositionsController = {
               house: houseNumber
             };
           }),
-          aspects: aspects,
+          aspects: {
+            planetaryAspects: planetaryAspects,
+            houseAspects: houseAspects,
+            strongestAspects: strongestAspects,
+            summary: {
+              totalPlanetaryAspects: planetaryAspects.length,
+              planetsWithHouseAspects: Object.keys(houseAspects).length,
+              rahuKetuSpecialAspectsEnabled: aspectsService.config.enableRahuKetuSpecialAspects
+            }
+          },
           charts: {
             lagna: {
               houses: housePositions,

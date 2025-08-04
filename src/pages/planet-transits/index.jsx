@@ -78,7 +78,7 @@ const PlanetTransit = () => {
   };
 
   const getAngularStatus = (transit) => {
-    // Calculate angular relationships with other planets
+    // Calculate Vedic aspects with other planets
     const aspects = [];
     if (transitData?.transits) {
       const currentDate = new Date(transit.ingressDate);
@@ -87,20 +87,34 @@ const PlanetTransit = () => {
         Math.abs(new Date(t.ingressDate) - currentDate) < 7 * 24 * 60 * 60 * 1000 // Within a week
       );
       
+      // Vedic aspect rules
+      const vedicAspects = {
+        'Mars': [4, 7, 8],
+        'Jupiter': [5, 7, 9], 
+        'Saturn': [3, 7, 10],
+        'Sun': [7],
+        'Moon': [7],
+        'Mercury': [7],
+        'Venus': [7],
+        'Rahu': [7],
+        'Ketu': [7]
+      };
+      
+      const aspectRules = vedicAspects[transit.planet] || [7];
+      
       sameDayTransits.forEach(otherTransit => {
-        const degreesDiff = Math.abs(transit.degreeInSign - otherTransit.degreeInSign);
         const signsDiff = getSignDistance(transit.toSign, otherTransit.toSign);
         
-        if (degreesDiff < 8 && signsDiff === 0) {
-          aspects.push({ type: 'conjunction', planet: otherTransit.planet, orb: degreesDiff });
-        } else if (Math.abs(signsDiff * 30 + degreesDiff - 180) < 8) {
-          aspects.push({ type: 'opposition', planet: otherTransit.planet, orb: Math.abs(signsDiff * 30 + degreesDiff - 180) });
-        } else if (Math.abs(signsDiff * 30 + degreesDiff - 120) < 8) {
-          aspects.push({ type: 'trine', planet: otherTransit.planet, orb: Math.abs(signsDiff * 30 + degreesDiff - 120) });
-        } else if (Math.abs(signsDiff * 30 + degreesDiff - 90) < 8) {
-          aspects.push({ type: 'square', planet: otherTransit.planet, orb: Math.abs(signsDiff * 30 + degreesDiff - 90) });
-        } else if (Math.abs(signsDiff * 30 + degreesDiff - 60) < 6) {
-          aspects.push({ type: 'sextile', planet: otherTransit.planet, orb: Math.abs(signsDiff * 30 + degreesDiff - 60) });
+        // Check if the sign distance matches any Vedic aspect
+        if (aspectRules.includes(signsDiff)) {
+          const aspectName = signsDiff === 7 ? 'Opposition' : `${signsDiff}th House Aspect`;
+          const degreesDiff = Math.abs(transit.degreeInSign - otherTransit.degreeInSign);
+          aspects.push({ 
+            type: aspectName.toLowerCase().replace(/[^a-z]/g, ''), 
+            planet: otherTransit.planet, 
+            orb: degreesDiff,
+            houseDistance: signsDiff
+          });
         }
       });
     }
@@ -111,27 +125,35 @@ const PlanetTransit = () => {
     const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
     const index1 = signs.indexOf(sign1);
     const index2 = signs.indexOf(sign2);
-    return Math.min(Math.abs(index1 - index2), 12 - Math.abs(index1 - index2));
+    let distance = index2 - index1;
+    if (distance <= 0) distance += 12;
+    return distance;
   };
 
   const getAspectIcon = (aspectType) => {
     const icons = {
-      conjunction: '☌',
       opposition: '☍',
-      trine: '△',
-      square: '□',
-      sextile: '⚹'
+      '3rdhouseaspect': '3',
+      '4thhouseaspect': '4', 
+      '5thhouseaspect': '5',
+      '7thhouseaspect': '☍',
+      '8thhouseaspect': '8',
+      '9thhouseaspect': '9',
+      '10thhouseaspect': '10'
     };
-    return icons[aspectType] || '•';
+    return icons[aspectType] || '◯';
   };
 
   const getAspectColor = (aspectType) => {
     const colors = {
-      conjunction: 'text-purple-600',
       opposition: 'text-red-500',
-      trine: 'text-green-500',
-      square: 'text-orange-500',
-      sextile: 'text-blue-500'
+      '3rdhouseaspect': 'text-orange-500',
+      '4thhouseaspect': 'text-orange-600',
+      '5thhouseaspect': 'text-green-500',
+      '7thhouseaspect': 'text-red-500',
+      '8thhouseaspect': 'text-purple-600',
+      '9thhouseaspect': 'text-green-600',
+      '10thhouseaspect': 'text-blue-600'
     };
     return colors[aspectType] || 'text-gray-500';
   };

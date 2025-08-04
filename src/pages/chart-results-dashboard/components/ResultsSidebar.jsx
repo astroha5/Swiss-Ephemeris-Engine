@@ -43,6 +43,12 @@ const ResultsSidebar = ({ activeSection, onSectionChange, isMobile = false }) =>
       description: 'Comprehensive life analysis'
     },
     {
+      id: 'astrological-qa',
+      label: 'Astrological Q&A',
+      icon: 'MessageSquare',
+      description: 'Ask questions about your chart'
+    },
+    {
       id: 'remedies',
       label: 'Remedies',
       icon: 'Shield',
