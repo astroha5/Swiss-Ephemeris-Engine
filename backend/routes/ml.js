@@ -27,8 +27,9 @@ router.post('/risk-assessment', async (req, res) => {
     // Default date to current if not provided
     const targetDate = date ? new Date(date) : new Date();
     
-    // Generate ML-based risk assessment
-    const riskAssessment = await mlAnalyticsService.predictCurrentRiskLevel(
+    // Generate ML-based risk assessment using instance
+    const mlService = new mlAnalyticsService();
+    const riskAssessment = await mlService.predictCurrentRiskLevel(
       null, // Let service fetch current planetary data
       {
         location: targetLocation,
@@ -189,10 +190,12 @@ router.post('/train', async (req, res) => {
     
     const { categories, retrain, options } = req.body;
     
-    // Start training process
-    const trainingResult = await mlAnalyticsService.trainPredictiveModels({
-      categories: categories || ['financial', 'political', 'natural_disaster', 'pandemic'],
-      retrain: retrain || false,
+    // Start training process using groupHistoricalEventsByCategory
+    const mlService = new mlAnalyticsService();
+    const trainingResult = await mlService.groupHistoricalEventsByCategory({
+      start_date: options?.start_date || '2000-01-01',
+      end_date: options?.end_date || new Date().toISOString(),
+      min_impact_level: options?.min_impact_level || 'medium',
       ...options
     });
     
