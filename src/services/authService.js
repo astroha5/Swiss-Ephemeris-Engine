@@ -1,9 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Use explicit Vite env vars in production (Render) with safe fallbacks for dev
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ypscvzznlrxjeqkjasmb.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlwc2N2enpubHJ4amVxa2phc21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNjk1NzIsImV4cCI6MjA2ODg0NTU3Mn0.KIe0Rqk5WC27hIyrgWHjS1aMaU2U2UcmrDJMq4q6H6w';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+/**
+ * Create Supabase client with robust browser auth settings.
+ * - persistSession: true to keep the session across reloads
+ * - autoRefreshToken: true for rotating refresh tokens
+ * - detectSessionInUrl: handle OAuth/magic-link redirects
+ * - storage: window.localStorage (only in browser)
+ */
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined
+  }
+});
 
 /**
  * Handle user sign-up with email and password
@@ -108,6 +123,11 @@ export async function signOut() {
  */
 export async function getUser() {
   try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    // If no session yet (fresh load), return null rather than throwing
+    if (!session) return null;
+
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
     return user;
@@ -135,7 +155,11 @@ export async function getSession() {
  * Listen to auth state changes
  */
 export function onAuthStateChange(callback) {
-  return supabase.auth.onAuthStateChange(callback);
+  // Wrap to normalize callback signature and avoid undefined subscription issues
+  const sub = supabase.auth.onAuthStateChange((event, session) => {
+    callback(event, session);
+  });
+  return sub;
 }
 
 /**

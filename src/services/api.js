@@ -4,10 +4,10 @@ import axios from 'axios';
 // Environment-based API URL configuration:
 // - Development: Uses localhost:3001 (from .env.local)
 // - Production: Uses https://astrova-backend.onrender.com (from .env.production)
-const API_BASE_URL = import.meta.env.VITE_API_URL || (
-  import.meta.env.PROD 
-    ? 'https://astrova-backend.onrender.com' 
-    : 'http://localhost:3001'
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL // preferred explicit base for Render multi-service
+  || import.meta.env.VITE_API_URL   // backward-compat for older env var name
+  || (import.meta.env.PROD ? 'https://astrova-backend.onrender.com' : 'http://localhost:3001')
 );
 
 // Log the current API configuration for debugging
@@ -17,6 +17,22 @@ console.log('🔗 API Configuration:', {
   isProduction: import.meta.env.PROD,
   isDevelopment: import.meta.env.DEV
 });
+
+/**
+ * Defensive JSON helper for fetch paths that don't use axios instance.
+ */
+async function safeJson(res) {
+  const ct = res.headers.get?.('content-type') || '';
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`API ${res.status} ${res.statusText}: ${text.slice(0, 200)}`);
+  }
+  if (!ct.includes('application/json')) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`API returned non-JSON: ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
 
 // Create axios instance for backend API
 const api = axios.create({
@@ -348,7 +364,7 @@ export const getPlanetaryEvents = async (filters = {}) => {
       Object.fromEntries(Object.entries(filters).filter(([_, value]) => value))
     );
     
-    const response = await api.get(`/api/planetary-events/events?${queryParams}`);
+    const response = await api.get(`/api/planetary-events/events?${queryParams.toString()}`);
     
     if (!response.data || !response.data.success) {
       throw new Error(response.data?.error || 'Failed to fetch planetary events');
@@ -408,7 +424,8 @@ export const createPlanetaryEvent = async (eventData) => {
  */
 export const getTodayRiskAssessment = async (latitude = 0, longitude = 0) => {
   try {
-    const response = await api.get(`/api/planetary-events/today-risk?lat=${latitude}&lon=${longitude}`);
+    const params = new URLSearchParams({ lat: String(latitude), lon: String(longitude) }).toString();
+    const response = await api.get(`/api/planetary-events/today-risk?${params}`);
     
     if (!response.data || !response.data.success) {
       throw new Error(response.data?.error || 'Failed to get risk assessment');
@@ -583,11 +600,7 @@ export const getMonthlyPredictions = async (requestData) => {
       })
     });
 
-    if (!monthlyPredictionResponse.ok) {
-      throw new Error(`HTTP error! status: ${monthlyPredictionResponse.status}`);
-    }
-
-    const predictionApiResponse = await monthlyPredictionResponse.json();
+    const predictionApiResponse = await safeJson(monthlyPredictionResponse);
 
     if (!predictionApiResponse.success) {
       throw new Error('Failed to get AI prediction data: ' + predictionApiResponse.error);
@@ -616,11 +629,7 @@ export const getMonthlyPredictions = async (requestData) => {
       })
     });
     
-    if (!planetaryResponse.ok) {
-      throw new Error(`HTTP error! status: ${planetaryResponse.status}`);
-    }
-    
-    const apiResponse = await planetaryResponse.json();
+    const apiResponse = await safeJson(planetaryResponse);
     
     if (!apiResponse.success) {
       throw new Error('Failed to get real planetary data: ' + apiResponse.error);
@@ -787,11 +796,7 @@ export const getPlanetaryTransits = async (year, timezone = 'UTC') => {
       body: JSON.stringify({ year, timezone })
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
+    const data = await safeJson(response);
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to get transit data');
@@ -831,11 +836,7 @@ export const getMonthlyTransits = async (month, year, timezone = 'UTC') => {
       body: JSON.stringify({ month, year, timezone })
     });
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
+    const data = await safeJson(response);
     
     if (!data.success) {
       throw new Error(data.error || 'Failed to get monthly transit data');
