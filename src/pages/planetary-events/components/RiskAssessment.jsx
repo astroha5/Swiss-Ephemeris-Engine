@@ -267,26 +267,12 @@ const RiskAssessment = () => {
                 <div>
                   <h4 className="font-semibold mb-1">Interpretation:</h4>
                   <p className="text-sm leading-relaxed">
-                    {riskData.risk_level === 'extreme' && "Very high chance of significant events related to economy, politics, or global affairs."}
-                    {riskData.risk_level === 'high' && "Elevated probability of notable developments in financial markets or international relations."}
-                    {riskData.risk_level === 'medium' && "Moderate likelihood of important news or market movements worth monitoring."}
-                    {riskData.risk_level === 'low' && "Low probability of major disruptions; generally stable cosmic conditions."}
+                    {riskData.interpretation}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-start gap-3">
-                <span className="text-xl mt-1">🧘</span>
-                <div>
-                  <h4 className="font-semibold mb-1">Recommendation:</h4>
-                  <p className="text-sm leading-relaxed">
-                    {riskData.risk_level === 'extreme' && "Stay well-informed through reliable news sources and avoid making impulsive financial or personal decisions today."}
-                    {riskData.risk_level === 'high' && "Keep an eye on current events and exercise extra caution with important decisions."}
-                    {riskData.risk_level === 'medium' && "A good day to stay aware of developments while proceeding with normal activities."}
-                    {riskData.risk_level === 'low' && "Favorable conditions for planning and implementing new projects or decisions."}
-                  </p>
-                </div>
-              </div>
+              
             </div>
           </motion.div>
 
@@ -323,7 +309,7 @@ const RiskAssessment = () => {
             </div>
           </motion.div>
 
-          {/* Matching Patterns */}
+          {/* Combined Historical Insights */}
           {riskData.matching_patterns && riskData.matching_patterns.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -331,14 +317,139 @@ const RiskAssessment = () => {
               transition={{ delay: 0.2 }}
               className="bg-white rounded-xl shadow-lg p-6"
             >
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                🎯 Matching Historical Patterns
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  🎯 Historical Insights
+                </h3>
+                <span className="text-xs text-gray-500">
+                  {riskData.matching_patterns?.length || 0} matching patterns
+                </span>
+              </div>
+
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <p className="text-sm text-blue-800">
                   <strong>What are Historical Patterns?</strong> These are specific planetary configurations that have coincided with significant world events in the past. We analyze current cosmic conditions against our database of historical correlations to assess potential influences.
                 </p>
               </div>
+
+              {/* Summary row previously in "Historical Context" */}
+              <div className="space-y-4 text-sm text-gray-700 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Total Matching Patterns</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {riskData.matching_patterns?.length || 0}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Avg. Pattern Risk</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {(() => {
+                        const pats = riskData.matching_patterns || [];
+                        if (!pats.length) return '—';
+                        const avg = pats.reduce((s, p) => s + (Number(p.risk_level) || 0), 0) / pats.length;
+                        return avg.toFixed(2) + '/10';
+                      })()}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Avg. Match Strength</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {(() => {
+                        const pats = riskData.matching_patterns || [];
+                        if (!pats.length) return '—';
+                        const avg = pats.reduce((s, p) => s + (Number(p.match_strength) || 0), 0) / pats.length;
+                        return avg.toFixed(1) + '%';
+                      })()}
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500">Avg. Historical Success</div>
+                    <div className="text-lg font-semibold text-gray-900">
+                      {(() => {
+                        const pats = riskData.matching_patterns || [];
+                        if (!pats.length) return '—';
+                        const avg = pats.reduce((s, p) => s + (Number(p.success_rate) || 0), 0) / pats.length;
+                        return avg.toFixed(1) + '%';
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top patterns and common planets */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-2">Top Patterns Today</div>
+                    <ul className="space-y-2">
+                      {(() => {
+                        const pats = (riskData.matching_patterns || [])
+                          .slice()
+                          .sort((a, b) => (Number(b.match_strength) || 0) - (Number(a.match_strength) || 0))
+                          .slice(0, 3);
+                        if (!pats.length) {
+                          return <li className="text-gray-500 italic">No patterns available</li>;
+                        }
+                        return pats.map((p, idx) => (
+                          <li key={idx} className="flex items-center justify-between bg-gray-50 rounded p-2">
+                            <span className="text-gray-800">
+                              {p.pattern_name
+                                .replace(/_/g, ' ')
+                                .replace(/jupiter/gi, 'Jupiter')
+                                .replace(/mars/gi, 'Mars')
+                                .replace(/venus/gi, 'Venus')
+                                .replace(/saturn/gi, 'Saturn')
+                                .replace(/mercury/gi, 'Mercury')
+                                .replace(/sun/gi, 'Sun')
+                                .replace(/moon/gi, 'Moon')
+                                .replace(/rahu/gi, 'Rahu (North Node)')
+                                .replace(/ketu/gi, 'Ketu (South Node)')
+                                .replace(/financial/gi, 'Economic')
+                                .replace(/events/gi, 'Influences')
+                                .split(' ')
+                                .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                                .join(' ')}
+                            </span>
+                            <span className="text-xs text-gray-600">
+                              Match {p.match_strength}% • Risk {p.risk_level}/10 • Success {p.success_rate}%
+                            </span>
+                          </li>
+                        ));
+                      })()}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-gray-900 mb-2">Common Planetary Involvements</div>
+                    <div className="text-xs text-gray-600">
+                      {(() => {
+                        const pats = riskData.matching_patterns || [];
+                        if (!pats.length) return 'No data';
+                        const planetKeys = ['sun','moon','mercury','venus','mars','jupiter','saturn','rahu','ketu'];
+                        const counts = {};
+                        pats.forEach(p => {
+                          const name = (p.pattern_name || '').toLowerCase();
+                          planetKeys.forEach(pk => {
+                            if (name.includes(pk)) counts[pk] = (counts[pk] || 0) + 1;
+                          });
+                        });
+                        const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,5);
+                        if (!sorted.length) return 'No identifiable planetary references in pattern names';
+                        return (
+                          <ul className="flex flex-wrap gap-2">
+                            {sorted.map(([k, v]) => (
+                              <li key={k} className="bg-gray-100 rounded-full px-2 py-1">
+                                {k.charAt(0).toUpperCase() + k.slice(1)}: {v}
+                              </li>
+                            ))}
+                          </ul>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Detailed per-pattern list with expandable historical events */}
               <div className="space-y-4">
                 {riskData.matching_patterns.map((pattern, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg p-4">
@@ -382,8 +493,7 @@ const RiskAssessment = () => {
                         Occurrences: {pattern.total_occurrences} {expandedPatterns.has(index) ? '▼' : '▶'}
                       </button>
                     </div>
-                    
-                    {/* Historical Data Section */}
+
                     {expandedPatterns.has(index) && (
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg border-l-4 border-blue-500">
                         <h5 className="font-semibold text-gray-800 mb-3 flex items-center">
@@ -395,8 +505,7 @@ const RiskAssessment = () => {
                             <strong>Pattern Analysis:</strong> This pattern has occurred {pattern.total_occurrences} times 
                             in our historical database with a {pattern.success_rate}% correlation rate.
                           </p>
-                          
-                          {/* Display real historical events fetched from the backend */}
+
                           <div className="bg-white rounded p-3 border">
                             <p className="font-medium text-gray-700 mb-1">Recent Notable Occurrences:</p>
                             <ul className="text-xs text-gray-600 space-y-1">
@@ -414,7 +523,7 @@ const RiskAssessment = () => {
                               )}
                             </ul>
                           </div>
-                          
+
                           <div className="flex items-center justify-between mt-3 pt-2 border-t">
                             <span className="text-xs text-gray-500">Pattern ID: {pattern.pattern_name}</span>
                             <span className="text-xs text-gray-500">Last updated: Today</span>
@@ -425,95 +534,54 @@ const RiskAssessment = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Recent Historical Examples summary moved here */}
+              <div className="mt-6">
+                <div className="font-semibold text-gray-900 mb-2">Recent Historical Examples (Summary)</div>
+                <div className="space-y-2">
+                  {(() => {
+                    const entries = Object.entries(historicalEvents || {});
+                    if (!entries.length) {
+                      return (
+                        <p className="text-xs text-gray-500">
+                          Expand a pattern above to load and preview recent historical occurrences here.
+                        </p>
+                      );
+                    }
+                    return entries.map(([patternId, events]) => {
+                      const ev = Array.isArray(events) && events.length ? events[0] : null;
+                      if (!ev) return null;
+                      const niceName = patternId
+                        .replace(/_/g, ' ')
+                        .split(' ')
+                        .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+                        .join(' ');
+                      return (
+                        <div key={patternId} className="bg-gray-50 rounded p-2 text-xs text-gray-700 flex items-center justify-between">
+                          <span>
+                            <strong>{niceName}:</strong> {ev.title} — {new Date(ev.date).toLocaleDateString()} ({ev.correlation} correlation)
+                          </span>
+                          {ev.source_url && (
+                            <a href={ev.source_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline ml-2">
+                              Source
+                            </a>
+                          )}
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <div className="text-xs text-gray-500 mt-4 p-3 bg-gray-50 rounded">
+                <strong>Disclaimer:</strong> This assessment is for informational purposes only. 
+                Astrological correlations do not guarantee future events and should not be used 
+                as the sole basis for important decisions.
+              </div>
             </motion.div>
           )}
 
-          {/* Risk Factors Breakdown */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            {/* Recommendations */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                💡 Recommendations
-              </h3>
-              <div className="space-y-3">
-                {riskData.risk_level === 'extreme' && (
-                  <>
-                    <div className="flex items-start gap-3">
-                      <span className="text-red-500">⚠️</span>
-                      <p className="text-sm text-gray-700">
-                        Monitor news sources closely for developing situations
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="text-red-500">📊</span>
-                      <p className="text-sm text-gray-700">
-                        Consider defensive positioning in financial markets
-                      </p>
-                    </div>
-                  </>
-                )}
-                {riskData.risk_level === 'high' && (
-                  <>
-                    <div className="flex items-start gap-3">
-                      <span className="text-orange-500">🔍</span>
-                      <p className="text-sm text-gray-700">
-                        Stay informed about global developments
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="text-orange-500">⚖️</span>
-                      <p className="text-sm text-gray-700">
-                        Exercise caution in major decisions
-                      </p>
-                    </div>
-                  </>
-                )}
-                {(riskData.risk_level === 'medium' || riskData.risk_level === 'low') && (
-                  <>
-                    <div className="flex items-start gap-3">
-                      <span className="text-green-500">✅</span>
-                      <p className="text-sm text-gray-700">
-                        Generally stable conditions expected
-                      </p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <span className="text-green-500">📈</span>
-                      <p className="text-sm text-gray-700">
-                        Good time for planning and implementation
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Historical Context */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">
-                📚 Historical Context
-              </h3>
-              <div className="space-y-3 text-sm text-gray-700">
-                <p>
-                  This assessment is based on analysis of {riskData.matching_patterns?.length || 0} 
-                  matching patterns from historical events.
-                </p>
-                <p>
-                  Risk calculations consider planetary positions, aspects, and their 
-                  correlation with past events of various impact levels.
-                </p>
-                <div className="text-xs text-gray-500 mt-4 p-3 bg-gray-50 rounded">
-                  <strong>Disclaimer:</strong> This assessment is for informational purposes only. 
-                  Astrological correlations do not guarantee future events and should not be used 
-                  as the sole basis for important decisions.
-                </div>
-              </div>
-            </div>
-          </motion.div>
+          
 
           {/* Refresh Button */}
           <div className="text-center">

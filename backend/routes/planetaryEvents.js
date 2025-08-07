@@ -447,7 +447,8 @@ router.get('/today-risk', async (req, res) => {
         risk_level: riskLevel,
         matching_patterns: matchingPatterns.slice(0, 5),
         planetary_positions: todayTransits.astroSnapshot,
-        interpretation: generateRiskInterpretation(riskLevel, matchingPatterns.slice(0, 3))
+        interpretation: generateRiskInterpretation(riskLevel, matchingPatterns.slice(0, 3)),
+        recommendation: generateRiskRecommendation(riskLevel, matchingPatterns.slice(0, 3))
       }
     });
 
@@ -607,6 +608,26 @@ function generateRiskInterpretation(riskLevel, patterns = []) {
   }
   
   return interpretation;
+}
+
+/**
+ * Generate risk recommendation text
+ * @param {string} riskLevel - Risk level
+ * @param {Array} patterns - Top patterns
+ * @returns {string} Recommendation text
+ */
+function generateRiskRecommendation(riskLevel, patterns = []) {
+  // Optionally tailor by top pattern categories in future
+  switch (riskLevel) {
+    case 'extreme':
+      return 'Stay well-informed through reliable news sources and avoid making impulsive financial or personal decisions today.';
+    case 'high':
+      return 'Keep an eye on current events and exercise extra caution with important decisions.';
+    case 'medium':
+      return 'Be aware of developments while proceeding with normal activities.';
+    default:
+      return 'Favorable conditions for planning and implementing new projects or decisions.';
+  }
 }
 
 module.exports = router;
