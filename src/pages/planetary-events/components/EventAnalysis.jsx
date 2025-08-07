@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import api from '../../../services/api';
 
 const EventAnalysis = () => {
   const [loading, setLoading] = useState(false);
@@ -35,10 +36,12 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/planetary-events/events?limit=50&offset=${currentOffset}`);
-      const data = await response.json();
+      const response = await api.get('/api/planetary-events/events', {
+        params: { limit: 50, offset: currentOffset }
+      });
+      const data = response.data;
       
-      if (data.success) {
+      if (data?.success) {
         const newEvents = data.data;
         setHasMore(newEvents.length === 50);
 
@@ -89,27 +92,21 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
     
     try {
       const eventIds = eventsNeedingEnhancement.map(e => e.id);
-      const response = await fetch('/api/planetary-events/enhance-planetary-data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          event_ids: eventIds,
-          force_recalculate: false
-        })
+      const { data } = await api.post('/api/planetary-events/enhance-planetary-data', {
+        event_ids: eventIds,
+        force_recalculate: false
       });
-
-      const data = await response.json();
       
-      if (data.success) {
-        setTotalEnhanced(prev => prev + data.enhanced_count);
+      if (data?.success) {
+        setTotalEnhanced(prev => prev + (data.enhanced_count || 0));
         
         // Refresh the events to show updated planetary data
-        const updatedResponse = await fetch(`/api/planetary-events/events?limit=${historicalEvents.length}&offset=0`);
-        const updatedData = await updatedResponse.json();
+        const updatedResponse = await api.get('/api/planetary-events/events', {
+          params: { limit: historicalEvents.length, offset: 0 }
+        });
+        const updatedData = updatedResponse.data;
         
-        if (updatedData.success) {
+        if (updatedData?.success) {
           setHistoricalEvents(updatedData.data);
         }
       }

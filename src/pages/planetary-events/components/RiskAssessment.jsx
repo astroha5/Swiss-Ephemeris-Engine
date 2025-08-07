@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import LocationSearch from '../../../components/LocationSearch';
+import api from '../../../services/api';
 
 const RiskAssessment = () => {
   const [location, setLocation] = useState({
@@ -46,18 +47,18 @@ const RiskAssessment = () => {
     setError(null);
     
     try {
-      const response = await fetch(
-        `/api/planetary-events/today-risk?lat=${location.latitude}&lon=${location.longitude}`
-      );
-      const data = await response.json();
-      
-      if (data.success) {
+      const params = new URLSearchParams({ lat: String(location.latitude), lon: String(location.longitude) }).toString();
+      const response = await api.get(`/api/planetary-events/today-risk?${params}`);
+      const data = response.data;
+
+      if (data?.success) {
         setRiskData(data.data);
       } else {
-        throw new Error(data.error || 'Failed to fetch risk assessment');
+        throw new Error(data?.error || 'Failed to fetch risk assessment');
       }
     } catch (err) {
-      setError(err.message);
+      console.error('Risk assessment fetch error:', err);
+      setError(err.message || 'Failed to fetch risk assessment');
     } finally {
       setLoading(false);
     }
@@ -103,11 +104,11 @@ const RiskAssessment = () => {
 
   const fetchHistoricalData = async (patternName) => {
     try {
-      const response = await fetch(
-        `/api/planetary-events/historical-pattern?pattern=${encodeURIComponent(patternName)}`
-      );
-      const data = await response.json();
-      return data.success ? data.data : [];
+      const response = await api.get(`/api/planetary-events/historical-pattern`, {
+        params: { pattern: patternName }
+      });
+      const data = response.data;
+      return data?.success ? data.data : [];
     } catch (err) {
       console.error('Failed to fetch historical data:', err);
       return [];
