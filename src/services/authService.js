@@ -50,19 +50,102 @@ export async function signUp(email, password, userData = {}) {
 /**
  * Handle user login with email and password
  */
-export async function signInWithPassword(email, password) {
-  try {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-    
-    if (error) throw error;
-    return data;
-  } catch (error) {
-    console.error('Sign in error:', error);
-    throw error;
+/**
+ * Normalize Supabase auth errors to user-friendly messages
+ */
+function mapAuthError(error) {
+  if (!error) return 'An unknown error occurred';
+  const msg = (error.message || '').toLowerCase();
+
+  if (msg.includes('invalid login credentials') || msg.includes('invalid email or password')) {
+    return 'Invalid email or password';
   }
+  if (msg.includes('email not confirmed') || msg.includes('email not confirmed')) {
+    return 'Please verify your email before signing in';
+  }
+  if (msg.includes('too many') || msg.includes('rate limit') || msg.includes('attempts')) {
+    return 'Too many attempts. Try again in a few minutes';
+  }
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+    return 'Network error. Check your connection and try again';
+  }
+  if (msg.includes('timeout')) {
+    return 'Request timed out. Please try again';
+  }
+  return error.message || 'Sign in failed';
+}
+
+/**
+ * Handle user login with email and password
+ * - Basic client-side validation
+ * - Small jittered retry for transient network errors
+ * - User-friendly error normalization
+ */
+export async function signInWithPassword(email, password) {
+  // Quick validation to avoid unnecessary network calls
+  const trimmedEmail = (email || '').trim();
+  const pwd = password || '';
+  if (!trimmedEmail || !pwd) {
+    const err = new Error('Email and password are required');
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+
+  // helper to actually call supabase
+  const attempt = async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout guard
+
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword(
+        { email: trimmedEmail, password: pwd },
+        { signal: controller.signal }
+      );
+      clearTimeout(timeout);
+      if (error) {
+        throw error;
+      }
+      return data;
+    } catch (e) {
+      clearTimeout(timeout);
+      throw e;
+    }
+  };
+
+  // Retry up to 2 times on transient issues
+  let lastErr;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const data = await attempt();
+      return data;
+    } catch (e) {
+      lastErr = e;
+      const msg = (e?.message || '').toLowerCase();
+      const isAbort = e?.name === 'AbortError';
+      const isTransient =
+        isAbort ||
+        msg.includes('failed to fetch') ||
+        msg.includes('network') ||
+        msg.includes('timeout') ||
+        msg.includes('fetch');
+
+      if (!isTransient || i === 2) {
+        console.error('Sign in error:', e);
+        const friendly = mapAuthError(e);
+        const err = new Error(friendly);
+        err.original = e;
+        throw err;
+      }
+      // Exponential backoff with jitter: 200ms, 400ms
+      const delay = 200 * Math.pow(2, i) + Math.floor(Math.random() * 100);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+
+  // Fallback (shouldn't reach)
+  const err = new Error(mapAuthError(lastErr));
+  err.original = lastErr;
+  throw err;
 }
 
 /**

@@ -59,21 +59,17 @@ export const searchLocations = async (query, limit = 10) => {
   }
 
   try {
-    // First, search in our predefined database for Indian cities
-    const localResults = searchLocalDatabase(query, limit);
-    
-    // If we have good local results, return them
-    if (localResults.length >= 3) {
-      return localResults;
-    }
-
-    // Otherwise, use external APIs
+    // Prefer worldwide external search first
     const externalResults = await searchExternalAPIs(query, limit);
-    
-    // Combine and deduplicate
-    const allResults = [...localResults, ...externalResults];
+
+    // Augment with local Indian presets (useful for neighborhoods)
+    const localResults = searchLocalDatabase(query, limit);
+
+    // Combine and deduplicate, prioritize external first, then local
+    // Ensure same city from local and OSM doesn't appear twice
+    const allResults = [...externalResults, ...localResults];
     const uniqueResults = deduplicateResults(allResults);
-    
+
     return uniqueResults.slice(0, limit);
   } catch (error) {
     console.error('Location search error:', error);
@@ -120,38 +116,38 @@ async function searchExternalAPIs(query, limit) {
   const results = [];
 
   try {
-    // Use OpenStreetMap Nominatim with better parameters
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?` + 
-      `format=json&q=${encodeURIComponent(query)}&` +
-      `limit=${limit}&addressdetails=1&countrycodes=in&` +
-      `bounded=1&viewbox=68,8,97,38`; // India bounding box
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?` +
+      `format=json&q=${encodeURIComponent(query)}&limit=${limit}&addressdetails=1&accept-language=en`;
 
     const response = await axios.get(nominatimUrl, {
       headers: {
         'Accept': 'application/json',
-        'Accept-Language': 'en'
+        'Accept-Language': 'en',
+        // Nominatim requires a proper identifiable UA; axios sets one but you may add one server-side if proxied.
       },
       timeout: 10000
     });
 
-    if (response.data && response.data.length > 0) {
-      response.data.forEach(item => {
-        const location = {
-          name: item.display_name.split(',')[0],
+    if (Array.isArray(response.data)) {
+      for (const item of response.data) {
+        const lat = parseFloat(item.lat);
+        const lon = parseFloat(item.lon);
+
+        results.push({
+          name: item.address?.city || item.address?.town || item.address?.village || item.address?.hamlet || item.display_name?.split(',')[0] || 'Unknown',
           displayName: item.display_name,
-          latitude: parseFloat(item.lat),
-          longitude: parseFloat(item.lon),
-          city: item.address?.city || item.address?.town || item.address?.village,
-          state: item.address?.state,
-          country: item.address?.country,
-          timezone: getTimezoneFromCoordinates(parseFloat(item.lat), parseFloat(item.lon)),
+          latitude: lat,
+          longitude: lon,
+          city: item.address?.city || item.address?.town || item.address?.village || item.address?.hamlet || '',
+          state: item.address?.state || item.address?.region || item.address?.state_district || '',
+          country: item.address?.country || '',
+          timezone: getTimezoneFromCoordinates(lat, lon),
           source: 'nominatim'
-        };
-        results.push(location);
-      });
+        });
+      }
     }
   } catch (error) {
-    console.warn('Nominatim search failed:', error.message);
+    console.warn('Nominatim search failed:', error?.message || String(error));
   }
 
   return results;
@@ -161,41 +157,63 @@ async function searchExternalAPIs(query, limit) {
  * Remove duplicate results
  */
 function deduplicateResults(results) {
+  // Normalize and dedupe by:
+  // 1) rounded coordinates (4 dp) and
+  // 2) normalized name+admin+country signature (case/space/diacritics insensitive)
   const seen = new Set();
-  return results.filter(item => {
-    const key = `${item.latitude.toFixed(4)},${item.longitude.toFixed(4)}`;
-    if (seen.has(key)) {
-      return false;
-    }
+
+  const normalize = (s) =>
+    (s || '')
+      .toString()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const keyFor = (r) => {
+    const lat = (Number(r.latitude) || 0).toFixed(4);
+    const lon = (Number(r.longitude) || 0).toFixed(4);
+    const name = normalize(r.name || r.city || '');
+    const admin = normalize(r.state || '');
+    const country = normalize(r.country || '');
+    // Prefer a stable signature first; coords as fallback tie-breaker
+    const signature = `${name}|${admin}|${country}`;
+    return `${signature}|${lat},${lon}`;
+  };
+
+  const deduped = [];
+  for (const r of results) {
+    const key = keyFor(r);
+    if (seen.has(key)) continue;
     seen.add(key);
-    return true;
-  });
+    deduped.push(r);
+  }
+  return deduped;
 }
 
 /**
  * Get timezone from coordinates
  */
 function getTimezoneFromCoordinates(lat, lng) {
-  // For Indian subcontinent
-  if (lat >= 6 && lat <= 38 && lng >= 68 && lng <= 98) {
-    return 'Asia/Kolkata';
-  }
-  
-  // Basic timezone detection for other regions
+  // Prefer timezone returned by a dedicated API when possible.
+  // Fallback heuristic by longitude bands (very coarse).
+  if (lat >= 6 && lat <= 38 && lng >= 68 && lng <= 98) return 'Asia/Kolkata';
   if (lng >= -180 && lng < -150) return 'Pacific/Honolulu';
   if (lng >= -150 && lng < -120) return 'America/Anchorage';
-  if (lng >= -120 && lng < -105) return 'America/Los_Angeles';
-  if (lng >= -105 && lng < -90) return 'America/Denver';
-  if (lng >= -90 && lng < -75) return 'America/Chicago';
-  if (lng >= -75 && lng < -60) return 'America/New_York';
+  if (lng >= -122 && lng < -112) return 'America/Los_Angeles';
+  if (lng >= -112 && lng < -102) return 'America/Denver';
+  if (lng >= -102 && lng < -87) return 'America/Chicago';
+  if (lng >= -87 && lng < -67) return 'America/New_York';
   if (lng >= -30 && lng < 15) return 'Europe/London';
   if (lng >= 15 && lng < 30) return 'Europe/Berlin';
-  if (lng >= 30 && lng < 45) return 'Europe/Moscow';
-  if (lng >= 60 && lng < 90) return 'Asia/Kolkata';
-  if (lng >= 90 && lng < 120) return 'Asia/Shanghai';
-  if (lng >= 120 && lng < 150) return 'Asia/Tokyo';
-  if (lng >= 150 && lng <= 180) return 'Pacific/Auckland';
-  
+  if (lng >= 30 && lng < 50) return 'Europe/Moscow';
+  if (lng >= 50 && lng < 80) return 'Asia/Tashkent';
+  if (lng >= 80 && lng < 95) return 'Asia/Kolkata';
+  if (lng >= 95 && lng < 110) return 'Asia/Bangkok';
+  if (lng >= 110 && lng < 125) return 'Asia/Shanghai';
+  if (lng >= 125 && lng < 140) return 'Asia/Tokyo';
+  if (lng >= 140 && lng <= 180) return 'Pacific/Auckland';
   return 'UTC';
 }
 

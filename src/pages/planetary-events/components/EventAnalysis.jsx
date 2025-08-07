@@ -171,154 +171,140 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
 
         {/* Historical Events Display */}
       {historicalEvents.length > 0 ? (
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
-  {historicalEvents.map((event, index) => (
-    <motion.div
-      key={event.id || index}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: (index % 50) * 0.02 }}
-      className="bg-surface rounded-2xl shadow-lg border border-border overflow-hidden"
-    >
-      {/* Header with planet icon and date */}
-      <div className="bg-gradient-to-r from-primary to-accent p-4 flex justify-between items-center">
-        <div className="text-2xl text-text-inverse">🪐</div>
-        <span className="text-xs font-medium text-background bg-primary px-3 py-1 rounded-full">
-          {new Date(event.event_date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })}
-        </span>
-      </div>
+  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
+    {historicalEvents.map((event, index) => {
+      const impactClass =
+        event.impact_level === 'extreme'
+          ? 'text-red-500 bg-red-500/10 ring-red-500/30'
+          : event.impact_level === 'high'
+          ? 'text-orange-500 bg-orange-500/10 ring-orange-500/30'
+          : event.impact_level === 'medium'
+          ? 'text-yellow-500 bg-yellow-500/10 ring-yellow-500/30'
+          : 'text-green-500 bg-green-500/10 ring-green-500/30';
 
-      {/* Card content */}
-      <div className="p-4">
-        <h4 className="text-xl font-medium text-text-primary mb-2">
-          {event.title}
-        </h4>
+      return (
+        <motion.article
+          key={event.id || index}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: (index % 24) * 0.015 }}
+          className="group relative flex flex-col h-full rounded-xl border border-border/80 bg-surface/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden focus-within:ring-2 focus-within:ring-primary"
+        >
+          {/* Top meta bar */}
+          <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/70">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="text-lg shrink-0">🪐</div>
+              <div className="truncate text-xs text-text-secondary" title={event.category?.replace('_',' ') || 'category'}>
+                {event.category?.replace('_',' ') || 'Other'}
+              </div>
+            </div>
+            <time
+              className="text-[11px] font-medium text-text-muted bg-background/60 px-2 py-0.5 rounded-full"
+              dateTime={event.event_date}
+            >
+              {new Date(event.event_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+            </time>
+          </div>
 
-{/* Display Planetary Snapshot if available */}
-{event.planetary_snapshot && (
-  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 mb-4 border border-border">
-    <h5 className="text-lg font-heading font-semibold text-text-primary mb-3 flex items-center">
-      <span className="mr-2">🌌</span> Planetary Snapshot
-    </h5>
-    {/* Helper functions for house and Nakshatra */}
-      {(() => {
-        const getHouseForPlanet = (planetName) => {
-          if (event.planetary_snapshot.aspects) {
-            const aspect = event.planetary_snapshot.aspects.find(a =>
-              a.fromPlanet?.toLowerCase() === planetName.toLowerCase()
-            );
-            return aspect ? aspect.fromHouse : null;
-          }
-          return null;
-        };
-        const getOrdinalHouse = (houseNum) => {
-          if (!houseNum) return '';
-          const ordinals = ['', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th', '11th', '12th'];
-          return ordinals[houseNum] || `${houseNum}th`;
-        };
-        const planetList = ['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'rahu', 'ketu'];
-        const planetSymbols = {
-          sun: '☉', moon: '☽', mercury: '☿', venus: '♀', mars: '♂', jupiter: '♃',
-          saturn: '♄', rahu: '☊', ketu: '☋'
-        };
-        return (
-          <div className="grid grid-cols-2 gap-3">
-            {planetList.map((planet) => {
-              if (!event.planetary_snapshot[planet]) return null;
-              const house = getHouseForPlanet(planet);
-              const houseText = house ? `, ${getOrdinalHouse(house)} House` : '';
-              const nakshatra = planet === 'moon' && event.planetary_snapshot.nakshatra
-                ? `, Nakshatra: ${event.planetary_snapshot.nakshatra}`
-                : '';
-              return (
-                <div key={planet} className="flex items-center text-sm text-text-secondary bg-surface rounded-lg p-2">
-                  <span className="text-base mr-2 text-primary">{planetSymbols[planet]}</span>
-                  <div className="flex-1">
-                    <span className="font-medium capitalize text-text-primary">{planet}:</span>
-                    <span className="ml-1 text-xs">{event.planetary_snapshot[planet]}{houseText}{nakshatra}</span>
-                  </div>
+          {/* Body */}
+          <div className="flex flex-col p-4 gap-3 flex-1">
+            <h4 className="text-base md:text-lg font-semibold leading-snug text-text-primary line-clamp-2" title={event.title}>
+              {event.title}
+            </h4>
+
+            {/* Meta row */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+              {event.location_name && (
+                <div className="inline-flex items-center gap-1">
+                  <span>📍</span>
+                  <span className="truncate max-w-[12rem]" title={event.location_name}>{event.location_name}</span>
                 </div>
-              );
-            })}
-            {/* Ascendant */}
-            {event.planetary_snapshot.ascendant && (
-              <div className="flex items-center text-sm text-text-secondary bg-surface rounded-lg p-2">
-                <span className="text-base mr-2 text-primary">🔭</span>
-                <div className="flex-1">
-                  <span className="font-medium text-text-primary">Ascendant:</span>
-                  <span className="ml-1 text-xs">{event.planetary_snapshot.ascendant}</span>
+              )}
+              {event.event_type && (
+                <div className="inline-flex items-center gap-1">
+                  <span>🏷️</span>
+                  <span className="capitalize truncate max-w-[10rem]" title={event.event_type.replace('_',' ')}>{event.event_type.replace('_',' ')}</span>
+                </div>
+              )}
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ring-1 ${impactClass}`}>
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                <span className="uppercase tracking-wide font-medium">{event.impact_level || 'low'}</span>
+              </span>
+            </div>
+
+            {/* Description */}
+            {event.description && (
+              <p className="text-sm text-text-secondary line-clamp-3">
+                {event.description}
+              </p>
+            )}
+
+            {/* Snapshot chips */}
+            {event.planetary_snapshot && (
+              <div className="mt-1 flex flex-wrap gap-2">
+                {['sun','moon','mars','mercury','jupiter','venus','saturn'].map(p => {
+                  const val = event.planetary_snapshot[p];
+                  if (!val) return null;
+                  return (
+                    <span key={p} className="text-[11px] px-2 py-0.5 rounded-md bg-background/60 border border-border/70 text-text-muted capitalize">
+                      {p}: {String(val).split(' ')[0]}
+                    </span>
+                  );
+                })}
+                {event.planetary_snapshot.ascendant && (
+                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-background/60 border border-border/70 text-text-muted">
+                    Asc: {event.planetary_snapshot.ascendant.split(' ')[0]}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Aspects summary */}
+            {event.planetary_snapshot?.aspects?.length > 0 && (
+              <div className="mt-1">
+                <button
+                  type="button"
+                  aria-expanded={expandedAspects.has(event.id)}
+                  onClick={() => toggleAspectsExpansion(event.id)}
+                  className="text-xs text-primary hover:text-primary/80 inline-flex items-center gap-1"
+                >
+                  <span>🔗 Vedic Aspects</span>
+                  <span className="text-[11px] text-text-muted">
+                    ({expandedAspects.has(event.id) ? 'hide' : `+${Math.max(0, event.planetary_snapshot.aspects.length - 0)}`})
+                  </span>
+                </button>
+                <div className={`${expandedAspects.has(event.id) ? 'block' : 'hidden'} mt-2 space-y-1 max-h-40 overflow-y-auto pr-1`}>
+                  {event.planetary_snapshot.aspects.slice(0, 12).map((aspect, idx) => (
+                    <div key={idx} className="text-xs text-text-secondary bg-surface/70 border border-border/60 rounded-md px-2 py-1">
+                      • {aspect.description || `${aspect.fromPlanet} ${aspect.aspectType} ${aspect.toPlanet}`}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
-        );
-      })()}
-  </div>
-)}
-{/* Vedic Aspects Section */}
-{event.planetary_snapshot.aspects && event.planetary_snapshot.aspects.length > 0 && (
-  <div className="bg-gradient-to-r from-accent/5 to-primary/5 rounded-xl p-4 border border-border">
-    <h6 className="text-base font-heading font-semibold text-text-primary mb-3 flex items-center">
-      <span className="mr-2">🔗</span> Vedic Aspects
-    </h6>
-    <div className="space-y-2">
-      {event.planetary_snapshot.aspects.slice(0, 5).map((aspect, idx) => (
-        <div key={idx} className="text-sm text-text-secondary bg-surface rounded-lg p-2">
-          • {aspect.description || `${aspect.fromPlanet} ${aspect.aspectType} ${aspect.toPlanet}`}
-        </div>
-      ))}
-      {event.planetary_snapshot.aspects.length > 5 && (
-        <div className="text-xs text-text-muted italic bg-surface rounded-lg p-2">
-          {!expandedAspects.has(event.id) && `...and {event.planetary_snapshot.aspects.length - 5} more aspects`}
-          {expandedAspects.has(event.id) && event.planetary_snapshot.aspects.slice(5).map((aspect, idx) => (
-            <div key={`more-aspect-${idx}`} className="text-sm text-text-secondary bg-surface rounded-lg p-2">
-              • {aspect.description || `${aspect.fromPlanet} ${aspect.aspectType} ${aspect.toPlanet}`}
-            </div>
-          ))}
-        </div>
-      )}
-      {event.planetary_snapshot.aspects.length > 5 && (
-        <button
-          className="text-xs font-medium text-primary mt-2"
-          onClick={() => toggleAspectsExpansion(event.id)}
-        >
-          {expandedAspects.has(event.id) ? "Show Less" : "Show More"}
-        </button>
-      )}
-    </div>
-  </div>
-)}
 
-        <p className="text-sm font-body text-text-secondary">
-          <strong>Event:</strong> {event.description || event.title}
-        </p>
-        <div className="mt-3 flex items-center space-x-4">
-          <span className={`text-xs px-2 py-1 rounded-full ${
-            event.impact_level === 'extreme' ? 'bg-red-100 text-red-800' :
-            event.impact_level === 'high' ? 'bg-orange-100 text-orange-800' :
-            event.impact_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-green-100 text-green-800'
-          }`}>
-            {event.impact_level?.toUpperCase()} IMPACT
-          </span>
-          <span className="text-xs font-caption text-text-muted capitalize">
-            Category: {event.category?.replace('_', ' ')}
-          </span>
-          {event.location_name && (
-            <span className="text-xs font-caption text-text-muted">
-              📍 {event.location_name}
-            </span>
-          )}
-        </div>
-      </div>
-              </motion.div>
-            ))}
+            <div className="mt-auto pt-2 flex items-center justify-between">
+              {/* Confidence placeholder if present in data in future */}
+              <div className="text-[11px] text-text-muted">
+                Source: {event.source_name || 'manual'}
+              </div>
+              {event.source_url && (
+                <a
+                  href={event.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  View source →
+                </a>
+              )}
+            </div>
           </div>
-        ) : (
+        </motion.article>
+      );
+    })}
+  </div>
+) : (
           <div className="bg-gray-50 rounded-xl shadow-lg p-8 text-center border border-gray-200">
             <div className="text-6xl mb-4">🔍</div>
             <h3 className="text-xl font-bold text-gray-900 mb-4">
@@ -330,6 +316,28 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
           </div>
         )}
 
+        {/* Analysis Results Summary */}
+        {hasMore && (
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={() => loadHistoricalEvents(historicalEvents.length, false)}
+              disabled={loading}
+              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium disabled:opacity-50 shadow-lg flex items-center space-x-2"
+            >
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                  <span>Loading...</span>
+                </>
+              ) : (
+                <>
+                  <span>📄</span>
+                  <span>Load More Events</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
         {/* Analysis Results Summary */}
         {analysisData && (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-6 mt-8 border border-blue-200">
@@ -360,71 +368,7 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap justify-center gap-4">
-          <button
-            onClick={runAnalysis}
-            disabled={loading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium disabled:opacity-50 shadow-lg flex items-center space-x-2"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span>Analyzing...</span>
-              </>
-            ) : (
-              <>
-                <span>🔄</span>
-                <span>Refresh Patterns</span>
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => {
-              const eventsNeedingEnhancement = historicalEvents.filter(event => 
-                event.latitude && event.longitude && !event.sun_sign
-              );
-              if (eventsNeedingEnhancement.length > 0) {
-                enhancePlanetaryDataForBatch(eventsNeedingEnhancement);
-              } else {
-                alert('No events need planetary data enhancement. All events with location data already have precomputed planetary positions.');
-              }
-            }}
-            disabled={enhancing || loading}
-            className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all font-medium disabled:opacity-50 shadow-lg flex items-center space-x-2"
-          >
-            {enhancing ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                <span>Calculating...</span>
-              </>
-            ) : (
-              <>
-                <span>🔭</span>
-                <span>Enhance Missing Data</span>
-              </>
-            )}
-          </button>
-          {hasMore && (
-            <button
-              onClick={() => loadHistoricalEvents(historicalEvents.length, false)}
-              disabled={loading}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all font-medium disabled:opacity-50 shadow-lg flex items-center space-x-2"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                  <span>Loading...</span>
-                </>
-              ) : (
-                <>
-                  <span>📄</span>
-                  <span>Load More Events</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
+        {/* Action Buttons removed as per feedback */}
       </motion.div>
     </div>
   );
