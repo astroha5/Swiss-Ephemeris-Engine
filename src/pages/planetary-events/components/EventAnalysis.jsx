@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import api from '../../../services/api';
 
@@ -14,6 +14,37 @@ const EventAnalysis = () => {
   const [currentBatch, setCurrentBatch] = useState(0);
   const [analysisData, setAnalysisData] = useState(null);
   const [expandedAspects, setExpandedAspects] = useState(new Set());
+  const autoLoadingRef = useRef(false);
+
+  // Advanced filter state
+  const [filters, setFilters] = useState({
+    search: '',
+    category: '',
+    impact_level: '',
+    start_date: '',
+    end_date: '',
+    event_type: '',
+    country_code: '',
+    // Planet-in-sign filter
+    positionPlanets: new Set(),
+    positionSigns: new Set(),
+    // Aspects filter (from planets aspecting to planets)
+    aspectFromPlanets: new Set(),
+    aspectToPlanets: new Set(),
+    
+  });
+
+  const categoryOptions = [
+    'financial', 'natural_disaster', 'political', 'war', 'terrorism', 'pandemic', 'technology', 'social', 'accident', 'other'
+  ];
+  const impactOptions = ['extreme', 'high', 'medium', 'low'];
+  const eventTypeOptions = useMemo(() => {
+    const set = new Set();
+    historicalEvents.forEach(e => { if (e.event_type) set.add(e.event_type); });
+    return Array.from(set).sort();
+  }, [historicalEvents]);
+  const planetOptions = ['sun','moon','mars','mercury','jupiter','venus','saturn','rahu','ketu'];
+  const signOptions = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
 
   const toggleAspectsExpansion = (eventId) => {
     setExpandedAspects(prev => {
@@ -27,23 +58,38 @@ const EventAnalysis = () => {
     });
   };
 
+  // Load on mount
   useEffect(() => {
     loadHistoricalEvents(0, true);
   }, []);
+
+  // Build server-backed filters
+  const buildServerFilters = () => {
+    const { category, impact_level, start_date, end_date } = filters;
+    const params = {};
+    if (category) params.category = category;
+    if (impact_level) params.impact_level = impact_level;
+    if (start_date) params.start_date = start_date;
+    if (end_date) params.end_date = end_date;
+    return params;
+  };
 
 const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
     const currentScrollPosition = window.pageYOffset; // Store current scroll position
     setLoading(true);
     setError(null);
     try {
+      const serverFilters = buildServerFilters();
+      const planetaryActive = (filters.positionPlanets.size > 0 && filters.positionSigns.size > 0) || (filters.aspectFromPlanets.size > 0 || filters.aspectToPlanets.size > 0);
+      const pageSize = planetaryActive ? 200 : 50;
       const response = await api.get('/api/planetary-events/events', {
-        params: { limit: 50, offset: currentOffset }
+        params: { limit: pageSize, offset: currentOffset, ...serverFilters }
       });
       const data = response.data;
       
       if (data?.success) {
         const newEvents = data.data;
-        setHasMore(newEvents.length === 50);
+        setHasMore(newEvents.length === pageSize);
 
         // Process each event to extract necessary planetary data if available
         const processedEvents = newEvents.map(event => {
@@ -64,10 +110,13 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
           // Restore scroll position for infinite scroll experience
           setTimeout(() => window.scrollTo(0, currentScrollPosition), 0);
         }
+
+        return processedEvents;
       }
     } catch (error) {
       console.error('Error loading historical events:', error);
       setError('Failed to load historical events. Please try again.');
+      return [];
     } finally {
       setLoading(false);
     }
@@ -118,6 +167,148 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
     }
   };
 
+  // Derived filtered events (client-side filters beyond what server supports)
+  // Predicate to check if an event matches current filters
+  const eventMatchesFilters = (evt) => {
+    const search = filters.search.trim().toLowerCase();
+    const eventType = filters.event_type.trim();
+    const country = filters.country_code.trim().toUpperCase();
+
+    if (search) {
+      const hay = `${evt.title || ''} ${evt.description || ''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (eventType && (evt.event_type || '') !== eventType) return false;
+    if (country && (evt.country_code || '').toUpperCase() !== country) return false;
+
+    if (filters.positionPlanets.size > 0 && filters.positionSigns.size > 0) {
+      const signOfPlanet = (planetKey) => {
+        const pdata = (evt.planetary_snapshot || {})[planetKey];
+        let sign = '';
+        if (typeof pdata === 'string') {
+          sign = (pdata.split(' ')[0] || '').trim();
+        } else if (pdata && typeof pdata === 'object') {
+          sign = (pdata.sign || pdata.Sign || '').trim();
+        }
+        if (!sign) {
+          const topLevelSign = evt[`${planetKey}_sign`] || evt[`${planetKey}_Sign`];
+          if (topLevelSign) sign = String(topLevelSign).trim();
+        }
+        return sign;
+      };
+
+      if (filters.positionSigns.size === 1) {
+        const [requiredSign] = Array.from(filters.positionSigns);
+        const allMatch = Array.from(filters.positionPlanets).every(p => signOfPlanet(p) === requiredSign);
+        if (!allMatch) return false;
+      } else {
+        const signs = Array.from(filters.positionSigns);
+        const existsCommonSign = signs.some(s =>
+          Array.from(filters.positionPlanets).every(p => signOfPlanet(p) === s)
+        );
+        if (!existsCommonSign) return false;
+      }
+    }
+
+    if (filters.aspectFromPlanets.size > 0 || filters.aspectToPlanets.size > 0) {
+      const aspects = (evt.planetary_snapshot && Array.isArray(evt.planetary_snapshot.aspects)) ? evt.planetary_snapshot.aspects : [];
+      if (aspects.length === 0) return false;
+      const hasAspectMatch = aspects.some(a => {
+        const from = (a.fromPlanet || a.from || '').toString().toLowerCase();
+        const to = (a.toPlanet || a.to || '').toString().toLowerCase();
+        const fromOk = filters.aspectFromPlanets.size === 0 || filters.aspectFromPlanets.has(from);
+        const toOk = filters.aspectToPlanets.size === 0 || filters.aspectToPlanets.has(to);
+        return fromOk && toOk;
+      });
+      if (!hasAspectMatch) return false;
+    }
+
+    return true;
+  };
+
+  const filteredEvents = useMemo(() => {
+    const search = filters.search.trim().toLowerCase();
+    const eventType = filters.event_type.trim();
+    const country = filters.country_code.trim().toUpperCase();
+
+    return historicalEvents.filter(eventMatchesFilters);
+  }, [historicalEvents, filters]);
+
+  // Auto-load more pages when planetary filters are active and no matches yet
+  useEffect(() => {
+    const planetaryActive = (filters.positionPlanets.size > 0 && filters.positionSigns.size > 0) || (filters.aspectFromPlanets.size > 0 || filters.aspectToPlanets.size > 0);
+    if (!planetaryActive) return;
+    if (loading) return;
+    if (filteredEvents.length > 0) return;
+    if (!hasMore) return;
+    if (autoLoadingRef.current) return;
+
+    let cancelled = false;
+    autoLoadingRef.current = true;
+
+    (async () => {
+      let offsetLocal = historicalEvents.length;
+      let attempts = 0;
+      while (!cancelled && attempts < 20) {
+        const nextBatch = await loadHistoricalEvents(offsetLocal, false);
+        offsetLocal += nextBatch.length;
+        attempts += 1;
+        // If we got fewer than 50, no more pages
+        if (nextBatch.length < 50) break;
+        // If the nextBatch has a match, we can stop early
+        if (nextBatch.some(eventMatchesFilters)) break;
+        // If after appending we have any match, stop
+        if (historicalEvents.some(eventMatchesFilters)) break;
+      }
+      autoLoadingRef.current = false;
+    })();
+
+    return () => { cancelled = true; };
+  }, [filters.positionPlanets, filters.positionSigns, filters.aspectFromPlanets, filters.aspectToPlanets, filteredEvents.length, hasMore, loading]);
+
+  // Auto-apply filters when key filters change (so user doesn't have to click Apply)
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (!loading) {
+        handleApplyFilters();
+      }
+    }, 150);
+    return () => clearTimeout(debounce);
+  }, [
+    filters.category,
+    filters.impact_level,
+    filters.start_date,
+    filters.end_date,
+    filters.event_type,
+    filters.country_code,
+    filters.positionPlanets,
+    filters.positionSigns,
+    filters.aspectFromPlanets,
+    filters.aspectToPlanets
+  ]);
+
+  // Apply filters with auto-fetch for planetary configs if no matches found
+  const handleApplyFilters = async () => {
+    const firstBatch = await loadHistoricalEvents(0, true);
+
+    const planetaryFiltersActive = (filters.positionPlanets.size > 0 && filters.positionSigns.size > 0) || (filters.aspectFromPlanets.size > 0 || filters.aspectToPlanets.size > 0);
+    if (!planetaryFiltersActive) return;
+
+    // If no matches in the first page, progressively load more until matches found or no more pages
+    let attempts = 0;
+    let offsetLocal = firstBatch.length;
+    let found = firstBatch.some(eventMatchesFilters);
+    let keepGoing = firstBatch.length === 50;
+    while (!found && keepGoing && attempts < 20) {
+      const nextBatch = await loadHistoricalEvents(offsetLocal, false);
+      offsetLocal += nextBatch.length;
+      found = nextBatch.some(eventMatchesFilters);
+      keepGoing = nextBatch.length === 50 && nextBatch.length > 0;
+      attempts += 1;
+      if (nextBatch.length === 0) break;
+    }
+  };
+
   if (loading) {
     return (
       <div className="bg-surface rounded-xl shadow-soft p-6 border border-border">
@@ -148,6 +339,209 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6"
       >
+        {/* Advanced Filters */}
+        <div className="bg-white border border-border rounded-xl p-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            {/* Search */}
+            <div className="md:col-span-2">
+              <label className="block text-xs text-text-muted mb-1">Search</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-indigo-500"
+                placeholder="Title or description..."
+                value={filters.search}
+                onChange={(e) => setFilters(f => ({ ...f, search: e.target.value }))}
+              />
+            </div>
+            {/* Category */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Category</label>
+              <select
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                value={filters.category}
+                onChange={(e) => setFilters(f => ({ ...f, category: e.target.value }))}
+              >
+                <option value="">All</option>
+                {categoryOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt.replace('_',' ')}</option>
+                ))}
+              </select>
+            </div>
+            {/* Impact */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Impact</label>
+              <select
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                value={filters.impact_level}
+                onChange={(e) => setFilters(f => ({ ...f, impact_level: e.target.value }))}
+              >
+                <option value="">Any</option>
+                {impactOptions.map(opt => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
+            </div>
+            {/* Dates */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Start date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border rounded-md"
+                value={filters.start_date}
+                onChange={(e) => setFilters(f => ({ ...f, start_date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-text-muted mb-1">End date</label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 border rounded-md"
+                value={filters.end_date}
+                onChange={(e) => setFilters(f => ({ ...f, end_date: e.target.value }))}
+              />
+            </div>
+            {/* Event type (dropdown) */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Event type</label>
+              <select
+                className="w-full px-3 py-2 border rounded-md bg-white"
+                value={filters.event_type}
+                onChange={(e) => setFilters(f => ({ ...f, event_type: e.target.value }))}
+              >
+                <option value="">All</option>
+                {eventTypeOptions.map(et => (
+                  <option key={et} value={et}>{et.replace('_',' ')}</option>
+                ))}
+              </select>
+            </div>
+            {/* Country */}
+            <div>
+              <label className="block text-xs text-text-muted mb-1">Country code</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="US, IN, GB..."
+                value={filters.country_code}
+                onChange={(e) => setFilters(f => ({ ...f, country_code: e.target.value }))}
+              />
+            </div>
+            {/* Planet in Sign: Planets */}
+            <div className="md:col-span-2">
+              <label className="block text-xs text-text-muted mb-2">Planets (position filter)</label>
+              <div className="flex flex-wrap gap-2">
+                {planetOptions.map(p => {
+                  const checked = filters.positionPlanets.has(p);
+                  return (
+                    <label key={`pos-${p}`} className={`px-3 py-1 rounded-md border cursor-pointer select-none text-sm ${checked ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-white border-border text-text-secondary'}`}>
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={checked}
+                        onChange={(e) => setFilters(f => {
+                          const next = new Set(f.positionPlanets);
+                          if (e.target.checked) next.add(p); else next.delete(p);
+                          return { ...f, positionPlanets: next };
+                        })}
+                      />
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Planet in Sign: Signs */}
+            <div className="md:col-span-2">
+              <label className="block text-xs text-text-muted mb-2">Signs</label>
+              <div className="flex flex-wrap gap-2">
+                {signOptions.map(s => {
+                  const checked = filters.positionSigns.has(s);
+                  return (
+                    <label key={`sign-${s}`} className={`px-3 py-1 rounded-md border cursor-pointer select-none text-sm ${checked ? 'bg-indigo-50 border-indigo-300 text-indigo-800' : 'bg-white border-border text-text-secondary'}`}>
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={checked}
+                        onChange={(e) => setFilters(f => {
+                          const next = new Set(f.positionSigns);
+                          if (e.target.checked) next.add(s); else next.delete(s);
+                          return { ...f, positionSigns: next };
+                        })}
+                      />
+                      {s}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Aspects: From planets */}
+            <div className="md:col-span-2">
+              <label className="block text-xs text-text-muted mb-2">Aspecting planets (from)</label>
+              <div className="flex flex-wrap gap-2">
+                {planetOptions.map(p => {
+                  const checked = filters.aspectFromPlanets.has(p);
+                  return (
+                    <label key={`af-${p}`} className={`px-3 py-1 rounded-md border cursor-pointer select-none text-sm ${checked ? 'bg-purple-50 border-purple-300 text-purple-800' : 'bg-white border-border text-text-secondary'}`}>
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={checked}
+                        onChange={(e) => setFilters(f => {
+                          const next = new Set(f.aspectFromPlanets);
+                          if (e.target.checked) next.add(p); else next.delete(p);
+                          return { ...f, aspectFromPlanets: next };
+                        })}
+                      />
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+            {/* Aspects: To planets */}
+            <div className="md:col-span-2">
+              <label className="block text-xs text-text-muted mb-2">Aspected planets (to)</label>
+              <div className="flex flex-wrap gap-2">
+                {planetOptions.map(p => {
+                  const checked = filters.aspectToPlanets.has(p);
+                  return (
+                    <label key={`at-${p}`} className={`px-3 py-1 rounded-md border cursor-pointer select-none text-sm ${checked ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-border text-text-secondary'}`}>
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={checked}
+                        onChange={(e) => setFilters(f => {
+                          const next = new Set(f.aspectToPlanets);
+                          if (e.target.checked) next.add(p); else next.delete(p);
+                          return { ...f, aspectToPlanets: next };
+                        })}
+                      />
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between mt-4 gap-3">
+            <div className="flex gap-2">
+              <button
+                onClick={handleApplyFilters}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Apply Filters
+              </button>
+              <button
+                onClick={() => { setFilters({
+                  search: '', category: '', impact_level: '', start_date: '', end_date: '', event_type: '', country_code: '', positionPlanets: new Set(), positionSigns: new Set(), aspectFromPlanets: new Set(), aspectToPlanets: new Set()
+                }); loadHistoricalEvents(0, true); }}
+                className="px-4 py-2 border rounded-md hover:bg-gray-50"
+              >
+                Reset
+              </button>
+            </div>
+            <div className="text-sm text-text-muted">Showing {filteredEvents.length} of {historicalEvents.length}{hasMore ? '+' : ''}</div>
+          </div>
+        </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center space-x-2">
           <span>🔎</span>
           <span>Find Patterns</span>
@@ -172,7 +566,7 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
         {/* Historical Events Display */}
       {historicalEvents.length > 0 ? (
   <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-    {historicalEvents.map((event, index) => {
+    {filteredEvents.map((event, index) => {
       const impactClass =
         event.impact_level === 'extreme'
           ? 'text-red-500 bg-red-500/10 ring-red-500/30'
