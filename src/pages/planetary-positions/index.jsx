@@ -223,7 +223,8 @@ const PlanetaryPositions = () => {
         {/* Floating Timezone & Location Widget */}
         {location && <TimeZoneWidget location={location} />}
         
-        <main className="pt-4 pb-8">
+        {/* Add top padding to account for fixed header height */}
+        <main className="pt-20 md:pt-24 pb-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {/* Page Header */}
             <div className="text-center mb-8">

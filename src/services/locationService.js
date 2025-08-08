@@ -157,11 +157,11 @@ async function searchExternalAPIs(query, limit) {
  * Remove duplicate results
  */
 function deduplicateResults(results) {
-  // Normalize and dedupe by:
-  // 1) rounded coordinates (4 dp) and
-  // 2) normalized name+admin+country signature (case/space/diacritics insensitive)
-  const seen = new Set();
-
+  // Strategy:
+  // - Build a stable signature on normalized name|admin1|country
+  // - Within each signature bucket, group by rounded coordinates to collapse same place across sources
+  // - Prefer higher quality source order: nominatim > local (but keep first occurrence order from combined array)
+  // - Enhance displayName to a consistent, disambiguated format
   const normalize = (s) =>
     (s || '')
       .toString()
@@ -171,24 +171,75 @@ function deduplicateResults(results) {
       .replace(/\s+/g, ' ')
       .trim();
 
-  const keyFor = (r) => {
-    const lat = (Number(r.latitude) || 0).toFixed(4);
-    const lon = (Number(r.longitude) || 0).toFixed(4);
+  const signatureFor = (r) => {
     const name = normalize(r.name || r.city || '');
     const admin = normalize(r.state || '');
     const country = normalize(r.country || '');
-    // Prefer a stable signature first; coords as fallback tie-breaker
-    const signature = `${name}|${admin}|${country}`;
-    return `${signature}|${lat},${lon}`;
+    return `${name}|${admin}|${country}`;
   };
 
-  const deduped = [];
+  const coordKey = (r) => {
+    // 3 dp ~ 100m precision; good to merge near-identical duplicates without collapsing distinct towns
+    const lat = (Number(r.latitude) || 0).toFixed(3);
+    const lon = (Number(r.longitude) || 0).toFixed(3);
+    return `${lat},${lon}`;
+  };
+
+  // Bucket by signature then coordinates
+  const bySignature = new Map();
   for (const r of results) {
-    const key = keyFor(r);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(r);
+    const sig = signatureFor(r);
+    if (!bySignature.has(sig)) bySignature.set(sig, new Map());
+    const bucket = bySignature.get(sig);
+    const ck = coordKey(r);
+    if (!bucket.has(ck)) {
+      bucket.set(ck, r);
+    } else {
+      // Prefer sources in this order; keep existing if it's higher priority
+      const existing = bucket.get(ck);
+      const rank = (src) => (src === 'nominatim' ? 2 : src === 'local' ? 1 : 0);
+      if (rank(r.source) > rank(existing.source)) {
+        bucket.set(ck, r);
+      }
+    }
   }
+
+  // Flatten keeping original order preference implicitly handled above,
+  // and enhance labels for clarity
+  const deduped = [];
+  for (const [, coordMap] of bySignature) {
+    for (const [, item] of coordMap) {
+      // Build a clear, consistent display label:
+      // City (or name), State, Country — with coordinates
+      const cityOrName = item.name || item.city || 'Unknown';
+      const parts = [cityOrName];
+      if (item.state) parts.push(item.state);
+      if (item.country) parts.push(item.country);
+      const baseLabel = parts.join(', ');
+      const latStr = typeof item.latitude === 'number' ? item.latitude.toFixed(4) : String(item.latitude || '');
+      const lonStr = typeof item.longitude === 'number' ? item.longitude.toFixed(4) : String(item.longitude || '');
+      const enhancedDisplay = `${baseLabel} (${latStr}, ${lonStr})`;
+
+      deduped.push({
+        ...item,
+        // Use enhanced display to avoid ambiguous duplicates in UI
+        displayName: enhancedDisplay
+      });
+    }
+  }
+
+  // To keep results deterministic for the UI, sort by:
+  // - source rank
+  // - then by name lexicographically
+  const rank = (src) => (src === 'nominatim' ? 2 : src === 'local' ? 1 : 0);
+  deduped.sort((a, b) => {
+    const rdiff = rank(b.source) - rank(a.source);
+    if (rdiff !== 0) return rdiff;
+    const an = (a.name || a.city || '').toLowerCase();
+    const bn = (b.name || b.city || '').toLowerCase();
+    return an.localeCompare(bn);
+  });
+
   return deduped;
 }
 

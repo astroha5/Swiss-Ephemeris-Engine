@@ -124,6 +124,24 @@ async function populatePlanetaryData() {
       try {
         logger.info(`\n🌟 Processing event ${i + 1}/${events.length}: "${event.title}"`);
         logger.info(`📅 Date: ${event.event_date}, 📍 Location: ${event.location_name || 'Unknown'}`);
+
+        // Check if there's already planetary data for this event; skip if present
+        const { data: existingRow, error: checkError } = await supabase
+          .from('world_events')
+          .select('planetary_snapshot')
+          .eq('id', event.id)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          throw new Error(`Failed to check existing data: ${checkError.message}`);
+        }
+
+        if (existingRow && existingRow.planetary_snapshot) {
+          logger.info('⏭️ Skipping: planetary data already exists for this event');
+          // small delay to keep pacing even when skipping
+          await new Promise(resolve => setTimeout(resolve, 100));
+          continue;
+        }
         
         // Calculate planetary data
         const timestamp = new Date(event.event_date);
@@ -167,16 +185,7 @@ async function populatePlanetaryData() {
           }
         });
 
-        // Check if there's already planetary data for this event
-        const { data: existingEvent, error: checkError } = await supabase
-          .from('world_events')
-          .select('planetary_snapshot')
-          .eq('id', event.id)
-          .single();
-
-        if (checkError && checkError.code !== 'PGRST116') {
-          throw new Error(`Failed to check existing data: ${checkError.message}`);
-        }
+        
 
         // Update the event with planetary data
         const { error: updateError } = await supabase

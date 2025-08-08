@@ -1,4 +1,4 @@
-const { supabase } = require('../config/supabase');
+const { supabase, sql } = require('../config/supabase');
 const logger = require('../utils/logger');
 
 class PlanetaryPatternExtractorService {
@@ -581,6 +581,34 @@ class PlanetaryPatternExtractorService {
         }
       }
 
+      // Persist combined patterns as well (previously only logged)
+      if (patterns.combined && Array.isArray(patterns.combined.significant_patterns)) {
+        for (const combo of patterns.combined.significant_patterns) {
+          const planets = combo.pattern || {};
+          const topAspects = combo.aspects || [];
+          const patternName = `Combined: Mars ${planets.mars_sign || 'NA'}, Saturn ${planets.saturn_sign || 'NA'} + Aspects ${topAspects.join(', ')}`;
+
+          const totalOcc = combo.occurrences || 0;
+          const hiOcc = (combo.events || []).filter(e => ['high', 'extreme'].includes(e.impact_level)).length;
+
+          const patternData = {
+            pattern_name: patternName,
+            description: `Recurring combo of planetary signs and aspects across ${totalOcc} events`,
+            pattern_type: this.patternTypes.COMBINED_PATTERN,
+            pattern_conditions: {
+              planetary: planets,
+              aspects: topAspects
+            },
+            total_occurrences: totalOcc,
+            high_impact_occurrences: hiOcc,
+            success_rate: totalOcc > 0 ? parseFloat(((hiOcc / totalOcc) * 100).toFixed(2)) : 0
+          };
+
+          await this.storePattern(patternData);
+          storedPatterns.push(patternData);
+        }
+      }
+
       logger.info(`✅ Stored ${storedPatterns.length} significant patterns in database`);
       return storedPatterns;
 
@@ -595,19 +623,37 @@ class PlanetaryPatternExtractorService {
    * @param {Object} patternData - Pattern to store
    */
   async storePattern(patternData) {
+    // Prefer direct Postgres connection when available to write to astrological_patterns only
     try {
-      const { error } = await supabase
-        .from('astrological_patterns')
-        .upsert([patternData], { 
-          onConflict: 'pattern_name',
-          ignoreDuplicates: false 
-        });
+      if (sql) {
+        const rows = await sql`
+          INSERT INTO astrological_patterns
+            (pattern_name, description, pattern_type, pattern_conditions, total_occurrences, high_impact_occurrences, success_rate)
+          VALUES
+            (${patternData.pattern_name}, ${patternData.description}, ${patternData.pattern_type}, ${patternData.pattern_conditions}, ${patternData.total_occurrences}, ${patternData.high_impact_occurrences}, ${patternData.success_rate})
+          ON CONFLICT (pattern_name) DO UPDATE SET
+            description = EXCLUDED.description,
+            pattern_type = EXCLUDED.pattern_type,
+            pattern_conditions = EXCLUDED.pattern_conditions,
+            total_occurrences = EXCLUDED.total_occurrences,
+            high_impact_occurrences = EXCLUDED.high_impact_occurrences,
+            success_rate = EXCLUDED.success_rate;
+        `;
+        return rows;
+      } else {
+        const { error } = await supabase
+          .from('astrological_patterns')
+          .upsert([patternData], { 
+            onConflict: 'pattern_name',
+            ignoreDuplicates: false 
+          });
 
-      if (error) {
-        logger.warn(`Failed to store pattern ${patternData.pattern_name}:`, error.message);
+        if (error) {
+          logger.warn(`Failed to store pattern ${patternData.pattern_name}:`, error.message);
+        }
       }
     } catch (error) {
-      logger.warn('Error storing individual pattern:', error.message);
+      logger.warn('Error storing individual pattern via direct SQL:', error.message);
     }
   }
 
@@ -618,12 +664,17 @@ class PlanetaryPatternExtractorService {
    */
   async getEventsForPatternAnalysis(filters) {
     try {
+      // Fetch events with embedded JSON columns if available; avoid implicit relationship joins
       let query = supabase
         .from('world_events')
         .select(`
-          *,
-          planetary_transits(*),
-          planetary_aspects(*)
+          id,
+          title,
+          event_date,
+          category,
+          impact_level,
+          planetary_snapshot,
+          planetary_aspects
         `);
 
       // Apply filters
@@ -654,7 +705,80 @@ class PlanetaryPatternExtractorService {
         throw error;
       }
 
-      return data || [];
+      // Normalize to expected structure used by extractors
+      const normalized = (data || []).map(e => {
+        // planetary_transits expected by degree/nakshatra/sign extractors: wrap snapshot into array with expected keys
+        const pt = [];
+        if (e.planetary_snapshot && typeof e.planetary_snapshot === 'object') {
+          const ps = e.planetary_snapshot;
+          pt.push({
+            sun_longitude: ps.sun?.longitude ?? null,
+            sun_sign: ps.sun?.sign ?? null,
+            sun_degree_in_sign: ps.sun?.degree ?? null,
+            sun_nakshatra: ps.sun?.nakshatra ?? null,
+
+            moon_longitude: ps.moon?.longitude ?? null,
+            moon_sign: ps.moon?.sign ?? null,
+            moon_degree_in_sign: ps.moon?.degree ?? null,
+            moon_nakshatra: ps.moon?.nakshatra ?? null,
+
+            mars_longitude: ps.mars?.longitude ?? null,
+            mars_sign: ps.mars?.sign ?? null,
+            mars_degree_in_sign: ps.mars?.degree ?? null,
+            mars_nakshatra: ps.mars?.nakshatra ?? null,
+
+            mercury_longitude: ps.mercury?.longitude ?? null,
+            mercury_sign: ps.mercury?.sign ?? null,
+            mercury_degree_in_sign: ps.mercury?.degree ?? null,
+            mercury_nakshatra: ps.mercury?.nakshatra ?? null,
+
+            jupiter_longitude: ps.jupiter?.longitude ?? null,
+            jupiter_sign: ps.jupiter?.sign ?? null,
+            jupiter_degree_in_sign: ps.jupiter?.degree ?? null,
+            jupiter_nakshatra: ps.jupiter?.nakshatra ?? null,
+
+            venus_longitude: ps.venus?.longitude ?? null,
+            venus_sign: ps.venus?.sign ?? null,
+            venus_degree_in_sign: ps.venus?.degree ?? null,
+            venus_nakshatra: ps.venus?.nakshatra ?? null,
+
+            saturn_longitude: ps.saturn?.longitude ?? null,
+            saturn_sign: ps.saturn?.sign ?? null,
+            saturn_degree_in_sign: ps.saturn?.degree ?? null,
+            saturn_nakshatra: ps.saturn?.nakshatra ?? null,
+
+            rahu_longitude: ps.rahu?.longitude ?? null,
+            rahu_sign: ps.rahu?.sign ?? null,
+            rahu_degree_in_sign: ps.rahu?.degree ?? null,
+            rahu_nakshatra: ps.rahu?.nakshatra ?? null,
+
+            ketu_longitude: ps.ketu?.longitude ?? null,
+            ketu_sign: ps.ketu?.sign ?? null,
+            ketu_degree_in_sign: ps.ketu?.degree ?? null,
+            ketu_nakshatra: ps.ketu?.nakshatra ?? null,
+
+            ascendant_longitude: ps.ascendant?.longitude ?? null,
+            ascendant_sign: ps.ascendant?.sign ?? null,
+            ascendant_degree_in_sign: ps.ascendant?.degree ?? null,
+            ascendant_nakshatra: ps.ascendant?.nakshatra ?? null,
+          });
+        }
+
+        // planetary_aspects expected by aspect extractor: ensure array
+        const aspects = Array.isArray(e.planetary_aspects) ? e.planetary_aspects : [];
+
+        return {
+          id: e.id,
+          title: e.title,
+          event_date: e.event_date,
+          category: e.category,
+          impact_level: e.impact_level,
+          planetary_transits: pt,
+          planetary_aspects: aspects
+        };
+      });
+
+      return normalized;
     } catch (error) {
       logger.error('Error in getEventsForPatternAnalysis:', error);
       throw error;

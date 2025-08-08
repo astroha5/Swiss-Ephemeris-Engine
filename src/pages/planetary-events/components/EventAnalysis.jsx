@@ -188,10 +188,10 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: (index % 24) * 0.015 }}
-          className="group relative flex flex-col h-full rounded-xl border border-border/80 bg-surface/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden focus-within:ring-2 focus-within:ring-primary"
+          className="group relative flex flex-col h-full rounded-xl border border-border bg-white shadow hover:shadow-md transition-all duration-200 overflow-hidden focus-within:ring-2 focus-within:ring-primary"
         >
           {/* Top meta bar */}
-          <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border/70">
+          <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-primary/5 to-accent/5 border-b border-border">
             <div className="flex items-center gap-2 min-w-0">
               <div className="text-lg shrink-0">🪐</div>
               <div className="truncate text-xs text-text-secondary" title={event.category?.replace('_',' ') || 'category'}>
@@ -207,13 +207,13 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
           </div>
 
           {/* Body */}
-          <div className="flex flex-col p-4 gap-3 flex-1">
+          <div className="flex flex-col p-5 gap-3 flex-1">
             <h4 className="text-base md:text-lg font-semibold leading-snug text-text-primary line-clamp-2" title={event.title}>
               {event.title}
             </h4>
 
             {/* Meta row */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-gray-600">
               {event.location_name && (
                 <div className="inline-flex items-center gap-1">
                   <span>📍</span>
@@ -234,58 +234,219 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
 
             {/* Description */}
             {event.description && (
-              <p className="text-sm text-text-secondary line-clamp-3">
+              <p className="text-[13px] leading-6 text-gray-700 line-clamp-4">
                 {event.description}
               </p>
             )}
 
-            {/* Snapshot chips */}
+            {/* Snapshot chips with Vedic dignities */}
             {event.planetary_snapshot && (
-              <div className="mt-1 flex flex-wrap gap-2">
-                {['sun','moon','mars','mercury','jupiter','venus','saturn'].map(p => {
-                  const val = event.planetary_snapshot[p];
-                  if (!val) return null;
+              <div className="mt-2 flex flex-wrap gap-2 items-start">
+                {['sun','moon','mars','mercury','jupiter','venus','saturn','rahu','ketu'].map(p => {
+                  const pdata = event.planetary_snapshot[p];
+                  if (!pdata) return null;
+
+                  // Normalize to an object shape whether pdata is string or object
+                  let sign = '';
+                  let deg = '';
+                  let dignity = '';
+
+                  if (typeof pdata === 'string') {
+                    // Expect formats like "Aries 10°" or "Aries"
+                    const parts = pdata.split(' ');
+                    sign = parts[0] || '';
+                    deg = parts[1] || '';
+                  } else if (typeof pdata === 'object') {
+                    sign = pdata.sign || pdata.Sign || '';
+                    const degreeVal = pdata.degreeInSign || pdata.degree || pdata.degree_in_sign;
+                    if (typeof degreeVal === 'number') deg = `${degreeVal.toFixed(0)}°`;
+                    dignity = pdata.dignity || pdata.dignity_status || '';
+                  }
+
+                  // If backend hasn't supplied dignity, compute Vedic dignity client-side as fallback
+                  const computeDignity = (planet, s) => {
+                    // Special handling: Nodes (Rahu/Ketu) don't use dignity like grahas
+                    if (planet === 'rahu') return 'Rahu';
+                    if (planet === 'ketu') return 'Ketu';
+
+                    const exalt = {
+                      sun: 'Aries', moon: 'Taurus', mars: 'Capricorn', mercury: 'Virgo',
+                      jupiter: 'Cancer', venus: 'Pisces', saturn: 'Libra'
+                    };
+                    const debil = {
+                      sun: 'Libra', moon: 'Scorpio', mars: 'Cancer', mercury: 'Pisces',
+                      jupiter: 'Capricorn', venus: 'Virgo', saturn: 'Aries'
+                    };
+                    const own = {
+                      sun: ['Leo'],
+                      moon: ['Cancer'],
+                      mars: ['Aries','Scorpio'],
+                      mercury: ['Gemini','Virgo'],
+                      jupiter: ['Sagittarius','Pisces'],
+                      venus: ['Taurus','Libra'],
+                      saturn: ['Capricorn','Aquarius']
+                    };
+                    if (!s) return '';
+                    if (s === exalt[planet]) return 'Exalted';
+                    if (s === debil[planet]) return 'Debilitated';
+                    if (own[planet]?.includes(s)) return 'Own Sign';
+                    // Moolatrikona simplified by sign
+                    const moola = {
+                      sun: 'Leo', moon: 'Taurus', mars: 'Aries', mercury: 'Virgo',
+                      jupiter: 'Sagittarius', venus: 'Libra', saturn: 'Aquarius'
+                    };
+                    if (s === moola[planet]) return 'Moolatrikona';
+                    return '';
+                  };
+
+                  const finalDignity = dignity || computeDignity(p, sign);
+                  // Avoid repeating the label for nodes. If computeDignity returned "Rahu"/"Ketu",
+                  // then treat that as the planet label only (no trailing bullet label).
+                  const showLabel = !(p === 'rahu' && finalDignity === 'Rahu') && !(p === 'ketu' && finalDignity === 'Ketu');
+
+                  const badgeClass =
+                    p === 'rahu'
+                      ? 'text-fuchsia-900 bg-fuchsia-50 border-fuchsia-200'
+                      : p === 'ketu'
+                      ? 'text-rose-900 bg-rose-50 border-rose-200'
+                      : finalDignity === 'Exalted'
+                      ? 'text-emerald-900 bg-emerald-50 border-emerald-200'
+                      : finalDignity === 'Debilitated'
+                      ? 'text-red-900 bg-red-50 border-red-200'
+                      : finalDignity === 'Own Sign'
+                      ? 'text-blue-900 bg-blue-50 border-blue-200'
+                      : finalDignity === 'Moolatrikona'
+                      ? 'text-purple-900 bg-purple-50 border-purple-200'
+                      : 'text-gray-800 bg-gray-50 border-gray-200';
+
                   return (
-                    <span key={p} className="text-[11px] px-2 py-0.5 rounded-md bg-background/60 border border-border/70 text-text-muted capitalize">
-                      {p}: {String(val).split(' ')[0]}
+                    <span key={p} className={`text-[12px] px-2.5 py-1 rounded-md border ${badgeClass}`}>
+                      <span className="capitalize">{p}</span>{sign ? `: ${sign}` : ''}{deg ? ` ${deg}` : ''}
+                      {showLabel && finalDignity ? <span className="ml-1">• {finalDignity}</span> : null}
                     </span>
                   );
                 })}
+
+                {/* Ascendant */}
                 {event.planetary_snapshot.ascendant && (
-                  <span className="text-[11px] px-2 py-0.5 rounded-md bg-background/60 border border-border/70 text-text-muted">
-                    Asc: {event.planetary_snapshot.ascendant.split(' ')[0]}
+                  <span className="text-[12px] px-2.5 py-1 rounded-md bg-gray-50 border border-gray-200 text-gray-700">
+                    Asc: {typeof event.planetary_snapshot.ascendant === 'string'
+                      ? event.planetary_snapshot.ascendant.split(' ')[0]
+                      : (event.planetary_snapshot.ascendant.sign || '')}
                   </span>
                 )}
+
+                {/* Unified Aspects popover + Separate Conjunctions */}
+                {Array.isArray(event.planetary_snapshot.aspects) && event.planetary_snapshot.aspects.length > 0 && (() => {
+                  const aspects = event.planetary_snapshot.aspects;
+                  const conjunctions = aspects.filter(a => a.aspectType === 'conjunction');
+                  const nonConjunctions = aspects.filter(a => a.aspectType !== 'conjunction');
+
+                  return (
+                    <>
+                      {/* Conjunctions pill (separate) */}
+                      {conjunctions.length > 0 && (
+                        <details className="group relative">
+                          <summary className="list-none cursor-pointer text-[12px] px-2.5 py-1 rounded-md border text-amber-800 bg-amber-50 border-amber-200 hover:bg-amber-100 select-none inline-flex items-center gap-1">
+                            <span>Conjunctions</span>
+                            <span className="text-[10px] text-amber-800/80">({conjunctions.length})</span>
+                          </summary>
+                          {/* Full-screen modal */}
+                          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => {
+                            if (e.target === e.currentTarget || (e.target instanceof Element && e.target.classList.contains('modal-backdrop'))) {
+                              const details = e.currentTarget.closest('details');
+                              if (details) details.removeAttribute('open');
+                            }
+                          }}>
+                            <div className="absolute inset-0 bg-black/40 modal-backdrop" />
+                            <div className="relative bg-white rounded-xl shadow-2xl border border-amber-200 w-[min(96vw,900px)] max-h-[90vh] overflow-y-auto p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <h5 className="text-lg font-semibold text-amber-900">Conjunctions</h5>
+                                <button
+                                  className="text-amber-800 hover:text-amber-900 text-sm px-2 py-1 rounded-md hover:bg-amber-50"
+                                  onClick={(e) => {
+                                    // close the <details>
+                                    const el = e.currentTarget.closest('details');
+                                    if (el) el.removeAttribute('open');
+                                  }}
+                                >
+                                  Close ✕
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                {conjunctions.map((a, idx) => {
+                                  const label = a.description || `${a.fromPlanet} conjunct ${a.toPlanet}`;
+                                  return (
+                                    <div key={idx} className="text-[14px] px-3 py-2 rounded border border-amber-200 bg-amber-50 text-amber-900">
+                                      • {label}{typeof a.orb === 'number' ? ` (${a.orb.toFixed(1)}°)` : ''}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+                      )}
+
+                      {/* Unified Aspects pill (all aspects except conjunctions, merged top+all) */}
+                      {nonConjunctions.length > 0 && (
+                        <details className="group relative">
+                          <summary className="list-none cursor-pointer text-[12px] px-2.5 py-1 rounded-md border text-indigo-800 bg-indigo-50 border-indigo-200 hover:bg-indigo-100 select-none inline-flex items-center gap-1">
+                            <span>Aspects</span>
+                            <span className="text-[10px] text-indigo-700/80">({nonConjunctions.length})</span>
+                          </summary>
+                          {/* Full-screen modal */}
+                          <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={(e) => {
+                            // Close when clicking the dim backdrop or outside content box
+                            if (e.target === e.currentTarget || (e.target instanceof Element && e.target.classList.contains('modal-backdrop'))) {
+                              const details = e.currentTarget.closest('details');
+                              if (details) details.removeAttribute('open');
+                            }
+                          }}>
+                            <div className="absolute inset-0 bg-black/40 modal-backdrop" />
+                            <div className="relative bg-white rounded-xl shadow-2xl border border-gray-200 w-[min(96vw,1000px)] max-h-[90vh] overflow-y-auto p-5">
+                              <div className="flex items-center justify-between mb-3">
+                                <h5 className="text-lg font-semibold text-indigo-900">Aspects</h5>
+                                <button
+                                  className="text-indigo-800 hover:text-indigo-900 text-sm px-2 py-1 rounded-md hover:bg-indigo-50"
+                                  onClick={(e) => {
+                                    const el = e.currentTarget.closest('details');
+                                    if (el) el.removeAttribute('open');
+                                  }}
+                                >
+                                  Close ✕
+                                </button>
+                              </div>
+                              <div className="space-y-2">
+                                {nonConjunctions.map((a, idx) => {
+                                  const label = a.description || `${a.fromPlanet} ${a.aspectType} ${a.toPlanet}`;
+                                  const style =
+                                    a.aspectType === 'opposition' || a.aspectType === 'square' ? 'border-rose-200 bg-rose-50 text-rose-900' :
+                                    a.aspectType === 'trine' || a.aspectType === 'sextile' ? 'border-emerald-200 bg-emerald-50 text-emerald-900' :
+                                    a.aspectType === 'drishti' ? 'border-indigo-200 bg-indigo-50 text-indigo-900' :
+                                    'border-gray-200 bg-gray-50 text-gray-800';
+                                  return (
+                                    <div key={idx} className={`text-[14px] px-3 py-2 rounded border ${style}`}>
+                                      • {label}{typeof a.orb === 'number' ? ` (${a.orb.toFixed(1)}°)` : ''}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </details>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
             )}
 
-            {/* Aspects summary */}
-            {event.planetary_snapshot?.aspects?.length > 0 && (
-              <div className="mt-1">
-                <button
-                  type="button"
-                  aria-expanded={expandedAspects.has(event.id)}
-                  onClick={() => toggleAspectsExpansion(event.id)}
-                  className="text-xs text-primary hover:text-primary/80 inline-flex items-center gap-1"
-                >
-                  <span>🔗 Vedic Aspects</span>
-                  <span className="text-[11px] text-text-muted">
-                    ({expandedAspects.has(event.id) ? 'hide' : `+${Math.max(0, event.planetary_snapshot.aspects.length - 0)}`})
-                  </span>
-                </button>
-                <div className={`${expandedAspects.has(event.id) ? 'block' : 'hidden'} mt-2 space-y-1 max-h-40 overflow-y-auto pr-1`}>
-                  {event.planetary_snapshot.aspects.slice(0, 12).map((aspect, idx) => (
-                    <div key={idx} className="text-xs text-text-secondary bg-surface/70 border border-border/60 rounded-md px-2 py-1">
-                      • {aspect.description || `${aspect.fromPlanet} ${aspect.aspectType} ${aspect.toPlanet}`}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Removed separate expanded list; unified into popovers above to keep UI clean */}
 
-            <div className="mt-auto pt-2 flex items-center justify-between">
+            <div className="mt-auto pt-3 flex items-center justify-between">
               {/* Confidence placeholder if present in data in future */}
-              <div className="text-[11px] text-text-muted">
+              <div className="text-[12px] text-gray-500">
                 Source: {event.source_name || 'manual'}
               </div>
               {event.source_url && (
@@ -293,7 +454,7 @@ const loadHistoricalEvents = async (currentOffset = 0, reset = false) => {
                   href={event.source_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-medium text-primary hover:underline"
+                  className="text-[12px] font-medium text-indigo-700 hover:text-indigo-900 hover:underline"
                 >
                   View source →
                 </a>
