@@ -6,44 +6,6 @@ const TroubleshootingPanel = ({ errorType }) => {
   const [expandedSection, setExpandedSection] = useState(null);
 
   const troubleshootingData = {
-    upload: {
-      title: "Upload Issues",
-      sections: [
-        {
-          id: 'file-requirements',
-          title: 'File Requirements',
-          icon: 'FileImage',
-          content: [
-            'Supported formats: JPG, PNG, PDF (max 10MB)',
-            'Image resolution: minimum 800x600 pixels',
-            'Clear, well-lit photos work best',
-            'Avoid blurry or rotated images'
-          ]
-        },
-        {
-          id: 'common-issues',
-          title: 'Common Upload Problems',
-          icon: 'AlertTriangle',
-          content: [
-            'File too large: Compress image or use PDF',
-            'Unsupported format: Convert to JPG or PNG',
-            'Poor image quality: Retake photo with better lighting',
-            'Network timeout: Check internet connection'
-          ]
-        },
-        {
-          id: 'tips',
-          title: 'Best Practices',
-          icon: 'Lightbulb',
-          content: [
-            'Use good lighting when photographing kundli',
-            'Keep the kundli flat and straight',
-            'Ensure all text is clearly visible',
-            'Remove any shadows or glare'
-          ]
-        }
-      ]
-    },
     processing: {
       title: "Chart Generation Issues",
       sections: [

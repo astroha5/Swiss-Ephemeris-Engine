@@ -16,14 +16,6 @@ const ErrorBreadcrumb = ({ errorSource, previousPath, onNavigateBack }) => {
           backPath: '/birth-details-form',
           backLabel: 'Back to Form'
         };
-      case 'upload-processing':
-        return {
-          icon: 'Upload',
-          title: 'Kundli Upload',
-          description: 'Error occurred during file upload or processing',
-          backPath: '/kundli-upload',
-          backLabel: 'Back to Upload'
-        };
       case 'chart-generation':
         return {
           icon: 'BarChart3',

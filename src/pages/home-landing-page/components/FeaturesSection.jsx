@@ -32,13 +32,6 @@ const FeaturesSection = () => {
       benefits: ['Accurate time periods', 'Life phase insights', 'Future predictions']
     },
     {
-      id: 'multiple-inputs',
-      icon: 'Upload',
-      title: 'Flexible Input Methods',
-      description: 'Enter birth details manually or upload existing kundli images and PDFs for instant analysis and interpretation.',
-      benefits: ['Manual data entry', 'Image recognition', 'PDF processing']
-    },
-    {
       id: 'mobile-responsive',
       icon: 'Smartphone',
       title: 'Mobile Optimized',

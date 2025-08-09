@@ -19,8 +19,8 @@ const TestimonialsSection = () => {
       location: 'Delhi, India',
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       rating: 5,
-      text: `I uploaded my old kundli image and was amazed at how accurately the AI could read and interpret it. The PDF report is comprehensive and beautifully formatted. Highly recommended for anyone interested in Vedic astrology.`,
-      highlight: 'Image Recognition Excellence'
+      text: `The interpretations are accurate and the PDF report is comprehensive and beautifully formatted. Highly recommended for anyone interested in Vedic astrology.`,
+      highlight: 'Comprehensive Reports'
     },
     {
       id: 3,

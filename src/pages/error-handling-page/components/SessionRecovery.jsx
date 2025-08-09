@@ -11,13 +11,11 @@ const SessionRecovery = ({ onRestore, onDismiss }) => {
     const checkSavedData = () => {
       try {
         const birthDetails = localStorage.getItem('astrova_birth_details');
-        const uploadProgress = localStorage.getItem('astrova_upload_progress');
         const formData = localStorage.getItem('astrova_form_data');
         
-        if (birthDetails || uploadProgress || formData) {
+        if (birthDetails || formData) {
           setSavedData({
             birthDetails: birthDetails ? JSON.parse(birthDetails) : null,
-            uploadProgress: uploadProgress ? JSON.parse(uploadProgress) : null,
             formData: formData ? JSON.parse(formData) : null,
             timestamp: Date.now()
           });
@@ -41,7 +39,6 @@ const SessionRecovery = ({ onRestore, onDismiss }) => {
   const handleDismiss = () => {
     // Clear saved data
     localStorage.removeItem('astrova_birth_details');
-    localStorage.removeItem('astrova_upload_progress');
     localStorage.removeItem('astrova_form_data');
     
     if (onDismiss) {
@@ -84,12 +81,6 @@ const SessionRecovery = ({ onRestore, onDismiss }) => {
               <div className="flex items-center space-x-2 text-xs text-text-muted">
                 <Icon name="User" size={12} />
                 <span>Birth details: {savedData.birthDetails.name || 'Unnamed'}</span>
-              </div>
-            )}
-            {savedData.uploadProgress && (
-              <div className="flex items-center space-x-2 text-xs text-text-muted">
-                <Icon name="Upload" size={12} />
-                <span>Upload progress: {savedData.uploadProgress.fileName}</span>
               </div>
             )}
             {savedData.formData && (

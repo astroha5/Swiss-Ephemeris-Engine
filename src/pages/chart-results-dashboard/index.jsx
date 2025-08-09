@@ -30,9 +30,9 @@ const ChartResultsDashboard = () => {
   const [dashaLoading, setDashaLoading] = useState(false);
   const [dashaError, setDashaError] = useState(null);
 
-  // Check if user came from birth details form or upload
+  // Input method is manual entry only
   const sourceRoute = location.state?.from || '/home-landing-page';
-  const inputMethod = sourceRoute.includes('birth-details') ? 'Manual Entry' : 'Upload';
+  const inputMethod = 'Manual Entry';
   
   // Extract chart data and raw birth details from location state OR localStorage
   const { chartData, birthDetailsRaw } = useMemo(() => {

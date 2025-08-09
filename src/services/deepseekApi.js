@@ -109,13 +109,7 @@ backendApi.interceptors.response.use(
   }
 );
 
-// Note: Image analysis is not supported by local Ollama integration
-export const analyzeKundliImage = async (imageData, options = {}) => {
-  return {
-    success: false,
-    error: 'Image analysis is not supported with the current local AI integration. Please use manual chart data entry instead.',
-    timestamp: new Date().toISOString()
-  };};
+// Image analysis functionality removed
 
 // Generate astrological interpretation based on chart data
 // Updated model sequence - removed problematic model and reordered

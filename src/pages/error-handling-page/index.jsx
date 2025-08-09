@@ -41,30 +41,6 @@ const ErrorHandlingPage = () => {
 
   const errorTypes = [
     {
-      type: 'upload',
-      title: 'Upload Failed',
-      description: 'There was an issue processing your kundli image. The file might be corrupted, too large, or in an unsupported format.',
-      icon: 'Upload',
-      primaryAction: {
-        label: 'Try Upload Again',
-        onClick: () => navigate('/kundli-upload'),
-        variant: 'primary',
-        icon: 'Upload'
-      },
-      secondaryAction: {
-        label: 'Manual Entry',
-        onClick: () => navigate('/birth-details-form'),
-        variant: 'secondary',
-        icon: 'Edit3'
-      },
-      tips: [
-        'Use JPG, PNG, or PDF files under 10MB',
-        'Ensure image is clear and well-lit',
-        'Avoid blurry or rotated photos',
-        'Try compressing large files'
-      ]
-    },
-    {
       type: 'processing',
       title: 'Chart Generation Failed',
       description: 'Our AI system encountered an issue while generating your astrological chart. This could be due to invalid birth data or processing errors.',
@@ -146,8 +122,6 @@ const ErrorHandlingPage = () => {
     // Navigate based on available data
     if (savedData.birthDetails) {
       navigate('/birth-details-form', { state: { restoreData: savedData.birthDetails } });
-    } else if (savedData.uploadProgress) {
-      navigate('/kundli-upload', { state: { restoreData: savedData.uploadProgress } });
     } else {
       navigate('/home-landing-page');
     }

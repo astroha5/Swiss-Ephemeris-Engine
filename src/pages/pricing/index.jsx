@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../../components/ui/Header';
 import ErrorBoundaryNavigation from '../../components/ui/ErrorBoundaryNavigation';
 import Button from '../../components/ui/Button';
@@ -106,7 +107,12 @@ const PricingPage = () => {
               ) : (
                 <Button onClick={handleSubscribe} iconName="Crown" iconPosition="left">Upgrade to Premium</Button>
               )}
+              <p className="mt-3 text-xs text-text-muted">₹99/month. Auto‑renews monthly until cancelled. You can cancel anytime; access continues until the end of the current billing cycle. See our <Link to="/terms-of-service" className="text-primary hover:underline">Terms</Link> and <Link to="/refund-policy" className="text-primary hover:underline">Refund & Cancellation Policy</Link>.</p>
             </div>
+          </div>
+
+          <div className="mt-8 text-center text-sm text-text-secondary">
+            Questions about billing? <Link to="/contact" className="text-primary hover:underline">Contact us</Link>.
           </div>
         </main>
         {/* Auth Modals for gated upgrade */}

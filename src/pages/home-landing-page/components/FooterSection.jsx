@@ -12,24 +12,24 @@ const FooterSection = () => {
       { label: 'Support', path: '/error-handling-page' }
     ],
     resources: [
-      { label: 'About Vedic Astrology', path: '#' },
-      { label: 'Chart Reading Guide', path: '#' },
-      { label: 'Dasha Periods', path: '#' },
-      { label: 'FAQ', path: '#' }
+      { label: 'About Vedic Astrology', path: 'https://en.wikipedia.org/wiki/Hindu_astrology' },
+      { label: 'Chart Reading Guide', path: 'https://en.wikipedia.org/wiki/Natal_chart' },
+      { label: 'Vimshottari Dasha', path: 'https://en.wikipedia.org/wiki/Dasha_(astrology)#Vimshottari_Dasha' }
     ],
     support: [
       { label: 'Help Center', path: '/error-handling-page' },
-      { label: 'Contact Us', path: '#' },
-      { label: 'Privacy Policy', path: '#' },
-      { label: 'Terms of Service', path: '#' }
+      { label: 'Contact Us', path: '/contact' },
+      { label: 'Privacy Policy', path: '/privacy-policy' },
+      { label: 'Terms of Service', path: '/terms-of-service' },
+      { label: 'Refund Policy', path: '/refund-policy' }
     ]
   };
 
   const socialLinks = [
-    { name: 'Facebook', icon: 'Facebook', url: '#' },
-    { name: 'Twitter', icon: 'Twitter', url: '#' },
-    { name: 'Instagram', icon: 'Instagram', url: '#' },
-    { name: 'YouTube', icon: 'Youtube', url: '#' }
+    { name: 'Facebook', icon: 'Facebook', url: 'https://facebook.com' },
+    { name: 'Twitter', icon: 'Twitter', url: 'https://twitter.com' },
+    { name: 'Instagram', icon: 'Instagram', url: 'https://instagram.com' },
+    { name: 'YouTube', icon: 'Youtube', url: 'https://youtube.com' }
   ];
 
   const Logo = () => (

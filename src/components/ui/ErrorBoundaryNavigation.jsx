@@ -49,9 +49,6 @@ const ErrorBoundaryNavigationContent = ({ error, errorInfo, previousPath, onRetr
   const navigate = useNavigate();
 
   const getErrorType = () => {
-    if (error?.message?.includes('upload') || error?.message?.includes('file')) {
-      return 'upload';
-    }
     if (error?.message?.includes('chart') || error?.message?.includes('processing')) {
       return 'processing';
     }
@@ -65,21 +62,6 @@ const ErrorBoundaryNavigationContent = ({ error, errorInfo, previousPath, onRetr
     const errorType = getErrorType();
     
     switch (errorType) {
-      case 'upload':
-        return {
-          icon: 'Upload',
-          title: 'Upload Failed',
-          message: 'There was an issue processing your kundli image. Please try uploading again or use manual entry.',
-          primaryAction: {
-            label: 'Try Upload Again',
-            onClick: () => navigate('/kundli-upload')
-          },
-          secondaryAction: {
-            label: 'Manual Entry',
-            onClick: () => navigate('/birth-details-form')
-          }
-        };
-      
       case 'processing':
         return {
           icon: 'AlertTriangle',
