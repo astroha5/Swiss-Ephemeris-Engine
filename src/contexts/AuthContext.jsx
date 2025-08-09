@@ -6,6 +6,7 @@ import {
   signOut as authSignOut,
   getUserPreferences 
 } from '../services/authService';
+import { syncSubscriptionFromBackend } from '../services/subscriptionService';
 
 const AuthContext = createContext({});
 
@@ -39,6 +40,8 @@ export const AuthProvider = ({ children }) => {
         if (currentUser) {
           const preferences = await getUserPreferences(currentUser.id);
           setUserPreferences(preferences);
+          // Also sync subscription plan for access control
+          try { await syncSubscriptionFromBackend(); } catch (_) {}
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
@@ -61,6 +64,8 @@ export const AuthProvider = ({ children }) => {
         try {
           const preferences = await getUserPreferences(session.user.id);
           setUserPreferences(preferences);
+          // Ensure subscription plan is synced from backend on sign-in
+          try { await syncSubscriptionFromBackend(); } catch (_) {}
         } catch (error) {
           console.error('Error loading user preferences:', error);
         }

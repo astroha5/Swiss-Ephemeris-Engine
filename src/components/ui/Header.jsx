@@ -5,12 +5,20 @@ import Button from './Button';
 import UserAvatar from '../auth/UserAvatar';
 import LoginModal from '../auth/LoginModal';
 import SignupModal from '../auth/SignupModal';
+import PremiumUpsellModal from './PremiumUpsellModal';
+import { isPremium, subscribePremium, syncSubscriptionFromBackend } from '../../services/subscriptionService';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLocation as useRouterLocation } from 'react-router-dom';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isSignupModalOpen, setIsSignupModalOpen] = useState(false);
   const location = useLocation();
+  const routerLocation = useRouterLocation();
+  const { isAuthenticated } = useAuth();
+  const [showUpsell, setShowUpsell] = useState(false);
+  const [pendingUpgrade, setPendingUpgrade] = useState(false);
 
   const navigationItems = [
     {
@@ -42,6 +50,12 @@ const Header = () => {
       path: '/planetary-events',
       icon: 'TrendingUp',
       tooltip: 'Explore correlations between world events and planetary positions'
+    },
+    {
+      label: 'Pricing',
+      path: '/pricing',
+      icon: 'CreditCard',
+      tooltip: 'See Free vs Premium'
     },
     {
       label: 'Support',
@@ -76,6 +90,54 @@ const Header = () => {
   const closeModals = () => {
     setIsLoginModalOpen(false);
     setIsSignupModalOpen(false);
+  };
+
+  // After sign-in, if user is on Free plan, nudge to upgrade
+  React.useEffect(() => {
+    let cancelled = false;
+    const checkPlan = async () => {
+      if (!isAuthenticated) return;
+      // Do not show on pricing page
+      if (routerLocation.pathname === '/pricing') return;
+      // Only show once per sign-in
+      const shownKey = 'premiumUpsellShown';
+      if (localStorage.getItem(shownKey) === 'true') return;
+      const plan = await syncSubscriptionFromBackend();
+      if (!cancelled && plan !== 'premium' && !isPremium()) {
+        setShowUpsell(true);
+        localStorage.setItem(shownKey, 'true');
+      }
+    };
+    checkPlan();
+    return () => { cancelled = true; };
+  }, [isAuthenticated, routerLocation.pathname]);
+
+  const doUpgrade = async () => {
+    try {
+      const plan = await syncSubscriptionFromBackend();
+      if (plan === 'premium' || isPremium()) {
+        alert('You already have Premium access.');
+        setShowUpsell(false);
+        return;
+      }
+      await subscribePremium();
+      alert('You are now Premium! Enjoy faster and more accurate AI.');
+      setShowUpsell(false);
+    } catch (e) {
+      if (e?.code === 'AUTH_REQUIRED') {
+        setPendingUpgrade(true);
+        setIsLoginModalOpen(true);
+        return;
+      }
+      if (e?.code === 'ALREADY_PREMIUM') {
+        alert('You already have Premium access.');
+        setShowUpsell(false);
+        return;
+      }
+      alert('Subscription failed. Please try again.');
+    } finally {
+      setPendingUpgrade(false);
+    }
   };
 
   const Logo = () => (
@@ -231,13 +293,32 @@ const Header = () => {
       {/* Auth Modals */}
       <LoginModal
         isOpen={isLoginModalOpen}
-        onClose={closeModals}
+        onClose={() => {
+          setIsLoginModalOpen(false);
+          if (pendingUpgrade && isAuthenticated) {
+            void doUpgrade();
+          }
+        }}
         onSwitchToSignup={openSignupModal}
       />
       <SignupModal
         isOpen={isSignupModalOpen}
         onClose={closeModals}
         onSwitchToLogin={openLoginModal}
+      />
+
+      {/* Post-sign-in upsell for Free users */}
+      <PremiumUpsellModal
+        isOpen={showUpsell}
+        onClose={() => setShowUpsell(false)}
+        onUpgrade={() => {
+          if (!isAuthenticated) {
+            setPendingUpgrade(true);
+            setIsLoginModalOpen(true);
+            return;
+          }
+          void doUpgrade();
+        }}
       />
     </header>
   );

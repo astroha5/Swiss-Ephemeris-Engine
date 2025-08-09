@@ -61,3 +61,13 @@ async function testConnection() {
 testConnection();
 
 module.exports = { supabase, sql };
+
+// Create a per-request client that uses the caller's JWT for RLS
+module.exports.createAuthedClient = function createAuthedClient(accessToken) {
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false },
+    global: {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    }
+  });
+};

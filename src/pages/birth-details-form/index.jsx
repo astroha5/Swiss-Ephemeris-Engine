@@ -12,6 +12,11 @@ import AstrologicalTermsTooltip from './components/AstrologicalTermsTooltip';
 import Icon from '../../components/AppIcon';
 import Button from '../../components/ui/Button';
 import { generateKundli, geocodeLocation } from '../../services/api';
+import PremiumUpsellModal from '../../components/ui/PremiumUpsellModal';
+import { isPremium, subscribePremium, syncSubscriptionFromBackend } from '../../services/subscriptionService';
+import LoginModal from '../../components/auth/LoginModal';
+import SignupModal from '../../components/auth/SignupModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 const BirthDetailsForm = () => {
   const navigate = useNavigate();
@@ -26,6 +31,48 @@ const BirthDetailsForm = () => {
     locationData: null
   });
   const [errors, setErrors] = useState({});
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [pendingUpgrade, setPendingUpgrade] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (isAuthenticated && pendingUpgrade) {
+      void performUpgrade();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, pendingUpgrade]);
+
+  const performUpgrade = async () => {
+    try {
+      const backendPlan = await syncSubscriptionFromBackend();
+      if (backendPlan === 'premium' || isPremium()) {
+        alert('You already have Premium access.');
+        setShowPremiumModal(false);
+        setPendingUpgrade(false);
+        return;
+      }
+      await subscribePremium();
+      alert('You are now Premium! Enjoy faster and more accurate AI.');
+      setShowPremiumModal(false);
+    } catch (e) {
+      if (e?.code === 'AUTH_REQUIRED') {
+        setPendingUpgrade(true);
+        setLoginOpen(true);
+        return;
+      }
+      if (e?.code === 'ALREADY_PREMIUM') {
+        alert('You already have Premium access.');
+        setShowPremiumModal(false);
+        setPendingUpgrade(false);
+        return;
+      }
+      alert('Subscription failed. Please try again.');
+    } finally {
+      setPendingUpgrade(false);
+    }
+  };
 
   // Form validation
   const validateForm = () => {
@@ -94,6 +141,12 @@ const BirthDetailsForm = () => {
         errorElement.focus();
       }
       return;
+    }
+
+    // Prompt upsell only if not premium
+    if (!isPremium()) {
+      setShowPremiumModal(true);
+      // Do not return; allow user choice via modal
     }
 
     setIsLoading(true);
@@ -345,6 +398,31 @@ const BirthDetailsForm = () => {
           onPrimaryAction={handleSubmit}
           onSecondaryAction={() => navigate('/home-landing-page')}
           disabled={!isFormValid()}
+        />
+
+        <PremiumUpsellModal
+          isOpen={showPremiumModal}
+          onClose={() => setShowPremiumModal(false)}
+          onUpgrade={async () => {
+            if (!isAuthenticated) {
+              setPendingUpgrade(true);
+              setLoginOpen(true);
+              return;
+            }
+            await performUpgrade();
+          }}
+        />
+
+        {/* Auth Modals for gated upgrade */}
+        <LoginModal
+          isOpen={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          onSwitchToSignup={() => { setLoginOpen(false); setSignupOpen(true); }}
+        />
+        <SignupModal
+          isOpen={signupOpen}
+          onClose={() => setSignupOpen(false)}
+          onSwitchToLogin={() => { setSignupOpen(false); setLoginOpen(true); }}
         />
       </div>
     </ErrorBoundaryNavigation>

@@ -25,6 +25,7 @@ const analyticsRoutes = require('./routes/analytics');
 const majorPatternsRoutes = require('./routes/majorPatterns');
 const historicalEnrichmentRoutes = require('./routes/historicalEnrichment');
 const mlRoutes = require('./routes/ml');
+const subscriptionRoutes = require('./routes/subscription');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -95,6 +96,7 @@ app.use('/api/dasha', dashaRoutes);
 app.use('/api/planetary-positions', planetaryPositionsRoutes);
 app.use('/api/transits', transitRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/pattern-recall', patternRecallRoutes);
 app.use('/api/planetary-events', planetaryEventsRoutes);
 app.use('/api/patterns', patternsRoutes);
