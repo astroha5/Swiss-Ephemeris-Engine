@@ -94,28 +94,60 @@ async function callOpenRouter(prompt, modelOrKey, systemPrompt = 'You are an exp
   }
 }
 
-// OpenAI API call for premium users
-async function callOpenAI(prompt, model = 'gpt-4o-mini', systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', maxRetries = 3) {
+// OpenAI API call for premium users - supports both GPT-5 and GPT-4 models
+async function callOpenAI(prompt, model = 'gpt-5-mini', systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', verbosity = 'medium', maxRetries = 3) {
   const openai = createOpenAIClient();
+  const combinedInput = `${systemPrompt}\n\n${prompt}`;
+  
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await openai.chat.completions.create({
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: prompt
+      let response;
+      let content;
+      
+      // Use new responses.create() API for GPT-5 models
+      if (model === 'gpt-5-mini' || model.startsWith('gpt-5')) {
+        response = await openai.responses.create({
+          model,
+          input: combinedInput,
+          text: {
+            verbosity: verbosity
           }
-        ],
-        temperature: 0.4,
-        max_tokens: 4000
-      });
-      const content = response?.choices?.[0]?.message?.content;
-      if (content) {
+        });
+        
+        // Extract text from new API response format
+        content = "";
+        if (response.output && Array.isArray(response.output)) {
+          for (const item of response.output) {
+            if (item.content && Array.isArray(item.content)) {
+              for (const contentItem of item.content) {
+                if (contentItem.text && contentItem.text.value) {
+                  content += contentItem.text.value;
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // Use traditional chat completions API for GPT-4 models
+        response = await openai.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.4,
+          max_tokens: 4000
+        });
+        content = response?.choices?.[0]?.message?.content;
+      }
+      
+      if (content && content.trim()) {
         logger.info(`✅ Successfully generated response with OpenAI (${model})`);
         return content;
       }
@@ -175,13 +207,13 @@ router.post('/chart-interpretation', async (req, res) => {
       chartData,
       birthDetails,
       dashaData,
-      model: premium ? 'gpt-4o-mini' : undefined
+      model: premium ? 'gpt-5-mini' : undefined
     });
 
     res.json({
       taskId: 1,
       taskName: 'AI Chart Interpretation',
-      model: premium ? 'gpt-4o-mini' : AI_MODELS.CHART_INTERPRETATION,
+      model: premium ? 'gpt-5-mini' : AI_MODELS.CHART_INTERPRETATION,
       interpretation,
       timestamp: new Date().toISOString()
     });
@@ -212,7 +244,7 @@ router.post('/monthly-prediction', async (req, res) => {
 
     // Decide allowed model based on subscription (ignore client-provided model)
     const premium = await hasActivePremium(req);
-    const allowedModel = premium ? 'gpt-4o-mini' : AI_MODELS.MONTHLY_PREDICTIONS;
+    const allowedModel = premium ? 'gpt-5-mini' : AI_MODELS.MONTHLY_PREDICTIONS;
 
     // Generate AI prediction using the allowed model
     const prediction = await generateAIMonthlyPrediction({
@@ -277,10 +309,10 @@ router.post('/chat', async (req, res) => {
     const systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.';
 
     if (premium) {
-      const response = await callOpenAI(prompt, 'gpt-4o-mini', systemPrompt);
+      const response = await callOpenAI(prompt, 'gpt-5-mini', systemPrompt, 'medium');
       return res.json({
         response,
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         timestamp: new Date().toISOString(),
         status: 'success'
       });
@@ -326,13 +358,13 @@ router.post('/astrological-qa', async (req, res) => {
       chartData,
       birthDetails,
       dashaData,
-      model: premium ? 'gpt-4o-mini' : undefined
+      model: premium ? 'gpt-5-mini' : undefined
     });
 
     res.json({
       taskId: 3,
       taskName: 'AI Q&A Section',
-      model: premium ? 'gpt-4o-mini' : AI_MODELS.QA_SECTION,
+      model: premium ? 'gpt-5-mini' : AI_MODELS.QA_SECTION,
       question,
       answer,
       timestamp: new Date().toISOString()
@@ -389,8 +421,8 @@ ${dashaData ? `**Dasha Information:**\n${JSON.stringify(dashaData, null, 2)}` : 
 
 Provide a detailed Vedic astrological interpretation with specific insights based on planetary positions, house lords, and current dasha periods. Include personalized remedies.`;
 
-  if (model && (model === 'gpt-4o-mini' || model.startsWith('gpt-'))) {
-    return await callOpenAI(prompt, model, systemPrompt);
+  if (model && (model.startsWith('gpt-4') || model.startsWith('gpt-5'))) {
+    return await callOpenAI(prompt, model, systemPrompt, 'high'); // High verbosity for detailed chart interpretation
   }
   return await callOpenRouter(prompt, model || 'CHART_INTERPRETATION', systemPrompt);
 }
@@ -437,8 +469,8 @@ Base your analysis strictly on traditional Vedic astrological principles while p
   });
 
   try {
-    if (model && String(model).startsWith('openai/')) {
-      const response = await callOpenAI(prompt, model, systemPrompt);
+    if (model && (model.startsWith('gpt-4') || model.startsWith('gpt-5'))) {
+      const response = await callOpenAI(prompt, model, systemPrompt, 'high'); // Use high verbosity for detailed predictions
       return parseAIMonthlyResponse(response, { selectedMonth, selectedYear });
     }
     const response = await callOpenRouter(prompt, 'MONTHLY_PREDICTIONS', systemPrompt);
@@ -892,8 +924,8 @@ Analyze how current planetary transits will affect this person during ${currentM
 
 Return ONLY a valid JSON object following the exact structure specified above. Do not include any text before or after the JSON.`;
 
-  if (model && String(model).startsWith('openai/')) {
-    const response = await callOpenAI(prompt, model, systemPrompt);
+  if (model && (model.startsWith('gpt-4') || model.startsWith('gpt-5'))) {
+    const response = await callOpenAI(prompt, model, systemPrompt, 'high'); // Use high verbosity for detailed predictions
     
     // Parse the AI response to ensure it's valid JSON
     try {
@@ -972,8 +1004,8 @@ ${dashaData ? `**Current Dasha:**\n${JSON.stringify(dashaData, null, 2)}` : ''}
 
 Provide a detailed, personalized answer based on their specific chart placements, current dasha period, and relevant Vedic astrological principles. Include timing insights and remedies when appropriate.`;
 
-  if (model && (model === 'gpt-4o-mini' || model.startsWith('gpt-'))) {
-    return await callOpenAI(prompt, model, systemPrompt);
+  if (model && (model.startsWith('gpt-4') || model.startsWith('gpt-5'))) {
+    return await callOpenAI(prompt, model, systemPrompt, 'medium'); // Medium verbosity for Q&A responses
   }
   return await callOpenRouter(prompt, model || 'QA_SECTION', systemPrompt);
 }
