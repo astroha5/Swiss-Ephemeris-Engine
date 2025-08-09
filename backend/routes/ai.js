@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const logger = require('../utils/logger');
 const axios = require('axios');
+const { createAuthedClient } = require('../config/supabase');
+const { createOpenAIClient } = require('../config/openai');
 
 // OpenRouter Configuration
 const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
@@ -10,7 +12,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // AI Task Models Configuration (Sequential Execution Order)
 const AI_MODELS = {
   CHART_INTERPRETATION: 'shisa-ai/shisa-v2-llama3.3-70b:free',
-  MONTHLY_PREDICTIONS: 'shisa-ai/shisa-v2-llama3.3-70b:free', // Changed to avoid rate limits
+  MONTHLY_PREDICTIONS: 'shisa-ai/shisa-v2-llama3.3-70b:free',
   QA_SECTION: 'shisa-ai/shisa-v2-llama3.3-70b:free'
 };
 
@@ -46,13 +48,13 @@ async function validateOpenRouterConnection() {
   }
 }
 
-// OpenRouter API call function with specific model support
-async function callOpenRouter(prompt, modelKey, systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', maxRetries = 3) {
+// OpenRouter API call function with model or model-key support
+async function callOpenRouter(prompt, modelOrKey, systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', maxRetries = 3) {
   if (!OPENROUTER_API_KEY) {
     throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.');
   }
   
-  const model = AI_MODELS[modelKey] || AI_MODELS.CHART_INTERPRETATION;
+  const model = AI_MODELS[modelOrKey] || modelOrKey || AI_MODELS.CHART_INTERPRETATION;
   logger.info(`🚀 Calling OpenRouter with model: ${model}`);
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -92,6 +94,60 @@ async function callOpenRouter(prompt, modelKey, systemPrompt = 'You are an exper
   }
 }
 
+// OpenAI API call for premium users
+async function callOpenAI(prompt, model = 'gpt-5-mini', systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', maxRetries = 3) {
+  const openai = createOpenAIClient();
+  const combinedInput = `${systemPrompt}\n\n${prompt}`;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await openai.responses.create({
+        model,
+        input: combinedInput,
+        service_tier: 'priority'
+      });
+      const content = response?.output_text
+        || response?.choices?.[0]?.message?.content
+        || (Array.isArray(response?.output) ? response.output.map(p => p.content?.[0]?.text?.value).filter(Boolean).join('\n') : null);
+      if (content) {
+        logger.info(`✅ Successfully generated response with OpenAI (${model})`);
+        return content;
+      }
+      throw new Error('Empty response from OpenAI');
+    } catch (error) {
+      logger.error(`❌ OpenAI call failed (attempt ${attempt}/${maxRetries}):`, error.response?.data || error.message);
+      if (attempt === maxRetries) {
+        throw new Error(`OpenAI failed after ${maxRetries} attempts: ${error.message}`);
+      }
+      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+    }
+  }
+}
+
+// Determine if request has active premium subscription
+async function hasActivePremium(req) {
+  try {
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length) : null;
+    if (!token) return false;
+    const client = createAuthedClient(token);
+    const { data, error } = await client
+      .from('user_preferences')
+      .select('plan,premium_end_date,subscription_plan')
+      .eq('user_id', (await client.auth.getUser()).data?.user?.id)
+      .single();
+    if (error && error.code !== 'PGRST116') {
+      logger.warn('Premium check error:', error.message);
+    }
+    const plan = data?.plan || (data?.subscription_plan === 'premium' ? 'premium' : 'free') || 'free';
+    const endIso = data?.premium_end_date;
+    if (plan !== 'premium' || !endIso) return false;
+    return new Date(endIso).getTime() > Date.now();
+  } catch (e) {
+    logger.warn('Premium status check failed:', e.message);
+    return false;
+  }
+}
+
 // 🧠 AI TASK 1: Chart Interpretation Endpoint
 router.post('/chart-interpretation', async (req, res) => {
   try {
@@ -106,17 +162,19 @@ router.post('/chart-interpretation', async (req, res) => {
 
     logger.info('🔮 Starting AI Chart Interpretation Task');
 
-    // Generate chart interpretation using OpenRouter
+    // Choose model based on subscription
+    const premium = await hasActivePremium(req);
     const interpretation = await generateChartInterpretation({
       chartData,
       birthDetails,
-      dashaData
+      dashaData,
+      model: premium ? 'gpt-5-mini' : undefined
     });
 
     res.json({
       taskId: 1,
       taskName: 'AI Chart Interpretation',
-      model: AI_MODELS.CHART_INTERPRETATION,
+      model: premium ? 'gpt-5-mini' : AI_MODELS.CHART_INTERPRETATION,
       interpretation,
       timestamp: new Date().toISOString()
     });
@@ -145,9 +203,13 @@ router.post('/monthly-prediction', async (req, res) => {
 
     logger.info('Generating AI monthly prediction for user');
 
-    // Generate AI prediction using the specified model
+    // Decide allowed model based on subscription (ignore client-provided model)
+    const premium = await hasActivePremium(req);
+    const allowedModel = premium ? 'gpt-5-mini' : AI_MODELS.MONTHLY_PREDICTIONS;
+
+    // Generate AI prediction using the allowed model
     const prediction = await generateAIMonthlyPrediction({
-      model: model || 'microsoft/DialoGPT-medium',
+      model: allowedModel,
       chartData,
       dashaData,
       birthDetails,
@@ -158,7 +220,8 @@ router.post('/monthly-prediction', async (req, res) => {
 
     res.json({
       prediction,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      model: allowedModel
     });
 
   } catch (error) {
@@ -192,7 +255,7 @@ router.post('/monthly-prediction', async (req, res) => {
 // AI chat endpoint with OpenRouter integration
 router.post('/chat', async (req, res) => {
   try {
-    const { prompt, model, temperature, maxTokens } = req.body;
+    const { prompt } = req.body;
 
     // Validate required data
     if (!prompt) {
@@ -201,21 +264,25 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    logger.info('AI chat request received - using OpenRouter integration');
+    logger.info('AI chat request received - enforcing server-side model selection');
 
-    // Use the appropriate model or default to CHART_INTERPRETATION
-    const modelKey = model ? Object.keys(AI_MODELS).find(key => 
-      AI_MODELS[key] === model || key === model
-    ) : 'CHART_INTERPRETATION';
-    
+    const premium = await hasActivePremium(req);
     const systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.';
-    
-    // Call OpenRouter with the provided prompt
-    const response = await callOpenRouter(prompt, modelKey || 'CHART_INTERPRETATION', systemPrompt);
-    
-    res.json({
+
+    if (premium) {
+      const response = await callOpenAI(prompt, 'gpt-5-mini', systemPrompt);
+      return res.json({
+        response,
+        model: 'gpt-5-mini',
+        timestamp: new Date().toISOString(),
+        status: 'success'
+      });
+    }
+
+    const response = await callOpenRouter(prompt, 'CHART_INTERPRETATION', systemPrompt);
+    return res.json({
       response,
-      model: AI_MODELS[modelKey || 'CHART_INTERPRETATION'],
+      model: AI_MODELS.CHART_INTERPRETATION,
       timestamp: new Date().toISOString(),
       status: 'success'
     });
@@ -245,18 +312,20 @@ router.post('/astrological-qa', async (req, res) => {
 
     logger.info('👤 Starting AI Q&A Task');
 
-    // Generate AI response using the Q&A function
+    // Choose model based on subscription
+    const premium = await hasActivePremium(req);
     const answer = await generateAstrologicalQA({
       question,
       chartData,
       birthDetails,
-      dashaData
+      dashaData,
+      model: premium ? 'gpt-5-mini' : undefined
     });
 
     res.json({
       taskId: 3,
       taskName: 'AI Q&A Section',
-      model: AI_MODELS.QA_SECTION,
+      model: premium ? 'gpt-5-mini' : AI_MODELS.QA_SECTION,
       question,
       answer,
       timestamp: new Date().toISOString()
@@ -279,7 +348,7 @@ router.post('/astrological-qa', async (req, res) => {
 });
 
 // 🧠 AI TASK 1: Chart Interpretation Function
-async function generateChartInterpretation({ chartData, birthDetails, dashaData }) {
+async function generateChartInterpretation({ chartData, birthDetails, dashaData, model }) {
   const systemPrompt = `You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles. 
 
 Analyze birth charts using:
@@ -313,7 +382,10 @@ ${dashaData ? `**Dasha Information:**\n${JSON.stringify(dashaData, null, 2)}` : 
 
 Provide a detailed Vedic astrological interpretation with specific insights based on planetary positions, house lords, and current dasha periods. Include personalized remedies.`;
 
-  return await callOpenRouter(prompt, 'CHART_INTERPRETATION', systemPrompt);
+  if (model && String(model).startsWith('openai/')) {
+    return await callOpenAI(prompt, model, systemPrompt);
+  }
+  return await callOpenRouter(prompt, model || 'CHART_INTERPRETATION', systemPrompt);
 }
 
 // 🧠 AI TASK 2: Enhanced Monthly Predictions Function
@@ -358,6 +430,10 @@ Base your analysis strictly on traditional Vedic astrological principles while p
   });
 
   try {
+    if (model && String(model).startsWith('openai/')) {
+      const response = await callOpenAI(prompt, model, systemPrompt);
+      return parseAIMonthlyResponse(response, { selectedMonth, selectedYear });
+    }
     const response = await callOpenRouter(prompt, 'MONTHLY_PREDICTIONS', systemPrompt);
     return parseAIMonthlyResponse(response, { selectedMonth, selectedYear });
   } catch (error) {
@@ -712,7 +788,7 @@ function getAllFavorableDates(data, selectedMonth, selectedYear) {
   
   return allDates;
 }
-async function generateAIMonthlyPrediction({ chartData, dashaData, birthDetails, planetaryTransits, selectedMonth, selectedYear }) {
+async function generateAIMonthlyPrediction({ model, chartData, dashaData, birthDetails, planetaryTransits, selectedMonth, selectedYear }) {
   const systemPrompt = `You are an expert Vedic astrologer specializing in predictive astrology and transit analysis.
 
 Analyze current planetary transits against the natal chart, considering:
@@ -809,7 +885,29 @@ Analyze how current planetary transits will affect this person during ${currentM
 
 Return ONLY a valid JSON object following the exact structure specified above. Do not include any text before or after the JSON.`;
 
-  const response = await callOpenRouter(prompt, 'MONTHLY_PREDICTIONS', systemPrompt);
+  if (model && String(model).startsWith('openai/')) {
+    const response = await callOpenAI(prompt, model, systemPrompt);
+    
+    // Parse the AI response to ensure it's valid JSON
+    try {
+      const parsedResponse = JSON.parse(response);
+      return parsedResponse;
+    } catch (parseError) {
+      logger.warn('AI response was not valid JSON, attempting to extract:', parseError.message);
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const extractedJson = JSON.parse(jsonMatch[0]);
+          return extractedJson;
+        } catch (extractError) {
+          logger.error('Failed to extract JSON from AI response:', extractError.message);
+        }
+      }
+      logger.warn('Falling back to mock prediction due to JSON parsing failure');
+      throw new Error('AI response was not valid JSON - falling back to mock prediction');
+    }
+  }
+  const response = await callOpenRouter(prompt, model || 'MONTHLY_PREDICTIONS', systemPrompt);
   
   // Parse the AI response to ensure it's valid JSON
   try {
@@ -836,7 +934,7 @@ Return ONLY a valid JSON object following the exact structure specified above. D
 }
 
 // 🧠 AI TASK 3: Q&A Function
-async function generateAstrologicalQA({ question, chartData, birthDetails, dashaData }) {
+async function generateAstrologicalQA({ question, chartData, birthDetails, dashaData, model }) {
   const systemPrompt = `You are an expert Vedic astrologer providing personalized answers to astrological questions.
 
 When answering questions:
@@ -867,7 +965,10 @@ ${dashaData ? `**Current Dasha:**\n${JSON.stringify(dashaData, null, 2)}` : ''}
 
 Provide a detailed, personalized answer based on their specific chart placements, current dasha period, and relevant Vedic astrological principles. Include timing insights and remedies when appropriate.`;
 
-  return await callOpenRouter(prompt, 'QA_SECTION', systemPrompt);
+  if (model && String(model).startsWith('openai/')) {
+    return await callOpenAI(prompt, model, systemPrompt);
+  }
+  return await callOpenRouter(prompt, model || 'QA_SECTION', systemPrompt);
 }
 
 // Fallback mock prediction generation function

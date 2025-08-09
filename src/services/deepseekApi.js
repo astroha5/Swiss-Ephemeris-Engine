@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { isPremium } from './subscriptionService';
+import { getSession } from './authService';
 
 // Backend API configuration
 const BACKEND_BASE_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
@@ -10,6 +12,12 @@ const CLOUD_AI_CONFIG = {
   maxTokens: 4000,
   temperature: 0.4
 };
+
+// Models per plan
+const PREMIUM_MODEL = 'gpt-5-mini';
+const FREE_MODEL = 'shisa-ai/shisa-v2-llama3.3-70b:free';
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Create axios instance for backend API
 const backendApi = axios.create({
@@ -24,10 +32,14 @@ const backendApi = axios.create({
 const callBackendAI = async (prompt, options = {}) => {
   try {
     console.log('Backend AI service call initiated');
+    // Simulate slower responses for free plan
+    if (!isPremium()) {
+      await delay(1500);
+    }
     
     const response = await backendApi.post('/api/ai/chat', {
       prompt,
-      model: options.model || CLOUD_AI_CONFIG.model,
+      model: options.model || (isPremium() ? PREMIUM_MODEL : FREE_MODEL),
       temperature: options.temperature || CLOUD_AI_CONFIG.temperature,
       maxTokens: options.maxTokens || CLOUD_AI_CONFIG.maxTokens
     });
@@ -44,9 +56,17 @@ const callBackendAI = async (prompt, options = {}) => {
   }
 };
 
-// Request interceptor for logging
+// Request interceptor for auth + logging
 backendApi.interceptors.request.use(
-  (config) => {
+  async (config) => {
+    try {
+      const session = await getSession();
+      const token = session?.access_token;
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (_) {}
     console.log('Backend AI API Request:', {
       url: config.url,
       method: config.method,
@@ -218,7 +238,8 @@ Return results in this exact JSON format:
 Each section must include content, keyPoints, and recommendations based on actual Vedic principles.`
 }`;
 
-    const rawContent = await callBackendAI(prompt);
+    const selectedModel = isPremium() ? PREMIUM_MODEL : FREE_MODEL;
+    const rawContent = await callBackendAI(prompt, { model: selectedModel });
     
     // Always try to extract JSON from the response
     let processedContent = rawContent;
@@ -233,7 +254,7 @@ Each section must include content, keyPoints, and recommendations based on actua
     return {
       success: true,
       interpretation: processedContent,
-      model: CLOUD_AI_CONFIG.model,
+      model: selectedModel,
       timestamp: new Date().toISOString(),
       provider: 'OpenRouter (Cloud) - Pending Configuration'
     };
@@ -384,12 +405,13 @@ export const generateBirthChart = async (birthDetails, options = {}) => {
 
     Provide accurate calculations based on standard Vedic astrology principles using Lahiri Ayanamsa.`;
 
-    const chartData = await callBackendAI(prompt);
+    const selectedModel = isPremium() ? PREMIUM_MODEL : FREE_MODEL;
+    const chartData = await callBackendAI(prompt, { model: selectedModel });
 
     return {
       success: true,
       chartData: chartData,
-      model: CLOUD_AI_CONFIG.model,
+      model: selectedModel,
       timestamp: new Date().toISOString(),
       provider: 'OpenRouter (Cloud) - Pending Configuration'
     };

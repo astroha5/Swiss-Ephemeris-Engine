@@ -167,12 +167,18 @@ const MonthlyPredictionSection = ({ chartData, dashaData, birthDetails }) => {
           : 'http://localhost:3001'
       );
       
+      // Attach Supabase token so backend can enforce plan
+      const session = await (await import('../../../services/authService')).getSession();
+      const token = session?.access_token;
+
       const response = await fetch(`${API_BASE_URL}/api/ai/monthly-prediction`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
+          // Model is determined server-side; client value ignored
           prompt: prompt,
           // Send only essential data - dramatically reduced payload
           chartData: {
