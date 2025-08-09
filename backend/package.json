@@ -38,6 +38,7 @@
     "moment-timezone": "^0.5.43",
     "morgan": "^1.10.0",
     "node-fetch": "^3.3.2",
+    "openai": "^5.12.2",
     "postgres": "^3.4.7",
     "sparql-http-client": "^3.0.1",
     "swisseph": "^0.5.17",
