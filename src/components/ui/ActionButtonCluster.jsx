@@ -30,7 +30,7 @@ const ActionButtonCluster = ({
             variant: 'primary'
           },
           secondary: {
-            label: 'View Positions',
+            label: 'Planetary Positions',
             icon: 'MapPin',
             onClick: () => navigate('/planetary-events?tab=positions'),
             variant: 'secondary'

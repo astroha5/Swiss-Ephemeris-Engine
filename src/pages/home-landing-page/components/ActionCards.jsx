@@ -17,12 +17,21 @@ const ActionCards = () => {
       features: ['Date & Time Input', 'Location Search', 'Instant Processing']
     },
     {
+      id: 'ask-question',
+      title: 'Ask Any Question',
+      description: 'Get personalized astrological insights and answers to your specific questions',
+      icon: 'MessageCircle',
+      route: '/birth-details-form',
+      color: 'primary',
+      features: ['AI-Powered Insights', 'Personalized Answers', 'Quick Response']
+    },
+    {
       id: 'planetary-positions',
       title: 'Planetary Positions',
       description: 'View real-time planetary positions with interactive charts and navigation',
       icon: 'Globe',
       route: '/planetary-events?tab=positions',
-      color: 'accent',
+      color: 'primary',
       features: ['Live Positions', 'Historical Data', 'Interactive Charts']
     }
   ];
@@ -45,7 +54,7 @@ const ActionCards = () => {
         </div>
 
         {/* Action Cards Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {actionOptions.map((option) => (
             <div
               key={option.id}
@@ -54,18 +63,21 @@ const ActionCards = () => {
             >
               {/* Card Background Gradient */}
               <div className={`absolute inset-0 bg-gradient-to-br ${
-                option.color === 'primary' ?'from-primary/5 via-transparent to-primary/10' :'from-accent/5 via-transparent to-accent/10'
+                option.color === 'primary' ? 'from-primary/5 via-transparent to-primary/10' :
+                'from-accent/5 via-transparent to-accent/10'
               } opacity-0 group-hover:opacity-100 transition-celestial`}></div>
               
               <div className="relative p-8">
                 {/* Icon */}
                 <div className={`w-16 h-16 rounded-xl ${
-                  option.color === 'primary' ? 'bg-primary/10' : 'bg-accent/10'
+                  option.color === 'primary' ? 'bg-primary/10' :
+                  'bg-accent/10'
                 } flex items-center justify-center mb-6 group-hover:scale-110 transition-celestial`}>
                   <Icon 
                     name={option.icon} 
                     size={32} 
-                    className={option.color === 'primary' ? 'text-primary' : 'text-accent'}
+                    className={option.color === 'primary' ? 'text-primary' :
+                               'text-accent'}
                   />
                 </div>
 
@@ -103,7 +115,8 @@ const ActionCards = () => {
 
               {/* Decorative Corner */}
               <div className={`absolute top-0 right-0 w-20 h-20 ${
-                option.color === 'primary' ? 'bg-primary/5' : 'bg-accent/5'
+                option.color === 'primary' ? 'bg-primary/5' :
+                'bg-accent/5'
               } rounded-bl-full opacity-50`}></div>
             </div>
           ))}
