@@ -18,7 +18,7 @@ const HomeLandingPage = () => {
         <title>Astrova - AI-Powered Vedic Astrology Platform</title>
         <meta 
           name="description" 
-          content="Generate comprehensive Vedic birth charts with AI-powered interpretations. Enter birth details manually for personalized astrological analysis." 
+          content="Generate comprehensive Vedic birth charts with AI-powered interpretations. Upload kundli images or enter birth details manually for personalized astrological analysis." 
         />
         <meta name="keywords" content="vedic astrology, birth chart, kundli, AI astrology, horoscope, dasha, navamsa" />
         <meta property="og:title" content="Astrova - AI-Powered Vedic Astrology Platform" />

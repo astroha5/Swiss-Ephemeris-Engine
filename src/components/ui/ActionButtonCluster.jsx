@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import Button from './Button';
-
+import LoginModal from '../auth/LoginModal';
 
 const ActionButtonCluster = ({ 
   customActions = null,
@@ -13,6 +14,8 @@ const ActionButtonCluster = ({
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const getDefaultActions = () => {
     const currentPath = location.pathname;
@@ -21,9 +24,9 @@ const ActionButtonCluster = ({
       case '/home-landing-page':
         return {
           primary: {
-            label: 'Generate Chart',
-            icon: 'Calculator',
-            onClick: () => navigate('/birth-details-form'),
+            label: isAuthenticated ? 'Generate Chart' : 'Sign In to Generate Chart',
+            icon: isAuthenticated ? 'Calculator' : 'User',
+            onClick: () => isAuthenticated ? navigate('/birth-details-form') : setShowLoginModal(true),
             variant: 'primary'
           },
           secondary: {
@@ -39,7 +42,17 @@ const ActionButtonCluster = ({
           primary: {
             label: 'Generate Chart',
             icon: 'Sparkles',
-            onClick: onPrimaryAction || (() => navigate('/chart-results-dashboard')),
+            onClick: () => {
+              if (isAuthenticated) {
+                if (onPrimaryAction) {
+                  onPrimaryAction();
+                } else {
+                  navigate('/chart-results-dashboard');
+                }
+              } else {
+                setShowLoginModal(true);
+              }
+            },
             variant: 'primary',
             loading: isLoading
           },
@@ -50,7 +63,6 @@ const ActionButtonCluster = ({
             variant: 'ghost'
           }
         };
-
 
       case '/chart-results-dashboard':
         return {
@@ -163,6 +175,16 @@ const ActionButtonCluster = ({
 
       {/* Mobile spacing to prevent content overlap */}
       <div className="lg:hidden h-24"></div>
+      
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToSignup={() => {
+          setShowLoginModal(false);
+          // You can add signup modal logic here if needed
+        }}
+      />
     </div>
   );
 };

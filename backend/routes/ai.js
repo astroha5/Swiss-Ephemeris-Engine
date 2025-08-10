@@ -10,11 +10,18 @@ const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL || 'https://openrout
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // AI Task Models Configuration (Sequential Execution Order)
+// Use working OpenRouter models (shisa model requires prompt training)
 const AI_MODELS = {
-  CHART_INTERPRETATION: 'shisa-ai/shisa-v2-llama3.3-70b:free',
-  MONTHLY_PREDICTIONS: 'shisa-ai/shisa-v2-llama3.3-70b:free',
-  QA_SECTION: 'shisa-ai/shisa-v2-llama3.3-70b:free'
+  CHART_INTERPRETATION: 'qwen/qwen-2.5-72b-instruct:free',
+  MONTHLY_PREDICTIONS: 'qwen/qwen-2.5-72b-instruct:free',
+  QA_SECTION: 'qwen/qwen-2.5-72b-instruct:free'
 };
+
+// Additional fallback models to try if a selected model is unavailable or rate limited
+const FALLBACK_MODELS = [
+  'deepseek/deepseek-r1-distill-llama-70b:free',
+  'qwen/qwen-2.5-72b-instruct:free'
+];
 
 // Simple in-memory cache to reduce API calls
 const predictionCache = new Map();
@@ -26,7 +33,8 @@ const openRouterApi = axios.create({
   headers: {
     'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
     'Content-Type': 'application/json',
-    'HTTP-Referer': 'https://astrova.app',
+    'Accept': 'application/json',
+    'HTTP-Referer': process.env.FRONTEND_URL || 'https://astrova.app',
     'X-Title': 'Astrova AI Astrology App',
   },
   timeout: 120000, // Extended timeout for AI processing
@@ -48,50 +56,70 @@ async function validateOpenRouterConnection() {
   }
 }
 
-// OpenRouter API call function with model or model-key support
-async function callOpenRouter(prompt, modelOrKey, systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.', maxRetries = 3) {
+// OpenRouter API call function with model or model-key support and fallbacks
+async function callOpenRouter(
+  prompt,
+  modelOrKey,
+  systemPrompt = 'You are an expert Vedic astrologer with deep knowledge of traditional Jyotish principles.',
+  maxRetries = 3
+) {
   if (!OPENROUTER_API_KEY) {
     throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.');
   }
-  
-  const model = AI_MODELS[modelOrKey] || modelOrKey || AI_MODELS.CHART_INTERPRETATION;
-  logger.info(`🚀 Calling OpenRouter with model: ${model}`);
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await openRouterApi.post('/chat/completions', {
-        model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.4,
-        max_tokens: 4000
-      });
-      
-      if (response.data?.choices?.[0]?.message?.content) {
-        logger.info(`✅ Successfully generated response with OpenRouter (${model})`);
-        return response.data.choices[0].message.content;
+
+  const primaryModel = AI_MODELS[modelOrKey] || modelOrKey || AI_MODELS.CHART_INTERPRETATION;
+  const candidateModels = [primaryModel, ...FALLBACK_MODELS.filter(m => m !== primaryModel)];
+
+  let lastError = null;
+
+  for (const model of candidateModels) {
+    logger.info(`🚀 Calling OpenRouter with model: ${model}`);
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await openRouterApi.post('/chat/completions', {
+          model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.4,
+          max_tokens: 4000
+        });
+
+        const content = response.data?.choices?.[0]?.message?.content;
+        if (content) {
+          logger.info(`✅ Successfully generated response with OpenRouter (${model})`);
+          return content;
+        }
+        throw new Error('Empty response from OpenRouter');
+      } catch (error) {
+        lastError = error;
+        const status = error.response?.status;
+        const data = error.response?.data;
+        logger.error(`❌ OpenRouter call failed (attempt ${attempt}/${maxRetries}) for model ${model}:`, data || error.message);
+
+        // Non-retriable statuses: don't waste attempts; break to try a different model
+        const nonRetriable = [400, 401, 403, 404, 422].includes(status);
+        if (nonRetriable) {
+          break;
+        }
+
+        if (attempt < maxRetries) {
+          const backoffMs = Math.pow(2, attempt) * 1000;
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+        }
       }
-      
-      throw new Error('Empty response from OpenRouter');
-    } catch (error) {
-      logger.error(`❌ OpenRouter call failed (attempt ${attempt}/${maxRetries}):`, error.response?.data || error.message);
-      
-      if (attempt === maxRetries) {
-        throw new Error(`OpenRouter integration failed after ${maxRetries} attempts: ${error.response?.data?.error?.message || error.message}`);
-      }
-      
-      // Wait before retry (exponential backoff)
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+    }
+
+    // If auth error, no point in trying other models
+    if (lastError?.response?.status === 401 || lastError?.response?.status === 403) {
+      break;
     }
   }
+
+  const message = lastError?.response?.data?.error?.message || lastError?.message || 'Unknown error';
+  throw new Error(`OpenRouter integration failed after trying ${candidateModels.length} model(s): ${message}`);
 }
 
 // OpenAI API call for premium users - supports both GPT-5 and GPT-4 models
@@ -220,10 +248,13 @@ router.post('/chart-interpretation', async (req, res) => {
 
   } catch (error) {
     logger.error('❌ Error generating chart interpretation:', error);
-    res.status(500).json({
-      error: 'Failed to generate chart interpretation',
-      message: error.message,
-      timestamp: new Date().toISOString()
+    res.json({
+      response: "I'm sorry, but I can't provide a detailed astrological analysis right now due to high demand. Upgrade to our Premium plan for just ₹99/month to enjoy accurate, priority, and faster responses.",
+      model: AI_MODELS.CHART_INTERPRETATION,
+      timestamp: new Date().toISOString(),
+      status: 'fallback',
+      fallback: true,
+      error: error.message
     });
   }
 });
@@ -266,28 +297,15 @@ router.post('/monthly-prediction', async (req, res) => {
   } catch (error) {
     logger.error('Error generating monthly prediction:', error);
     
-    // Fallback to mock prediction if AI fails
-    try {
-      const { chartData, dashaData, birthDetails, planetaryTransits } = req.body;
-      const fallbackPrediction = await generateMonthlyPrediction({
-        chartData,
-        dashaData,
-        birthDetails,
-        planetaryTransits
-      });
-      
-      res.json({
-        prediction: fallbackPrediction,
-        timestamp: new Date().toISOString(),
-        note: 'AI service unavailable, using fallback prediction'
-      });
-    } catch (fallbackError) {
-      logger.error('Fallback prediction failed:', fallbackError);
-      res.status(500).json({
-        error: 'Failed to generate monthly prediction',
-        message: error.message
-      });
-    }
+    // Show custom fallback message when AI fails
+    res.json({
+      response: "I'm sorry, but I can't provide a detailed astrological analysis right now due to high demand. Upgrade to our Premium plan for just ₹99/month to enjoy accurate, priority, and faster responses.",
+      model: AI_MODELS.MONTHLY_PREDICTIONS,
+      timestamp: new Date().toISOString(),
+      status: 'fallback',
+      fallback: true,
+      error: error.message
+    });
   }
 });
 
@@ -328,12 +346,16 @@ router.post('/chat', async (req, res) => {
 
   } catch (error) {
     logger.error('Error in chat endpoint:', error);
-    
-    res.status(500).json({
-      error: 'Failed to process AI chat request',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
+
+            // Friendly fallback to avoid hard failure on the frontend
+        return res.json({
+          response: "I'm sorry, but I can't provide a detailed astrological analysis right now due to high demand. Upgrade to our Premium plan for just ₹99/month to enjoy accurate, priority, and faster responses.",
+          model: AI_MODELS.CHART_INTERPRETATION,
+          timestamp: new Date().toISOString(),
+          status: 'fallback',
+          fallback: true,
+          error: error.message
+        });
   }
 });
 

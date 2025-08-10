@@ -31,7 +31,8 @@ const Header = () => {
       label: 'Generate Chart',
       path: '/birth-details-form',
       icon: 'Calculator',
-      tooltip: 'Create your personalized birth chart'
+      tooltip: isAuthenticated ? 'Create your personalized birth chart' : 'Sign in to create your birth chart',
+      requiresAuth: true
     },
     {
       label: 'Planetary Positions',
@@ -214,7 +215,7 @@ const Header = () => {
                 <Link
                   to={item.path}
                   className={`
-                    flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-celestial
+                    flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-celestial relative
                     ${isActivePath(item.path)
                       ? 'bg-primary/10 text-primary border border-primary/20' :'text-text-secondary hover:text-primary hover:bg-primary/5'
                     }
@@ -222,6 +223,8 @@ const Header = () => {
                 >
                   <Icon name={item.icon} size={16} />
                   <span>{item.label}</span>
+                  
+
                 </Link>
                 
                 {/* Tooltip */}
@@ -268,15 +271,17 @@ const Header = () => {
                 to={item.path}
                 onClick={closeMobileMenu}
                 className={`
-                  flex items-center space-x-3 px-4 py-3 rounded-md text-base font-medium transition-celestial
+                  flex items-center space-x-3 px-4 py-3 rounded-md text-base font-medium transition-celestial relative
                   ${isActivePath(item.path)
                     ? 'bg-primary/10 text-primary border border-primary/20' :'text-text-secondary hover:text-primary hover:bg-primary/5'
                   }
                 `}
               >
                 <Icon name={item.icon} size={20} />
-                <div className="flex flex-col">
-                  <span>{item.label}</span>
+                <div className="flex flex-col flex-1">
+                  <div className="flex items-center space-x-2">
+                    <span>{item.label}</span>
+                  </div>
                   <span className="text-xs text-text-muted font-caption">
                     {item.tooltip}
                   </span>
