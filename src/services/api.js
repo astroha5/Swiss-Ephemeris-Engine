@@ -244,6 +244,40 @@ export const getPlanetaryPositions = async (params) => {
 };
 
 /**
+ * Generate a historically-backed, pattern-aware predictive report
+ * Persists snapshot and matches, and returns analysis
+ */
+export const getPlanetaryPositionsReport = async (params) => {
+  try {
+    const requestData = {
+      date: params.date,
+      time: params.time,
+      latitude: params.latitude,
+      longitude: params.longitude,
+      timezone: params.timezone || 'Asia/Kolkata',
+      place: params.place,
+      location_name: params.location_name
+    };
+
+    if (!requestData.date || !requestData.time) {
+      throw new Error('Date and time are required');
+    }
+    if (!requestData.latitude || !requestData.longitude) {
+      throw new Error('Location coordinates are required');
+    }
+
+    const response = await api.post('/api/planetary-positions/report', requestData);
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to generate planetary report');
+    }
+    return response.data;
+  } catch (error) {
+    console.error('Planetary positions report error:', error);
+    throw error;
+  }
+};
+
+/**
  * Generate Dasha data from birth details
  * @param {Object} birthDetails - Birth details for Dasha calculation
  * @returns {Promise<Object>} Dasha data from backend

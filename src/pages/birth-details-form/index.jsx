@@ -54,7 +54,8 @@ const BirthDetailsForm = () => {
         return;
       }
       await subscribePremium();
-      alert('You are now Premium! Enjoy faster and more accurate AI.');
+      alert('Payment successful! You are now Premium. Enjoy faster and more accurate AI.');
+      window.location.assign('/chart-results-dashboard');
       setShowPremiumModal(false);
     } catch (e) {
       if (e?.code === 'AUTH_REQUIRED') {
@@ -68,7 +69,11 @@ const BirthDetailsForm = () => {
         setPendingUpgrade(false);
         return;
       }
-      alert('Subscription failed. Please try again.');
+      if (e?.message === 'PAYMENTS_NOT_CONFIGURED') {
+        alert('Payments are not configured. Please try again later.');
+      } else {
+        alert('Payment failed. Please try again.');
+      }
     } finally {
       setPendingUpgrade(false);
     }

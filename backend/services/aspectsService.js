@@ -92,13 +92,21 @@ class AspectsService {
           const house1 = planetHouses[planet1];
           const house2 = planetHouses[planet2];
 
-          // Calculate house distance from planet1 to planet2
-          let houseDistance = house2 - house1;
-          if (houseDistance <= 0) houseDistance += 12;
+          // Calculate inclusive house distance from planet1 to planet2
+          // Counting starts from planet1's house as 1 (conjunction)
+          let houseDistance = ((house2 - house1 + 12) % 12) + 1;
 
           // Check if this distance matches any of planet1's aspect houses
           if (aspectHouses.includes(houseDistance)) {
-            const aspect = this.createVedicAspect(planet1, planet2, planetaryPositions[planet1], planetaryPositions[planet2], houseDistance);
+            const aspect = this.createVedicAspect(
+              planet1,
+              planet2,
+              planetaryPositions[planet1],
+              planetaryPositions[planet2],
+              houseDistance,
+              house1,
+              house2
+            );
             if (aspect) {
               aspects.push(aspect);
             }
@@ -141,16 +149,16 @@ class AspectsService {
   /**
    * Create a Vedic aspect object
    */
-  createVedicAspect(planet1, planet2, position1, position2, houseDistance) {
+  createVedicAspect(planet1, planet2, position1, position2, houseDistance, fromHouse, toHouse) {
     // Define aspect types based on house distance
     const aspectTypes = {
-      3: 'Third House Aspect',
-      4: 'Fourth House Aspect', 
-      5: 'Fifth House Aspect',
-      7: 'Seventh House Aspect (Opposition)',
-      8: 'Eighth House Aspect',
-      9: 'Ninth House Aspect',
-      10: 'Tenth House Aspect'
+      3: 'Third House Drishti',
+      4: 'Fourth House Drishti', 
+      5: 'Fifth House Drishti',
+      7: 'Seventh House Drishti',
+      8: 'Eighth House Drishti',
+      9: 'Ninth House Drishti',
+      10: 'Tenth House Drishti'
     };
 
     const aspectName = aspectTypes[houseDistance] || `${houseDistance}th House Aspect`;
@@ -161,7 +169,10 @@ class AspectsService {
     let separation = Math.abs(longitude1 - longitude2);
     if (separation > 180) separation = 360 - separation;
     
-    const exactAspectDegrees = (houseDistance - 1) * 30;
+    // Map house distance to the nearest angular separation within 0–180°.
+    // Example: 8th house distance => 210° raw, nearest separation is 150° (360-210)
+    const rawAngle = (houseDistance - 1) * 30;
+    const exactAspectDegrees = rawAngle > 180 ? 360 - rawAngle : rawAngle;
     const orb = Math.abs(separation - exactAspectDegrees);
     
     const strength = this.calculateVedicAspectStrength(planet1, planet2, houseDistance, orb);
@@ -172,6 +183,8 @@ class AspectsService {
       planet2: position2.name || planet2,
       aspect: aspectName,
       houseDistance: houseDistance,
+      fromHouse: typeof fromHouse === 'number' ? fromHouse : undefined,
+      toHouse: typeof toHouse === 'number' ? toHouse : undefined,
       orb: orb.toFixed(2),
       strength: strength,
       nature: nature,
@@ -388,16 +401,15 @@ class AspectsService {
    */
   getAspectTypeName(distance) {
     const aspectNames = {
-      3: 'Third House Aspect',
-      4: 'Fourth House Aspect',
-      5: 'Fifth House Aspect (Trine)',
-      7: 'Seventh House Aspect (Opposition)',
-      8: 'Eighth House Aspect',
-      9: 'Ninth House Aspect (Trine)',
-      10: 'Tenth House Aspect'
+      3: 'Third House Drishti',
+      4: 'Fourth House Drishti',
+      5: 'Fifth House Drishti',
+      7: 'Seventh House Drishti',
+      8: 'Eighth House Drishti',
+      9: 'Ninth House Drishti',
+      10: 'Tenth House Drishti'
     };
-    
-    return aspectNames[distance] || `${distance}th House Aspect`;
+    return aspectNames[distance] || `${distance}th House Drishti`;
   }
 
   /**

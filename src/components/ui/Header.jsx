@@ -35,7 +35,7 @@ const Header = () => {
     },
     {
       label: 'Planetary Positions',
-      path: '/planetary-positions',
+      path: '/planetary-events?tab=positions',
       icon: 'Globe',
       tooltip: 'View planetary positions for any date and location'
     },
@@ -121,7 +121,8 @@ const Header = () => {
         return;
       }
       await subscribePremium();
-      alert('You are now Premium! Enjoy faster and more accurate AI.');
+      alert('Payment successful! You are now Premium. Enjoy faster and more accurate AI.');
+      window.location.assign('/chart-results-dashboard');
       setShowUpsell(false);
     } catch (e) {
       if (e?.code === 'AUTH_REQUIRED') {
@@ -134,7 +135,11 @@ const Header = () => {
         setShowUpsell(false);
         return;
       }
-      alert('Subscription failed. Please try again.');
+      if (e?.message === 'PAYMENTS_NOT_CONFIGURED') {
+        alert('Payments are not configured. Please try again later.');
+      } else {
+        alert('Payment failed. Please try again.');
+      }
     } finally {
       setPendingUpgrade(false);
     }

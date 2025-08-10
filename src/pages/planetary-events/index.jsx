@@ -1,32 +1,58 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import EventAnalysis from './components/EventAnalysis';
-import RiskAssessment from './components/RiskAssessment';
-import { useAuth } from '../../contexts/AuthContext';
+import PlanetaryPositionsTab from './components/PlanetaryPositionsTab';
+import Header from '../../components/ui/Header';
+import ProgressIndicator from '../../components/ui/ProgressIndicator';
+import ErrorBoundaryNavigation from '../../components/ui/ErrorBoundaryNavigation';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const PlanetaryEventsPage = () => {
-  const { isAuthenticated, user } = useAuth();
   const [activeView, setActiveView] = useState('patterns');
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const views = [
     { id: 'patterns', label: 'Find Patterns', icon: '🔍', description: 'See what patterns emerge from the data' },
-    { id: 'predict', label: 'What About Today?', icon: '🎯', description: 'Check current planetary conditions' },
+    { id: 'positions', label: 'Planetary Positions', icon: '🪐', description: 'Explore real-time and historical planetary positions' },
   ];
+
+  // Sync from URL `tab` param → state
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && views.some(v => v.id === tab) && tab !== activeView) {
+      setActiveView(tab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.search]);
+
+  // Set state → push URL `tab` param
+  const setView = (viewId) => {
+    setActiveView(viewId);
+    const params = new URLSearchParams(location.search);
+    params.set('tab', viewId);
+    navigate({ pathname: '/planetary-events', search: `?${params.toString()}` });
+  };
 
   const renderActiveView = () => {
     switch (activeView) {
       case 'patterns':
         return <EventAnalysis />;
-      case 'predict':
-        return <RiskAssessment />;
+      case 'positions':
+        return <PlanetaryPositionsTab />;
       default:
         return null;
     }
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
+    <ErrorBoundaryNavigation>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <ProgressIndicator />
+        <main className="pt-20 md:pt-24 pb-8">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -52,7 +78,7 @@ const PlanetaryEventsPage = () => {
           {views.map((view) => (
             <button
               key={view.id}
-              onClick={() => setActiveView(view.id)}
+              onClick={() => setView(view.id)}
               className={`p-6 rounded-xl text-left transition-all duration-200 ${
                 activeView === view.id 
                   ? 'bg-primary text-primary-foreground shadow-lg transform scale-105' 
@@ -96,8 +122,10 @@ const PlanetaryEventsPage = () => {
             Pattern recognition powered by statistical analysis
           </p>
         </motion.div>
+          </div>
+        </main>
       </div>
-    </div>
+    </ErrorBoundaryNavigation>
   );
 };
 

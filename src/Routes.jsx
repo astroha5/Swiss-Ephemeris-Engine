@@ -6,7 +6,6 @@ import { useAuth } from './contexts/AuthContext';
 const HomeLandingPage = lazy(() => import('./pages/home-landing-page'));
 const BirthDetailsForm = lazy(() => import('./pages/birth-details-form'));
 const ChartResultsDashboard = lazy(() => import('./pages/chart-results-dashboard'));
-const PlanetaryPositions = lazy(() => import('./pages/planetary-positions'));
 const PlanetaryEvents = lazy(() => import('./pages/planetary-events'));
 const PlanetTransits = lazy(() => import('./pages/planet-transits'));
 const ErrorHandlingPage = lazy(() => import('./pages/error-handling-page'));
@@ -30,7 +29,8 @@ const Routes = () => {
         <Route path="/home-landing-page" element={<HomeLandingPage />} />
         <Route path="/birth-details-form" element={<BirthDetailsForm />} />
         <Route path="/chart-results-dashboard" element={<ChartResultsDashboard />} />
-        <Route path="/planetary-positions" element={<PlanetaryPositions />} />
+        {/* Redirect old Planetary Positions path to new tab under Event Correlations */}
+        <Route path="/planetary-positions" element={<Navigate to="/planetary-events?tab=positions" replace />} />
         <Route path="/planetary-events" element={<PlanetaryEvents />} />
         <Route path="/planet-transits" element={<PlanetTransits />} />
         <Route path="/error-handling-page" element={<ErrorHandlingPage />} />

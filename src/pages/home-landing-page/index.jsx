@@ -10,7 +10,6 @@ import FeaturesSection from './components/FeaturesSection';
 import TestimonialsSection from './components/TestimonialsSection';
 import FooterSection from './components/FooterSection';
 import AccuracyTooltip from '../../components/ui/AccuracyTooltip';
-import AuthDebug from '../../components/auth/AuthDebug';
 
 const HomeLandingPage = () => {
   return (
@@ -69,9 +68,6 @@ const HomeLandingPage = () => {
         
         {/* Footer */}
         <FooterSection />
-        
-        {/* Auth Debug (development only) */}
-        <AuthDebug />
       </div>
     </ErrorBoundaryNavigation>
   );

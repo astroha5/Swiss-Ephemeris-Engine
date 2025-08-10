@@ -620,17 +620,28 @@ class PatternRecognitionService {
    */
   inferCategoryFromPattern(patternName) {
     const lowerPattern = patternName.toLowerCase();
-    
-    if (lowerPattern.includes('mars') || lowerPattern.includes('saturn')) {
-      return 'political';
+    // Expanded heuristics for broader categories
+    if (/(earthquake|volcan|tsunami|cyclone|hurricane|flood|wildfire|storm|natural)/i.test(lowerPattern)) {
+      return 'natural_disaster';
     }
-    if (lowerPattern.includes('jupiter')) {
+    if (/(tech|technology|ai|network|internet|satellite|communication|mercury in aquarius|saturn in aquarius)/i.test(lowerPattern)) {
+      return 'technology';
+    }
+    if (/(geo|war|conflict|military|border|sanction|diplom|mars|saturn)/i.test(lowerPattern)) {
+      return 'geopolitics';
+    }
+    if (/(health|pandemic|epidemic|virus|disease|plague|ketu|rahu)/i.test(lowerPattern)) {
+      return 'health';
+    }
+    if (/(finance|market|jupiter|economic|bank|inflation|recession)/i.test(lowerPattern)) {
       return 'financial';
     }
-    if (lowerPattern.includes('moon') || lowerPattern.includes('rahu')) {
+    if (/(election|policy|government|saturn|authority|law)/i.test(lowerPattern)) {
+      return 'political';
+    }
+    if (/(social|protest|moon|movement|culture|societ)/i.test(lowerPattern)) {
       return 'social';
     }
-    
     return 'other';
   }
 

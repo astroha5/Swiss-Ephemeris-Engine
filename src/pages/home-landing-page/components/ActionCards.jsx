@@ -21,7 +21,7 @@ const ActionCards = () => {
       title: 'Planetary Positions',
       description: 'View real-time planetary positions with interactive charts and navigation',
       icon: 'Globe',
-      route: '/planetary-positions',
+      route: '/planetary-events?tab=positions',
       color: 'accent',
       features: ['Live Positions', 'Historical Data', 'Interactive Charts']
     }

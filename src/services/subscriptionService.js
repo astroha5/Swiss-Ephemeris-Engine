@@ -65,6 +65,8 @@ export const subscribePremium = async () => {
     // 1) Get Razorpay config
     const cfg = await backendApi.get('/api/payments/config');
     const keyId = cfg?.data?.key_id;
+    const allowFallback = import.meta.env.VITE_ALLOW_PAYMENT_FALLBACK === 'true';
+    const isProd = !!import.meta.env.PROD;
 
     if (keyId) {
       // 2) Create order (₹99 => 9900 paise)
@@ -90,31 +92,24 @@ export const subscribePremium = async () => {
         }
       });
 
-      const options = {
-        key: keyId,
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Astrova Premium',
-        description: 'Monthly subscription',
-        order_id: order.id,
-        prefill: {
-          email: user?.email || '',
-          contact: ''
-        },
-        theme: { color: '#4f46e5' }
-      };
-
       const paymentResponse = await new Promise((resolve, reject) => {
+        const options = {
+          key: keyId,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Astrova Premium',
+          description: 'Monthly subscription',
+          order_id: order.id,
+          prefill: {
+            email: user?.email || '',
+            contact: ''
+          },
+          theme: { color: '#4f46e5' },
+          handler: (resp) => resolve(resp)
+        };
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', (resp) => reject(new Error(resp?.error?.description || 'Payment failed')));
         rzp.open();
-        // Razorpay calls the handler on success via URL callback; use on('payment.success') alternative if available
-        // Here we rely on on('payment.success') polyfill route:
-        window.addEventListener('message', function onMsg(e) {
-          // This is a placeholder; many SPAs use handler callback in options
-        });
-        // Proper success handler
-        options.handler = (resp) => resolve(resp);
       });
 
       // 4) Verify payment
@@ -136,20 +131,24 @@ export const subscribePremium = async () => {
       return true;
     }
 
-    // Fallback: if payments not configured, keep existing behavior (upgrade endpoint)
-    const res = await backendApi.post('/api/subscription/upgrade', {}, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    localStorage.setItem(SUBSCRIPTION_KEY, 'premium');
-    if (res?.data?.premium_end_date) {
-      try { localStorage.setItem(PREMIUM_END_KEY, res.data.premium_end_date); } catch (_) {}
+    // Fallback only allowed in non-production or when explicitly enabled
+    if (!isProd || allowFallback) {
+      const res = await backendApi.post('/api/subscription/upgrade', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      localStorage.setItem(SUBSCRIPTION_KEY, 'premium');
+      if (res?.data?.premium_end_date) {
+        try { localStorage.setItem(PREMIUM_END_KEY, res.data.premium_end_date); } catch (_) {}
+      }
+      if (user?.id) {
+        try {
+          await updateUserPreferences(user.id, { subscription_plan: 'premium' });
+        } catch (_err) {}
+      }
+      return true;
     }
-    if (user?.id) {
-      try {
-        await updateUserPreferences(user.id, { subscription_plan: 'premium' });
-      } catch (_err) {}
-    }
-    return true;
+
+    throw new Error('PAYMENTS_NOT_CONFIGURED');
   } catch (e) {
     const message = e?.response?.data?.error || e?.message || '';
     if (message.toLowerCase().includes('already')) {
