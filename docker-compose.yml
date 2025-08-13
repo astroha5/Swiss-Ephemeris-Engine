@@ -1,0 +1,15 @@
+services:
+  api:
+    build: .
+    image: swiss-calc-engine:latest
+    container_name: swiss-calc-engine
+    environment:
+      - EPHE_DIR=/ephe
+      - CORS_ORIGINS=*
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount your local ephemeris directory containing .se1 files
+      - ./ephemeris:/ephe:ro
+    restart: unless-stopped
+

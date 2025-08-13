@@ -1,6 +1,13 @@
 # Swiss Calculation Engine
 
-A pure Python calculation engine for astrological computations using the Swiss Ephemeris. This package provides accurate planetary positions, house cusps, ayanamsa adjustments, and retrograde flags as plain JSON-serializable data structures. No business logic, AI, UI, payment, or user management code is included.
+A pure Python calculation engine and standalone HTTP API service using the Swiss Ephemeris.
+
+Important:
+- Standalone service: interact only via HTTP API calls. Do not import this AGPL code directly into closed-source apps.
+- No ephemeris files included: Swiss Ephemeris .se1 data files are not in this repo.
+- Outputs raw JSON only; no interpretation.
+
+This package provides accurate planetary positions, house cusps, ayanamsa adjustments, and retrograde flags as plain JSON-serializable data structures. No business logic, AI, UI, payment, or user management code is included.
 
 ## Features
 - Loads Swiss Ephemeris `.se1` data files (not included; see below)
@@ -29,24 +36,67 @@ A pure Python calculation engine for astrological computations using the Swiss E
    ```
 
 ## Ephemeris Data Files
+No ephemeris files included in this repository.
 Swiss Ephemeris `.se1` files are not included due to licensing. Download them from:
 - https://www.astro.com/swisseph/
 - https://github.com/aloistr/swisseph
 
-Place the files in a directory (e.g., `ephemeris/`). Then set the path using SWISS_EPHE_PATH (this is what the code reads):
-- macOS/Linux (bash/zsh):
-  ```bash
-  export SWISS_EPHE_PATH="$(pwd)/ephemeris"
-  ```
-- Windows (PowerShell):
-  ```powershell
-  $env:SWISS_EPHE_PATH = "$PWD/ephemeris"
-  ```
-Alternatively, pass `--ephe_dir` to the CLI or `ephe_dir` to the Python API.
+Place the files in a directory (e.g., `ephemeris/`).
+
+- For the HTTP API service, set the EPHE_DIR environment variable so the service can find them:
+  - macOS/Linux (bash/zsh):
+    ```bash
+    export EPHE_DIR="$(pwd)/ephemeris"
+    ```
+  - Windows (PowerShell):
+    ```powershell
+    $env:EPHE_DIR = "$PWD/ephemeris"
+    ```
+
+- For the Python library/CLI, you can either set SWISS_EPHE_PATH (legacy env used by the engine), pass `--ephe_dir` to the CLI, or pass `ephe_dir` to the Python API.
 
 Note on fallback: If `.se1` files are not available, the engine will automatically fall back to Moshier calculations (SEFLG_MOSEPH), which do not require ephemeris files but may be less precise than file-based Swiss Ephemeris.
 
 ## Usage
+
+### Run the HTTP API Service
+- Install dependencies:
+  ```bash
+  pip install .
+  ```
+- Set the ephemeris directory (no .se1 files are included in this repo):
+  ```bash
+  export EPHE_DIR="$(pwd)/ephemeris"  # macOS/Linux
+  # or on Windows PowerShell
+  # $env:EPHE_DIR = "$PWD/ephemeris"
+  ```
+- Optionally configure CORS for browser clients (default is open to all origins). To restrict:
+  ```bash
+  export CORS_ORIGINS="https://yourapp.com,https://another.app"
+  ```
+- Start the server (uvicorn):
+  ```bash
+  uvicorn swiss_calc_engine.service:app --host 0.0.0.0 --port 8000
+  # or use the console script
+  swiss-calc-api --host 0.0.0.0 --port 8000
+  ```
+
+Endpoints (all return raw JSON; no interpretation):
+- GET /
+  - Root metadata with name, version, and source link
+- GET /health
+  - Health status and version
+- GET /v1/julian-day?datetime=2024-01-01T12:00:00Z
+- GET /v1/ayanamsa?datetime=2024-01-01T12:00:00Zayanamsa=1  (default 1 = Lahiri)
+- GET /v1/planets?datetime=2024-01-01T12:00:00Ztropical=falseayanamsa=1
+  - Returns Sun–Pluto and Rahu (True Node); Ketu is computed as Rahu + 180°
+- GET /v1/houses?datetime=2024-01-01T12:00:00Zlat=28.6139lon=77.2090hsys=Ptropical=falseayanamsa=1
+  - Returns house cusps, ascendant, MC
+
+Notes:
+- The service reads EPHE_DIR on startup. If unset or files are missing, it falls back to Moshier when possible.
+- Interaction is only via HTTP API; do not import AGPL code directly in closed-source apps.
+- This is a standalone service intended to be consumed over HTTP.
 
 ### CLI Examples
 - Installed entrypoint:
@@ -69,6 +119,28 @@ Note on fallback: If `.se1` files are not available, the engine will automatical
     --houses \
     --hsys P
   ```
+
+### Docker
+
+Build and run with Docker (no ephemeris data bundled):
+
+```bash
+# Build image
+docker build -t swiss-calc-engine:latest .
+
+# Run with a local ephemeris directory mounted (optional)
+# Replace ./ephemeris with your path containing .se1 files
+docker run --rm -p 8000:8000 \
+  -e EPHE_DIR=/ephe \
+  -e CORS_ORIGINS="*" \
+  -v "$(pwd)/ephemeris:/ephe:ro" \
+  swiss-calc-engine:latest
+```
+
+Compose example:
+```bash
+docker compose up --build
+```
 
 ### Run tests
 - Quick run (no ephemeris required; ephemeris-dependent tests auto-skip):

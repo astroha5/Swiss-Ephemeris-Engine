@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.build/
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Local env and config
+.env
+.env.*
+
+# Ephemeris data (never commit)
+ephemeris/
+*.se1
+*.se?
+
+# IDEs and editors
+.vscode/
+.idea/
+*.swp
+

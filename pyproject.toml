@@ -4,28 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "swiss-calc-engine"
-version = "0.1.0"
-description = "Pure Python Swiss Ephemeris calculation engine returning JSON-friendly data"
+version = "1.0.0"
+description = "Pure Python Swiss Ephemeris calculation engine and FastAPI service returning JSON-friendly data"
 readme = "README.md"
 authors = [{ name = "Swiss Calculation Engine Maintainers" }]
 license = { file = "LICENSE" }
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 dependencies = [
-  "pyswisseph>=2.10.3"  # the PyPI package for Swiss Ephemeris
+  "pyswisseph>=2.10.3",
+  "fastapi>=0.110",
+  "uvicorn[standard]>=0.30"
 ]
-keywords = ["astrology", "swiss ephemeris", "vedic", "sidereal", "tropical", "astronomy", "json"]
+keywords = ["astrology", "swiss ephemeris", "vedic", "sidereal", "tropical", "astronomy", "json", "fastapi", "api"]
 classifiers = [
   "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Operating System :: OS Independent",
   "Topic :: Scientific/Engineering :: Astronomy",
+  "Framework :: FastAPI",
 ]
 
 [project.urls]
@@ -33,6 +35,7 @@ Homepage = "https://github.com/richardbelll9/Swiss-Calculation-Engine"
 
 [project.scripts]
 swiss-calc = "swiss_calc_engine.cli:main"
+swiss-calc-api = "swiss_calc_engine.service:main"
 
 [tool.setuptools.packages.find]
 include = ["swiss_calc_engine*"]
