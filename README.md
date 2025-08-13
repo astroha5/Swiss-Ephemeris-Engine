@@ -90,8 +90,10 @@ Endpoints (all return raw JSON; no interpretation):
 - GET /v1/ayanamsa?datetime=2024-01-01T12:00:00Zayanamsa=1  (default 1 = Lahiri)
 - GET /v1/planets?datetime=2024-01-01T12:00:00Ztropical=falseayanamsa=1
   - Returns Sun–Pluto and Rahu (True Node); Ketu is computed as Rahu + 180°
+  - Includes a backend field indicating SWIEPH (file-based Swiss), MOSEPH (Moshier fallback), or DEFAULT
 - GET /v1/houses?datetime=2024-01-01T12:00:00Zlat=28.6139lon=77.2090hsys=Ptropical=falseayanamsa=1
   - Returns house cusps, ascendant, MC
+  - Includes a backend field; houses use Swiss routines but depend only on time and location
 
 Notes:
 - The service reads EPHE_DIR on startup. If unset or files are missing, it falls back to Moshier when possible.

@@ -122,7 +122,7 @@ async def api_planets(
         jd = jd_from_dt(dt)
         sidereal = not tropical
         # Compute all planets (Sun–Pluto, mean/true nodes)
-        planets = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
+        planets, backend = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
         # Select Rahu as requested and compute Ketu = Rahu + 180
         rahu_key = "True Node" if node.lower() == "true" else "Mean Node"
         rahu = planets.get(rahu_key)
@@ -136,6 +136,7 @@ async def api_planets(
             "julian_day": float(jd),
             "tropical": bool(tropical),
             "ayanamsa_id": int(ayanamsa),
+            "backend": backend,
             "planets": planets_out,
         }
     except Exception as e:
@@ -155,11 +156,12 @@ async def api_houses(
         dt = _parse_dt(datetime)
         jd = jd_from_dt(dt)
         sidereal = not tropical
-        houses = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
+        houses, backend = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
         return {
             "julian_day": float(jd),
             "tropical": bool(tropical),
             "ayanamsa_id": int(ayanamsa),
+            "backend": backend,
             "houses": houses,
         }
     except Exception as e:

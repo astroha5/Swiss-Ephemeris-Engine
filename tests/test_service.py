@@ -48,6 +48,7 @@ def test_planets():
     )
     assert resp.status_code == 200
     data = resp.json()
+    assert data.get("backend") in ("SWIEPH", "MOSEPH", "DEFAULT")
     planets = data.get("planets", {})
     # Expect Sun and Rahu/Ketu present
     assert "Sun" in planets
@@ -72,6 +73,7 @@ def test_houses():
     )
     assert resp.status_code == 200
     data = resp.json()
+    assert data.get("backend") in ("SWIEPH", "MOSEPH", "DEFAULT")
     houses = data.get("houses", {})
     assert "cusps" in houses and isinstance(houses["cusps"], list)
     assert "ascendant" in houses and isinstance(houses["ascendant"], (int, float))

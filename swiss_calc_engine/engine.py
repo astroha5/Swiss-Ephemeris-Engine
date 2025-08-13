@@ -20,6 +20,11 @@ except Exception as e:  # pragma: no cover
         "pyswisseph (swisseph) is required. Install with `pip install pyswisseph`."
     ) from e
 
+# Ensure SEFLG_SPEED exists; some environments/builds of pyswisseph omit it.
+# Correct value from Swiss Ephemeris is 256.
+if not hasattr(swe, "SEFLG_SPEED"):
+    swe.SEFLG_SPEED = 256  # type: ignore[attr-defined]
+
 
 PLANETS = [
     swe.SUN,
@@ -75,21 +80,26 @@ def julian_day(dt: datetime) -> float:
     return swe.julday(dt_utc.year, dt_utc.month, dt_utc.day, dt_utc.hour + dt_utc.minute / 60 + dt_utc.second / 3600)
 
 
-def _swe_calc(jd: float, body: int, flags: int) -> Tuple[List[float], int]:
+def _swe_calc(jd: float, body: int, flags: int) -> Tuple[List[float], int, str]:
+    backend = "DEFAULT"
     pos, ret = swe.calc_ut(jd, body, flags)
     if ret < 0:
         # Try Swiss Ephemeris file-based
         pos, ret = swe.calc_ut(jd, body, flags | swe.SEFLG_SWIEPH)
+        backend = "SWIEPH" if ret >= 0 else backend
+    else:
+        backend = "SWIEPH"  # normal Swiss path
     if ret < 0:
         # Fall back to Moshier (no ephemeris files required)
         pos, ret = swe.calc_ut(jd, body, (flags & ~swe.SEFLG_SIDEREAL) | swe.SEFLG_MOSEPH)
-    return pos, ret
+        backend = "MOSEPH" if ret >= 0 else backend
+    return pos, ret, backend
 
 
-def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Dict[str, dict]:
-    """Compute planetary long/lat/dist and speeds. JSON-friendly dict keyed by planet name.
+def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Tuple[Dict[str, dict], str]:
+    """Compute planetary long/lat/dist and speeds. Returns (result, backend).
 
-    Parameters are stable for external imports.
+    Backend is one of: SWIEPH (file-based Swiss), MOSEPH (Moshier fallback), DEFAULT.
     """
     flags = swe.SEFLG_SPEED
     if sidereal:
@@ -97,10 +107,12 @@ def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = sw
         swe.set_sid_mode(ayanamsa)
 
     result: Dict[str, dict] = {}
+    backends: List[str] = []
     for p in PLANETS:
-        pos, ret = _swe_calc(jd, p, flags)
+        pos, ret, backend = _swe_calc(jd, p, flags)
         if ret < 0:
             raise RuntimeError(f"Swiss Ephemeris calculation failed for planet {PLANET_NAMES.get(p, str(p))}")
+        backends.append(backend)
         lon, lat, dist, spd_lon, spd_lat, spd_dist = pos
         result[PLANET_NAMES[p]] = {
             "longitude": float(lon),
@@ -111,25 +123,26 @@ def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = sw
             "speed_distance": float(spd_dist),
             "is_retrograde": bool(spd_lon < 0),
         }
-    return result
+    # Prefer SWIEPH if any used it, else MOSEPH if any used it, else DEFAULT
+    backend_overall = "SWIEPH" if "SWIEPH" in backends else ("MOSEPH" if "MOSEPH" in backends else "DEFAULT")
+    return result, backend_overall
 
-
-def get_house_cusps(jd: float, lat: float, lon: float, hsys: str = "P", sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> dict:
-    """Compute house cusps and angles. Returns JSON-friendly dict.
-
-    hsys examples: 'P' Placidus, 'K' Koch, 'E' Equal, 'W' Whole Sign, etc.
-    """
+def get_house_cusps(jd: float, lat: float, lon: float, hsys: str = "P", sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Tuple[dict, str]:
+    """Compute house cusps and angles. Returns (dict, backend)."""
     if sidereal:
         swe.set_sid_mode(ayanamsa)
     # Swiss Ephemeris uses geographic longitude East positive; we assume lon East positive input
+    # houses() uses current ephemeris; we consider it SWIEPH if files are set, otherwise MOSEPH is still possible for planets but houses rely on time/place only.
     cusps, ascmc = swe.houses(jd, lat, lon, hsys)
-    return {
+    data = {
         "cusps": [float(c) for c in cusps],
         "ascendant": float(ascmc[0]),
         "mc": float(ascmc[1]),
         "vertex": float(ascmc[5]) if len(ascmc) > 5 else None,
     }
-
+    # Backend heuristic: if ephemeris path is set to something other than cwd, assume SWIEPH; otherwise DEFAULT.
+    backend = "SWIEPH" if os.getenv("EPHE_DIR") or os.getenv("SWISS_EPHE_PATH") else "DEFAULT"
+    return data, backend
 
 def compute_positions(
     dt: datetime,
@@ -149,12 +162,17 @@ def compute_positions(
     jd = julian_day(dt)
     sidereal = not tropical
 
+    planets, backend_planets = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
     data = {
         "julian_day": float(jd),
-        "planets": get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa),
+        "planets": planets,
+        "backend": backend_planets,
     }
     if include_houses:
-        data["houses"] = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
+        houses, backend_houses = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
+        data["houses"] = houses
+        if backend_houses != "DEFAULT":
+            data.setdefault("backend_details", {})["houses"] = backend_houses
     return data
 
 
