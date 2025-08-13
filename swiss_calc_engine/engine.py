@@ -20,10 +20,12 @@ except Exception as e:  # pragma: no cover
         "pyswisseph (swisseph) is required. Install with `pip install pyswisseph`."
     ) from e
 
-# Ensure SEFLG_SPEED exists; some environments/builds of pyswisseph omit it.
-# Correct value from Swiss Ephemeris is 256.
+# Fallbacks for missing Swiss Ephemeris flag constants (seen on some builds/environments)
+# Values are taken from the Swiss Ephemeris C headers.
 if not hasattr(swe, "SEFLG_SPEED"):
     swe.SEFLG_SPEED = 256  # type: ignore[attr-defined]
+if not hasattr(swe, "SEFLG_SIDEREAL"):
+    swe.SEFLG_SIDEREAL = 65536  # type: ignore[attr-defined]
 
 
 PLANETS = [
