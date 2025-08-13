@@ -1,3 +1,0 @@
-# This file is not needed for Render deployment
-# SPA routing is handled via render.yaml configuration
-# See routes section in render.yaml for SPA routing setup

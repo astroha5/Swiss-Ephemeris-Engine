@@ -44,19 +44,21 @@ Place the files in a directory (e.g., `ephemeris/`). Then set the path using SWI
   ```
 Alternatively, pass `--ephe_dir` to the CLI or `ephe_dir` to the Python API.
 
+Note on fallback: If `.se1` files are not available, the engine will automatically fall back to Moshier calculations (SEFLG_MOSEPH), which do not require ephemeris files but may be less precise than file-based Swiss Ephemeris.
+
 ## Usage
 
 ### CLI Examples
-- Sidereal (default), include houses:
+- Installed entrypoint:
   ```bash
-  python -m swiss_calc_engine.cli \
+  swiss-calc \
     --datetime 2024-01-01T12:00:00 \
     --lat 28.6139 \
     --lon 77.2090 \
     --ephe_dir ./ephemeris \
     --houses
   ```
-- Tropical, Placidus houses:
+- Module invocation (without installation):
   ```bash
   python -m swiss_calc_engine.cli \
     --datetime 2024-01-01T12:00:00 \
@@ -119,7 +121,12 @@ Alternatively, pass `--ephe_dir` to the CLI or `ephe_dir` to the Python API.
 ```
 
 ## License
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE) for details. Use of the Swiss Ephemeris data files requires compliance with the Swiss Ephemeris license from Astrodienst AG.
+
+Swiss Calculation Engine is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). See [LICENSE](LICENSE) for details.
+
+This software uses the Swiss Ephemeris © Astrodienst AG, available at https://www.astro.com/swisseph/ under the GNU AGPL v3 license.
+
+Swiss Ephemeris data files (*.se1) are not included in this repository and must be downloaded separately from Astrodienst. If you modify Swiss Ephemeris source code (not typical when using the Python bindings), you must note those changes and keep them under the AGPL.
 
 ## Disclaimer
 This engine is for astrological calculation purposes only. The Swiss Ephemeris is (c) Astrodienst AG and distributed under GPL terms. You must comply with their licensing for any use of the ephemeris data files.

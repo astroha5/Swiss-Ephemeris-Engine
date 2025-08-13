@@ -33,3 +33,6 @@ Homepage = "https://github.com/richardbelll9/Swiss-Calculation-Engine"
 
 [project.scripts]
 swiss-calc = "swiss_calc_engine.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["swiss_calc_engine*"]
