@@ -116,13 +116,21 @@ async def api_planets(
     tropical: bool = Query(False, description="Use tropical zodiac; default sidereal"),
     ayanamsa: int = Query(1, description="Swiss Ephemeris ayanamsa id; 1=Lahiri"),
     node: str = Query("true", description="'true' or 'mean' node for Rahu"),
+    latitude: float | None = Query(None, description="Latitude in decimal degrees (north positive)"),
+    longitude: float | None = Query(None, description="Longitude in decimal degrees (east positive)"),
 ):
     try:
         dt = _parse_dt(datetime)
         jd = jd_from_dt(dt)
         sidereal = not tropical
-        # Compute all planets (Sun–Pluto, mean/true nodes)
-        planets, backend = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
+        # Compute all planets (Sun–Pluto, mean/true nodes); topocentric if both latitude/longitude provided
+        planets, backend = get_planetary_positions(
+            jd,
+            sidereal=sidereal,
+            ayanamsa=ayanamsa,
+            lat=latitude if latitude is not None and longitude is not None else None,
+            lon=longitude if latitude is not None and longitude is not None else None,
+        )
         # Select Rahu as requested and compute Ketu = Rahu + 180
         rahu_key = "True Node" if node.lower() == "true" else "Mean Node"
         rahu = planets.get(rahu_key)
@@ -138,6 +146,10 @@ async def api_planets(
             "ayanamsa_id": int(ayanamsa),
             "backend": backend,
             "planets": planets_out,
+            "location_used": {
+                "latitude": float(latitude) if latitude is not None else None,
+                "longitude": float(longitude) if longitude is not None else None,
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

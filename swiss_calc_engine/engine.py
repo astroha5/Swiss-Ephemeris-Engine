@@ -98,15 +98,31 @@ def _swe_calc(jd: float, body: int, flags: int) -> Tuple[List[float], int, str]:
     return pos, ret, backend
 
 
-def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Tuple[Dict[str, dict], str]:
+def get_planetary_positions(
+    jd: float,
+    sidereal: bool = True,
+    ayanamsa: int = swe.SIDM_LAHIRI,
+    lat: Optional[float] = None,
+    lon: Optional[float] = None,
+) -> Tuple[Dict[str, dict], str]:
     """Compute planetary long/lat/dist and speeds. Returns (result, backend).
+
+    If both lat and lon are provided, performs topocentric calculations using swe.set_topo
+    and the SEFLG_TOPOCTR flag. Otherwise, defaults to geocentric.
 
     Backend is one of: SWIEPH (file-based Swiss), MOSEPH (Moshier fallback), DEFAULT.
     """
+    # Ensure required flags exist on some environments
+    if not hasattr(swe, "SEFLG_TOPOCTR"):
+        swe.SEFLG_TOPOCTR = 32768  # type: ignore[attr-defined]
     flags = swe.SEFLG_SPEED
     if sidereal:
         flags |= swe.SEFLG_SIDEREAL
         swe.set_sid_mode(ayanamsa)
+    # Only enable topocentric if both coordinates are provided
+    if lat is not None and lon is not None:
+        swe.set_topo(lon, lat, 0.0)
+        flags |= swe.SEFLG_TOPOCTR
 
     result: Dict[str, dict] = {}
     backends: List[str] = []
@@ -115,10 +131,10 @@ def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = sw
         if ret < 0:
             raise RuntimeError(f"Swiss Ephemeris calculation failed for planet {PLANET_NAMES.get(p, str(p))}")
         backends.append(backend)
-        lon, lat, dist, spd_lon, spd_lat, spd_dist = pos
+        lon_v, lat_v, dist, spd_lon, spd_lat, spd_dist = pos
         result[PLANET_NAMES[p]] = {
-            "longitude": float(lon),
-            "latitude": float(lat),
+            "longitude": float(lon_v),
+            "latitude": float(lat_v),
             "distance": float(dist),
             "speed_longitude": float(spd_lon),
             "speed_latitude": float(spd_lat),

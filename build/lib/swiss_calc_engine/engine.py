@@ -86,25 +86,33 @@ def _swe_calc(jd: float, body: int, flags: int) -> Tuple[List[float], int]:
     return pos, ret
 
 
-def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Dict[str, dict]:
+def get_planetary_positions(jd: float, sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI, lat: Optional[float] = None, lon: Optional[float] = None) -> Dict[str, dict]:
     """Compute planetary long/lat/dist and speeds. JSON-friendly dict keyed by planet name.
+
+    If both lat and lon are provided, performs topocentric calculations using swe.set_topo
+    and the SEFLG_TOPOCTR flag. Otherwise, defaults to geocentric.
 
     Parameters are stable for external imports.
     """
+    if not hasattr(swe, "SEFLG_TOPOCTR"):
+        swe.SEFLG_TOPOCTR = 32768  # type: ignore[attr-defined]
     flags = swe.SEFLG_SPEED
     if sidereal:
         flags |= swe.SEFLG_SIDEREAL
         swe.set_sid_mode(ayanamsa)
+    if lat is not None and lon is not None:
+        swe.set_topo(lon, lat, 0.0)
+        flags |= swe.SEFLG_TOPOCTR
 
     result: Dict[str, dict] = {}
     for p in PLANETS:
         pos, ret = _swe_calc(jd, p, flags)
         if ret < 0:
             raise RuntimeError(f"Swiss Ephemeris calculation failed for planet {PLANET_NAMES.get(p, str(p))}")
-        lon, lat, dist, spd_lon, spd_lat, spd_dist = pos
+        lon_v, lat_v, dist, spd_lon, spd_lat, spd_dist = pos
         result[PLANET_NAMES[p]] = {
-            "longitude": float(lon),
-            "latitude": float(lat),
+            "longitude": float(lon_v),
+            "latitude": float(lat_v),
             "distance": float(dist),
             "speed_longitude": float(spd_lon),
             "speed_latitude": float(spd_lat),

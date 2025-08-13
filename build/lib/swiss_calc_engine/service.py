@@ -79,6 +79,8 @@ async def api_planets(
     tropical: bool = Query(False, description="Use tropical zodiac; default sidereal"),
     ayanamsa: int = Query(1, description="Swiss Ephemeris ayanamsa id; 1=Lahiri"),
     node: str = Query("true", description="'true' or 'mean' node for Rahu"),
+    lat: float | None = Query(None, description="Latitude in decimal degrees (north positive)", alias="latitude"),
+    lon: float | None = Query(None, description="Longitude in decimal degrees (east positive)", alias="longitude"),
 ):
     try:
         import swisseph as swe
@@ -86,14 +88,22 @@ async def api_planets(
         jd = jd_from_dt(dt)
         sidereal = not tropical
         # Pick true vs mean node label to return
-        planets = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
+        planets = get_planetary_positions(
+            jd,
+            sidereal=sidereal,
+            ayanamsa=ayanamsa,
+            lat=lat if lat is not None and lon is not None else None,
+            lon=lon if lat is not None and lon is not None else None,
+        )
         # Select Rahu as requested and compute Ketu = Rahu + 180
         rahu_key = "True Node" if node.lower() == "true" else "Mean Node"
-        rahu = planets.get(rahu_key)
+        rahu = planets.get(rahu_key) if isinstance(planets, dict) else planets[0].get(rahu_key)
+        # Normalize planets output regardless of engine version in build/lib
+        planets_dict = planets if isinstance(planets, dict) else planets[0]
         if rahu is None:
             raise RuntimeError("Node computation failed")
         ketu_lon = (rahu["longitude"] + 180.0) % 360.0
-        planets_out = {k: v for k, v in planets.items() if k not in ("True Node", "Mean Node")}
+        planets_out = {k: v for k, v in planets_dict.items() if k not in ("True Node", "Mean Node")}
         planets_out["Rahu"] = rahu
         planets_out["Ketu"] = {"longitude": ketu_lon, "latitude": 0.0}
         return {
@@ -101,6 +111,10 @@ async def api_planets(
             "tropical": bool(tropical),
             "ayanamsa_id": int(ayanamsa),
             "planets": planets_out,
+            "location_used": {
+                "latitude": float(lat) if lat is not None else None,
+                "longitude": float(lon) if lon is not None else None,
+            },
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
