@@ -20,6 +20,13 @@ except Exception as e:  # pragma: no cover
         "pyswisseph (swisseph) is required. Install with `pip install pyswisseph`."
     ) from e
 
+try:
+    from timezonefinder import TimezoneFinder
+    import pytz
+    _TIMEZONE_SUPPORT = True
+except ImportError:  # pragma: no cover
+    _TIMEZONE_SUPPORT = False
+
 # Fallbacks for missing Swiss Ephemeris flag constants (seen on some builds/environments)
 # Values are taken from the Swiss Ephemeris C headers.
 if not hasattr(swe, "SEFLG_SPEED"):
@@ -69,6 +76,50 @@ def set_ephemeris_path(path: Optional[str] = None) -> None:
     """
     ephe = path or os.getenv("SWISS_EPHE_PATH") or os.getcwd()
     swe.set_ephe_path(ephe)
+
+
+def _detect_timezone(lat: float, lon: float) -> Optional[str]:
+    """Detect timezone from coordinates using timezonefinder.
+    
+    Returns timezone name (e.g., 'Asia/Kolkata') or None if detection fails.
+    """
+    if not _TIMEZONE_SUPPORT:
+        return None
+    
+    try:
+        tf = TimezoneFinder()
+        tz_name = tf.timezone_at(lat=lat, lng=lon)
+        return tz_name
+    except Exception:
+        return None
+
+
+def _convert_local_to_utc(dt: datetime, lat: float, lon: float) -> datetime:
+    """Convert naive datetime from local time to UTC based on coordinates.
+    
+    If timezone detection fails, returns datetime as-is (assumed UTC).
+    """
+    if dt.tzinfo is not None:
+        # Already timezone-aware, convert to UTC
+        return dt.astimezone(timezone.utc)
+    
+    if not _TIMEZONE_SUPPORT:
+        # No timezone support, assume UTC
+        return dt.replace(tzinfo=timezone.utc)
+    
+    tz_name = _detect_timezone(lat, lon)
+    if tz_name is None:
+        # Could not detect timezone, assume UTC
+        return dt.replace(tzinfo=timezone.utc)
+    
+    try:
+        # Convert from local time to UTC
+        local_tz = pytz.timezone(tz_name)
+        local_dt = local_tz.localize(dt)
+        return local_dt.astimezone(timezone.utc)
+    except Exception:
+        # Fallback to UTC if conversion fails
+        return dt.replace(tzinfo=timezone.utc)
 
 
 def julian_day(dt: datetime) -> float:
@@ -147,17 +198,37 @@ def get_planetary_positions(
 
 def get_house_cusps(jd: float, lat: float, lon: float, hsys: str = "P", sidereal: bool = True, ayanamsa: int = swe.SIDM_LAHIRI) -> Tuple[dict, str]:
     """Compute house cusps and angles. Returns (dict, backend)."""
-    if sidereal:
-        swe.set_sid_mode(ayanamsa)
     # Swiss Ephemeris uses geographic longitude East positive; we assume lon East positive input
     # houses() uses current ephemeris; we consider it SWIEPH if files are set, otherwise MOSEPH is still possible for planets but houses rely on time/place only.
-    cusps, ascmc = swe.houses(jd, lat, lon, hsys)
-    data = {
-        "cusps": [float(c) for c in cusps],
-        "ascendant": float(ascmc[0]),
-        "mc": float(ascmc[1]),
-        "vertex": float(ascmc[5]) if len(ascmc) > 5 else None,
-    }
+    cusps, ascmc = swe.houses(jd, lat, lon, hsys.encode('utf-8'))
+    
+    # The houses() function doesn't automatically apply sidereal correction
+    # We need to manually adjust if sidereal mode is requested
+    if sidereal:
+        # Set sidereal mode to calculate ayanamsa
+        swe.set_sid_mode(ayanamsa)
+        # Get ayanamsa value for the given Julian day
+        ayanamsa_value = swe.get_ayanamsa_ut(jd)
+        
+        # Apply ayanamsa correction to all values
+        adjusted_cusps = [(c - ayanamsa_value) % 360 for c in cusps]
+        adjusted_ascmc = [(a - ayanamsa_value) % 360 for a in ascmc]
+        
+        data = {
+            "cusps": [float(c) for c in adjusted_cusps],
+            "ascendant": float(adjusted_ascmc[0]),
+            "mc": float(adjusted_ascmc[1]),
+            "vertex": float(adjusted_ascmc[5]) if len(adjusted_ascmc) > 5 else None,
+        }
+    else:
+        # For tropical, no adjustment needed
+        data = {
+            "cusps": [float(c) for c in cusps],
+            "ascendant": float(ascmc[0]),
+            "mc": float(ascmc[1]),
+            "vertex": float(ascmc[5]) if len(ascmc) > 5 else None,
+        }
+    
     # Backend heuristic: if ephemeris path is set to something other than cwd, assume SWIEPH; otherwise DEFAULT.
     backend = "SWIEPH" if os.getenv("EPHE_DIR") or os.getenv("SWISS_EPHE_PATH") else "DEFAULT"
     return data, backend
@@ -171,13 +242,35 @@ def compute_positions(
     include_houses: bool = True,
     hsys: str = "P",
     ayanamsa: int = swe.SIDM_LAHIRI,
+    assume_local_time: bool = True,
 ) -> dict:
     """High-level one-call API. Returns JSON-serializable dict.
 
     This function is stable for external apps to import.
+    
+    Parameters:
+        dt: datetime object. If naive (no timezone), interpreted based on assume_local_time.
+        lat: Latitude in decimal degrees.
+        lon: Longitude in decimal degrees.
+        ephe_dir: Path to ephemeris files.
+        tropical: If True, use tropical zodiac. If False, use sidereal.
+        include_houses: Include house cusps and angles.
+        hsys: House system ('P' for Placidus, 'K' for Koch, etc.)
+        ayanamsa: Ayanamsa mode for sidereal calculations.
+        assume_local_time: If True and dt is naive, interpret as local time at lat/lon.
+                          If False, interpret as UTC.
     """
     set_ephemeris_path(ephe_dir)
-    jd = julian_day(dt)
+    
+    # Handle timezone conversion for naive datetimes
+    if dt.tzinfo is None and assume_local_time:
+        dt_utc = _convert_local_to_utc(dt, lat, lon)
+        detected_tz = _detect_timezone(lat, lon)
+    else:
+        dt_utc = dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+        detected_tz = None
+    
+    jd = julian_day(dt_utc)
     sidereal = not tropical
 
     planets, backend_planets = get_planetary_positions(jd, sidereal=sidereal, ayanamsa=ayanamsa)
@@ -186,11 +279,17 @@ def compute_positions(
         "planets": planets,
         "backend": backend_planets,
     }
+    
+    # Add timezone information if detected
+    if detected_tz:
+        data["timezone_detected"] = detected_tz
+        data["input_interpreted_as_local"] = True
+    elif dt.tzinfo is None and not assume_local_time:
+        data["input_interpreted_as_local"] = False
+    
     if include_houses:
         houses, backend_houses = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
         data["houses"] = houses
         if backend_houses != "DEFAULT":
             data.setdefault("backend_details", {})["houses"] = backend_houses
     return data
-
-

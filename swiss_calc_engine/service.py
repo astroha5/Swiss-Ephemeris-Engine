@@ -20,6 +20,7 @@ from .engine import (
     julian_day as jd_from_dt,
     get_planetary_positions,
     get_house_cusps,
+    compute_positions,
 )
 
 
@@ -163,19 +164,41 @@ async def api_houses(
     hsys: str = Query("P", description="House system code, e.g., P, K, E, W"),
     tropical: bool = Query(False, description="Use tropical zodiac; default sidereal"),
     ayanamsa: int = Query(1, description="Swiss Ephemeris ayanamsa id; 1=Lahiri"),
+    assume_local_time: bool = Query(True, description="If datetime is naive, interpret as local time at lat/lon"),
 ):
     try:
-        dt = _parse_dt(datetime)
-        jd = jd_from_dt(dt)
-        sidereal = not tropical
-        houses, backend = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
-        return {
-            "julian_day": float(jd),
+        dt_input = _parse_dt_for_location(datetime, lat, lon, assume_local_time)
+        result = compute_positions(
+            dt=dt_input,
+            lat=lat,
+            lon=lon,
+            tropical=tropical,
+            include_houses=True,
+            hsys=hsys,
+            ayanamsa=ayanamsa,
+            assume_local_time=assume_local_time,
+        )
+        
+        response = {
+            "julian_day": result["julian_day"],
             "tropical": bool(tropical),
             "ayanamsa_id": int(ayanamsa),
-            "backend": backend,
-            "houses": houses,
+            "houses": result["houses"],
         }
+        
+        # Include backend information if available
+        if "backend" in result:
+            response["backend"] = result["backend"]
+        if "backend_details" in result:
+            response["backend_details"] = result["backend_details"]
+            
+        # Include timezone information if detected
+        if "timezone_detected" in result:
+            response["timezone_detected"] = result["timezone_detected"]
+        if "input_interpreted_as_local" in result:
+            response["input_interpreted_as_local"] = result["input_interpreted_as_local"]
+        
+        return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -189,6 +212,28 @@ def _parse_dt(s: str) -> datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def _parse_dt_for_location(s: str, lat: float, lon: float, assume_local_time: bool) -> datetime:
+    """Parse datetime string, with optional timezone detection based on location.
+    
+    If assume_local_time=False or if datetime is timezone-aware, behaves like _parse_dt.
+    If assume_local_time=True and datetime is naive, returns naive datetime for engine to handle.
+    """
+    try:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid datetime format. Use ISO 8601.")
+    
+    if dt.tzinfo is not None:
+        # Timezone-aware datetime - convert to UTC
+        return dt.astimezone(timezone.utc)
+    elif assume_local_time:
+        # Naive datetime, let engine handle timezone detection
+        return dt
+    else:
+        # Naive datetime, treat as UTC
+        return dt.replace(tzinfo=timezone.utc)
 
 
 def run(host: str = "0.0.0.0", port: int = 8000):
