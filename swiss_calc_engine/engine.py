@@ -200,7 +200,14 @@ def get_house_cusps(jd: float, lat: float, lon: float, hsys: str = "P", sidereal
     """Compute house cusps and angles. Returns (dict, backend)."""
     # Swiss Ephemeris uses geographic longitude East positive; we assume lon East positive input
     # houses() uses current ephemeris; we consider it SWIEPH if files are set, otherwise MOSEPH is still possible for planets but houses rely on time/place only.
-    cusps, ascmc = swe.houses(jd, lat, lon, hsys.encode('utf-8'))
+    
+    # Ensure hsys is properly encoded as bytes - handle both str and bytes input
+    if isinstance(hsys, str):
+        hsys_bytes = hsys.encode('utf-8')
+    else:
+        hsys_bytes = hsys
+    
+    cusps, ascmc = swe.houses(jd, lat, lon, hsys_bytes)
     
     # The houses() function doesn't automatically apply sidereal correction
     # We need to manually adjust if sidereal mode is requested

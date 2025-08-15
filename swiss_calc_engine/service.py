@@ -167,36 +167,64 @@ async def api_houses(
     assume_local_time: bool = Query(True, description="If datetime is naive, interpret as local time at lat/lon"),
 ):
     try:
-        dt_input = _parse_dt_for_location(datetime, lat, lon, assume_local_time)
-        result = compute_positions(
-            dt=dt_input,
-            lat=lat,
-            lon=lon,
-            tropical=tropical,
-            include_houses=True,
-            hsys=hsys,
-            ayanamsa=ayanamsa,
-            assume_local_time=assume_local_time,
-        )
+        # Parse datetime with timezone awareness if requested
+        if assume_local_time:
+            # Try to use the new timezone-aware parsing
+            try:
+                dt_input = _parse_dt_for_location(datetime, lat, lon, assume_local_time)
+                use_new_engine = True
+            except:
+                # Fallback to old parsing if new functions aren't available
+                dt_input = _parse_dt(datetime)
+                use_new_engine = False
+        else:
+            dt_input = _parse_dt(datetime)
+            use_new_engine = False
         
-        response = {
-            "julian_day": result["julian_day"],
-            "tropical": bool(tropical),
-            "ayanamsa_id": int(ayanamsa),
-            "houses": result["houses"],
-        }
-        
-        # Include backend information if available
-        if "backend" in result:
-            response["backend"] = result["backend"]
-        if "backend_details" in result:
-            response["backend_details"] = result["backend_details"]
+        if use_new_engine and hasattr(compute_positions, '__call__'):
+            # Use new engine with timezone support
+            result = compute_positions(
+                dt=dt_input,
+                lat=lat,
+                lon=lon,
+                tropical=tropical,
+                include_houses=True,
+                hsys=hsys,
+                ayanamsa=ayanamsa,
+                assume_local_time=assume_local_time,
+            )
             
-        # Include timezone information if detected
-        if "timezone_detected" in result:
-            response["timezone_detected"] = result["timezone_detected"]
-        if "input_interpreted_as_local" in result:
-            response["input_interpreted_as_local"] = result["input_interpreted_as_local"]
+            response = {
+                "julian_day": result["julian_day"],
+                "tropical": bool(tropical),
+                "ayanamsa_id": int(ayanamsa),
+                "houses": result["houses"],
+            }
+            
+            # Include backend information if available
+            if "backend" in result:
+                response["backend"] = result["backend"]
+            if "backend_details" in result:
+                response["backend_details"] = result["backend_details"]
+                
+            # Include timezone information if detected
+            if "timezone_detected" in result:
+                response["timezone_detected"] = result["timezone_detected"]
+            if "input_interpreted_as_local" in result:
+                response["input_interpreted_as_local"] = result["input_interpreted_as_local"]
+        else:
+            # Fallback to original engine API for compatibility
+            jd = jd_from_dt(dt_input)
+            sidereal = not tropical
+            houses, backend = get_house_cusps(jd, lat, lon, hsys=hsys, sidereal=sidereal, ayanamsa=ayanamsa)
+            
+            response = {
+                "julian_day": float(jd),
+                "tropical": bool(tropical),
+                "ayanamsa_id": int(ayanamsa),
+                "backend": backend,
+                "houses": houses,
+            }
         
         return response
     except Exception as e:
