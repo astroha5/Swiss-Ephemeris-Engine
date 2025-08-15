@@ -2,6 +2,24 @@
 
 A pure Python calculation engine and standalone HTTP API service using the Swiss Ephemeris.
 
+🌟 **NEW: Fixed Critical Issues for Accurate Astrology Calculations**
+- ✅ **Proper Sidereal Calculations** - Fixed ayanamsa correction for Vedic astrology
+- ✅ **Timezone Awareness** - Handles local time to UTC conversion correctly
+- ✅ **Verified Accuracy** - All major calculation bugs resolved
+
+**🌐 Live API:** https://swiss-ephemeris-engine.onrender.com
+
+## ⚠️ Critical for Accuracy
+
+**For correct results, convert birth time to UTC before API calls:**
+```bash
+# Example: Birth in Kolkata (12:00 PM IST = 06:30 UTC)
+curl "https://swiss-ephemeris-engine.onrender.com/v1/houses?datetime=2000-09-30T06:30:00Z&lat=22.5726&lon=88.3639&tropical=false"
+# Returns: Sagittarius ascendant ✅
+```
+
+**📖 [Complete API Documentation](./API_DOCUMENTATION.md) | 🚀 [Quick Reference](./QUICK_REFERENCE.md)**
+
 Important:
 - Standalone service: interact only via HTTP API calls. Do not import this AGPL code directly into closed-source apps.
 - No ephemeris files included: Swiss Ephemeris .se1 data files are not in this repo.
