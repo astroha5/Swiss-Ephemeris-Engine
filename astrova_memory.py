@@ -31,12 +31,12 @@ class AstrovaMemoryManager:
         # Core Architecture Information
         architecture_messages = [
             {
-                "role": "user", 
-                "content": "Astrova is a Vedic astrology platform with React frontend (Vite) and Node.js backend using Swiss Ephemeris for astronomical calculations. Uses Supabase Direct Connection (postgresql://postgres:***@db.ypscvzznlrxjeqkjasmb.supabase.co:5432/postgres) with comprehensive database containing 6 tables: world_events (1,500 rows), astrological_patterns (282 rows), event_pattern_matches (8,290 rows), ml_models (4 rows), ml_predictions (7 rows), and events_with_pattern_matches view."
+                "role": "user",
+                "content": "Astrova is a Vedic astrology platform with React frontend (Vite) and Node.js backend using Swiss Ephemeris for astronomical calculations. Provides API for birth chart generation, planetary positions, and dasha calculations."
             },
             {
-                "role": "assistant", 
-                "content": "I'll remember that Astrova uses React+Vite frontend, Node.js backend, Swiss Ephemeris calculations, and Supabase Direct Connection with rich database containing world events, astrological patterns, ML models, and pattern matching data."
+                "role": "assistant",
+                "content": "I'll remember that Astrova uses React+Vite frontend, Node.js backend, and Swiss Ephemeris calculations for Vedic astrology API services."
             }
         ]
         
@@ -44,11 +44,11 @@ class AstrovaMemoryManager:
         backend_messages = [
             {
                 "role": "user",
-                "content": "Astrova backend has these key services: enhancedSwissEphemeris.js for planetary calculations, kundliController.js for birth chart generation, yogaService.js, doshaService.js, dashaService.js for Vimshottari calculations, aspectsService.js for planetary aspects, and predictionService.js for ML-based predictions."
+                "content": "Astrova backend has these key services: enhancedSwissEphemeris.js for planetary calculations, kundliController.js for birth chart generation, yogaService.js, doshaService.js, dashaService.js for Vimshottari calculations, aspectsService.js for planetary aspects, and panchangService.js for daily panchang."
             },
             {
                 "role": "assistant",
-                "content": "I'll remember the Astrova backend services: Swiss Ephemeris calculations, Kundli controller, Yoga/Dosha services, Dasha calculations, aspects service, and ML prediction service."
+                "content": "I'll remember the Astrova backend services: Swiss Ephemeris calculations, Kundli controller, Yoga/Dosha services, Dasha calculations, aspects service, and panchang service."
             }
         ]
         
@@ -56,11 +56,11 @@ class AstrovaMemoryManager:
         frontend_messages = [
             {
                 "role": "user",
-                "content": "Astrova frontend includes chart results dashboard with birth chart visualization, monthly predictions using AI (Llama-3.3-70B via OpenRouter), planetary events analysis with load-more pagination, and comprehensive astrology interpretation modules."
+                "content": "Astrova frontend includes chart results dashboard with birth chart visualization, planetary positions tracking, and comprehensive astrology calculation modules."
             },
             {
                 "role": "assistant",
-                "content": "I'll remember the Astrova frontend has chart dashboard, AI-powered monthly predictions, planetary events with pagination, and interpretation modules."
+                "content": "I'll remember the Astrova frontend has chart dashboard, planetary positions tracking, and astrology calculation modules."
             }
         ]
         
@@ -68,11 +68,11 @@ class AstrovaMemoryManager:
         technical_messages = [
             {
                 "role": "user",
-                "content": "Astrova uses Lahiri Ayanamsa for sidereal calculations, supports historical timezone handling, calculates Navamsa charts, implements Vedic aspects (Drishti), and includes ML pattern analysis for world events correlation with planetary positions."
+                "content": "Astrova uses Lahiri Ayanamsa for sidereal calculations, supports historical timezone handling, calculates Navamsa charts, and implements Vedic aspects (Drishti)."
             },
             {
                 "role": "assistant",
-                "content": "I'll remember Astrova's technical specs: Lahiri Ayanamsa, historical timezones, Navamsa charts, Vedic aspects, and ML pattern analysis for world events."
+                "content": "I'll remember Astrova's technical specs: Lahiri Ayanamsa, historical timezones, Navamsa charts, and Vedic aspects."
             }
         ]
         
@@ -80,11 +80,11 @@ class AstrovaMemoryManager:
         status_messages = [
             {
                 "role": "user",
-                "content": f"As of {datetime.now().strftime('%Y-%m-%d')}, Astrova has implemented: complete birth chart generation, Vimshottari Dasha calculations, monthly AI predictions, planetary events analysis with pagination, Swiss Ephemeris integration, and ML training for astrological patterns."
+                "content": f"As of {datetime.now().strftime('%Y-%m-%d')}, Astrova has implemented: complete birth chart generation, Vimshottari Dasha calculations, planetary positions tracking, Swiss Ephemeris integration, and Vedic astrology API services."
             },
             {
                 "role": "assistant",
-                "content": "I'll remember the current Astrova implementation status with all major astrology features completed and operational."
+                "content": "I'll remember the current Astrova implementation status with all major astrology calculation features completed and operational."
             }
         ]
         
@@ -296,23 +296,21 @@ class AstrovaMemoryManager:
         """Get all technology-related memories"""
         return self.get_memories_by_category("technology")
     
-    def add_database_schema_info(self, async_mode=True):
-        """Add current Supabase database schema information"""
-        database_info = [
-            "Supabase Direct Connection established at postgresql://postgres:***@db.ypscvzznlrxjeqkjasmb.supabase.co:5432/postgres",
-            "Database contains 6 tables: world_events (1,500 historical events with planetary data), astrological_patterns (282 pattern definitions), event_pattern_matches (8,290 pattern correlations), ml_models (4 trained models for financial/political/disaster/pandemic predictions), ml_predictions (7 historical predictions), and events_with_pattern_matches view for analysis",
-            "world_events table structure: id, title, description, event_date, category, event_type, impact_level, location_name, latitude, longitude, country_code, affected_population, source_url, planetary_snapshot (JSONB with full planetary positions), planetary_aspects (array of aspect descriptions)",
-            "astrological_patterns table: pattern_name, pattern_type (planetary/aspect/nakshatra), pattern_conditions (JSONB), success_rate, total_occurrences, high_impact_occurrences",
-            "ml_models table: model_name, model_type, category, model_data (JSONB with weights/features), accuracy, precision_score, recall_score, f1_score, hyperparameters",
-            "Database includes rich astrological data: planetary positions in signs/degrees, Vedic aspects (Drishti), nakshatras, house positions, conjunctions, and ML pattern recognition for world event correlation"
+    def add_api_services_info(self, async_mode=True):
+        """Add current API services information"""
+        api_info = [
+            "Astrova provides REST API endpoints for Vedic astrology calculations",
+            "API endpoints include: planetary positions, birth chart generation, dasha calculations, panchang, and transit analysis",
+            "All calculations use Swiss Ephemeris for accurate astronomical data",
+            "Supports Lahiri Ayanamsa for sidereal Vedic astrology calculations"
         ]
-        
+
         results = []
-        for info in database_info:
+        for info in api_info:
             result = self.add_memory(info, async_mode=async_mode)
             results.append(result)
-        
-        print(f"✅ Added {len([r for r in results if r])} database schema memories")
+
+        print(f"✅ Added {len([r for r in results if r])} API services memories")
         return results
     
     def browse_memories_paginated(self, page_size=10):
@@ -350,7 +348,7 @@ def main():
     parser.add_argument("--update", type=str, help="Update memory by ID (format: 'memory_id,new_text')")
     parser.add_argument("--browse", action="store_true", help="Interactive paginated browsing")
     parser.add_argument("--tech", action="store_true", help="Show only technology memories")
-    parser.add_argument("--database", action="store_true", help="Add current database schema information")
+    parser.add_argument("--api", action="store_true", help="Add current API services information")
     parser.add_argument("--dev-session", type=str, help="Add development session (format: 'summary,changes,files')")
     
     args = parser.parse_args()
@@ -377,8 +375,8 @@ def main():
             print("❌ Update format should be: --update 'memory_id,new text'")
     elif args.browse:
         memory_manager.browse_memories_paginated(args.page_size)
-    elif args.database:
-        memory_manager.add_database_schema_info()
+    elif args.api:
+        memory_manager.add_api_services_info()
     elif args.dev_session:
         try:
             parts = args.dev_session.split(',', 2)

@@ -8,8 +8,6 @@
 - **Planetary Positions** - Real-time planetary position tracking
 - **Vimshottari Dasha** - Complete dasha period calculations
 - **Chart Visualization** - Traditional North Indian chart display
-- **Monthly Predictions** - Astrological insights and forecasts
-- **Pattern Recall** - Historical event pattern matching
 - **Transit Analysis** - Current planetary transit effects
 
 ## 🏗️ Project Structure
@@ -80,7 +78,6 @@ astrova hf/
 - **Frontend**: React 18, Vite, Tailwind CSS
 - **Backend**: Node.js, Express.js
 - **Calculations**: Swiss Ephemeris
-- **Database**: Supabase (PostgreSQL)
 - **Styling**: Tailwind CSS with custom themes
 
 ## 🎯 Core Features
@@ -99,8 +96,6 @@ astrova hf/
 ### Transit Analysis
 - Current planetary positions
 - Transit effects analysis
-- Pattern matching with historical events
-- Simplified data storage in world_events table with planetary_snapshot and planetary_aspects columns
 
 ## 🔧 Configuration
 
