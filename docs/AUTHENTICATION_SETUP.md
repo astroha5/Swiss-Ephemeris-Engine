@@ -1,6 +1,6 @@
 # Authentication Implementation Guide
 
-## Overview
+## 1 Overview
 I've implemented a complete authentication system for your Astrova application using Supabase. The authentication was missing from the frontend despite having all the backend services configured.
 
 ## What Was Added
