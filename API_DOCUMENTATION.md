@@ -1,6 +1,6 @@
 # Swiss Calculation Engine API Documentation
 
-## 🎯 Overview
+## 1 Overview
 
 The Swiss Calculation Engine provides accurate astrological calculations using the Swiss Ephemeris library. This API returns raw astronomical data for planetary positions, house cusps, and ascendant calculations in both tropical and sidereal (Vedic) systems.
 
