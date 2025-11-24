@@ -1,6 +1,6 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd backend && npm install"
+buildCommand = "cd backend && npm install && chmod +x download-ephemeris.sh && ./download-ephemeris.sh"
 
 [deploy]
 startCommand = "cd backend && npm start"

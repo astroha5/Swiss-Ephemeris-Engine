@@ -12,10 +12,10 @@ const errorHandler = require('./utils/errorHandler');
 
 // Import routes
 const kundliRoutes = require('./routes/kundli');
-// const panchangRoutes = require('./routes/panchang');
-// const dashaRoutes = require('./routes/dasha');
-// const planetaryPositionsRoutes = require('./routes/planetaryPositions');
-// const transitRoutes = require('./routes/transits');
+const panchangRoutes = require('./routes/panchang');
+const dashaRoutes = require('./routes/dasha');
+const planetaryPositionsRoutes = require('./routes/planetaryPositions');
+const transitRoutes = require('./routes/transits');
 // const aiRoutes = require('./routes/ai');
 // const patternRecallRoutes = require('./routes/patternRecall');
 // const planetaryEventsRoutes = require('./routes/planetaryEvents');
@@ -91,10 +91,10 @@ app.get('/ping', (req, res) => {
 
 // API routes
 app.use('/api/kundli', kundliRoutes);
-// app.use('/api/panchang', panchangRoutes);
-// app.use('/api/dasha', dashaRoutes);
-// app.use('/api/planetary-positions', planetaryPositionsRoutes);
-// app.use('/api/transits', transitRoutes);
+app.use('/api/panchang', panchangRoutes);
+app.use('/api/dasha', dashaRoutes);
+app.use('/api/planetary-positions', planetaryPositionsRoutes);
+app.use('/api/transits', transitRoutes);
 // app.use('/api/ai', aiRoutes);
 // app.use('/api/subscription', subscriptionRoutes);
 // app.use('/api/payments', paymentsRoutes);
