@@ -1,2 +1,4 @@
+root_dir = "backend"
+
 [phases.setup]
 nixPkgs = ["python311", "nodejs_20", "gcc"]
