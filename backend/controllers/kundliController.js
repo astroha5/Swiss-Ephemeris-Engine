@@ -211,6 +211,13 @@ class KundliController {
       const navamsaChart = swissEphemerisService.calculateNavamsa(planetaryPositions);
       const navamsaHouses = generateNavamsaHouses(navamsaChart, ascendant);
 
+      // Debug: Check planetary positions before transform
+      console.log('DEBUG - Before transform, planetaryPositions keys:', Object.keys(planetaryPositions));
+      console.log('DEBUG - Moon exists:', !!planetaryPositions.moon);
+      if (planetaryPositions.moon) {
+        console.log('DEBUG - Moon sign:', planetaryPositions.moon.sign);
+      }
+
       // Transform planetary data for frontend
       const planetaryData = transformPlanetaryData(planetaryPositions, julianDay, latitude, longitude, ascendant);
 
@@ -234,12 +241,12 @@ class KundliController {
           const nakshatraLength = 360 / 27; // 13.333... degrees per nakshatra
           const nakshatraStart = Math.floor(moon.longitude / nakshatraLength) * nakshatraLength;
           const moonProgressInNakshatra = ((moon.longitude - nakshatraStart) / nakshatraLength) * 100;
-          
+
           dashaTimeline = dashaService.calculateDashaTimeline(
-            date, 
-            time, 
-            moon.nakshatra, 
-            moonProgressInNakshatra, 
+            date,
+            time,
+            moon.nakshatra,
+            moonProgressInNakshatra,
             timezone
           );
         }
@@ -258,6 +265,11 @@ class KundliController {
         timezone: timezone
       };
 
+      // Debug: Check planetary positions structure
+      console.log('DEBUG - Planetary positions keys:', Object.keys(planetaryPositions));
+      console.log('DEBUG - Moon object:', planetaryPositions.moon);
+      console.log('DEBUG - Sun object:', planetaryPositions.sun);
+
       // Prepare chart summary
       const chartSummary = {
         ascendant: {
@@ -267,16 +279,16 @@ class KundliController {
           nakshatra: ascendant.nakshatra
         },
         moonSign: {
-          sign: planetaryPositions.moon.sign,
-          degree: planetaryPositions.moon.degreeFormatted,
-          lord: getSignLord(planetaryPositions.moon.sign),
-          nakshatra: planetaryPositions.moon.nakshatra
+          sign: planetaryPositions.moon?.sign,
+          degree: planetaryPositions.moon?.degreeFormatted,
+          lord: planetaryPositions.moon?.sign ? getSignLord(planetaryPositions.moon.sign) : 'Unknown',
+          nakshatra: planetaryPositions.moon?.nakshatra
         },
         sunSign: {
-          sign: planetaryPositions.sun.sign,
-          degree: planetaryPositions.sun.degreeFormatted,
-          lord: getSignLord(planetaryPositions.sun.sign),
-          nakshatra: planetaryPositions.sun.nakshatra
+          sign: planetaryPositions.sun?.sign,
+          degree: planetaryPositions.sun?.degreeFormatted,
+          lord: planetaryPositions.sun?.sign ? getSignLord(planetaryPositions.sun.sign) : 'Unknown',
+          nakshatra: planetaryPositions.sun?.nakshatra
         },
         yogas: yogas,
         doshas: doshas,

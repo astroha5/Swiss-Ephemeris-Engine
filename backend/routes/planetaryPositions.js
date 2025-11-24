@@ -6,6 +6,6 @@ const planetaryPositionsController = require('../controllers/planetaryPositionsC
 router.post('/', planetaryPositionsController.getPlanetaryPositions);
 
 // Route for generating pattern-aware predictive report, storing snapshot and matches
-router.post('/report', planetaryPositionsController.generateReport);
+// router.post('/report', planetaryPositionsController.generateReport);
 
 module.exports = router;

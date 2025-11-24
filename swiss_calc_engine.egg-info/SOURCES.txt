@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+swiss_calc_engine/__init__.py
+swiss_calc_engine/cli.py
+swiss_calc_engine/engine.py
+swiss_calc_engine/service.py
+swiss_calc_engine.egg-info/PKG-INFO
+swiss_calc_engine.egg-info/SOURCES.txt
+swiss_calc_engine.egg-info/dependency_links.txt
+swiss_calc_engine.egg-info/entry_points.txt
+swiss_calc_engine.egg-info/requires.txt
+swiss_calc_engine.egg-info/top_level.txt

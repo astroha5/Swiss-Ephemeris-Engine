@@ -1,0 +1,3 @@
+[console_scripts]
+swiss-calc = swiss_calc_engine.cli:main
+swiss-calc-api = swiss_calc_engine.service:run

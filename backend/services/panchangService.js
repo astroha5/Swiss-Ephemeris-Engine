@@ -1,6 +1,6 @@
-const swisseph = require('swisseph');
 const moment = require('moment-timezone');
 const logger = require('../utils/logger');
+const enhancedSwissEphemeris = require('./enhancedSwissEphemeris');
 
 class PanchangService {
   constructor() {
@@ -137,37 +137,22 @@ class PanchangService {
    * Convert date/time to Julian Day
    */
   getJulianDay(date, time, timezone) {
-    const dateTimeString = `${date} ${time}`;
-    const momentObj = moment.tz(dateTimeString, 'YYYY-MM-DD HH:mm', timezone);
-    
-    if (!momentObj.isValid()) {
-      throw new Error('Invalid date/time format');
-    }
-
-    const utcMoment = momentObj.utc();
-    const year = utcMoment.year();
-    const month = utcMoment.month() + 1;
-    const day = utcMoment.date();
-    const hour = utcMoment.hour() + (utcMoment.minute() / 60.0);
-
-    return swisseph.swe_julday(year, month, day, hour, swisseph.SE_GREG_CAL);
+    return enhancedSwissEphemeris.getJulianDay(date, time, timezone);
   }
 
   /**
    * Get Sun position
    */
   getSunPosition(julianDay) {
-    const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
-    const result = swisseph.swe_calc_ut(julianDay, swisseph.SE_SUN, flags);
-    
-    if (result.flag < 0) {
-      throw new Error(`Failed to calculate Sun position: ${result.serr}`);
+    const positions = enhancedSwissEphemeris.getPlanetaryPositions(julianDay);
+    const sun = positions.planets.sun;
+    if (!sun) {
+      throw new Error('Failed to calculate Sun position');
     }
-
     return {
-      longitude: result.longitude,
-      latitude: result.latitude,
-      speed: result.longitudeSpeed
+      longitude: sun.longitude,
+      latitude: sun.latitude,
+      speed: sun.speed
     };
   }
 
@@ -175,17 +160,15 @@ class PanchangService {
    * Get Moon position
    */
   getMoonPosition(julianDay) {
-    const flags = swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED;
-    const result = swisseph.swe_calc_ut(julianDay, swisseph.SE_MOON, flags);
-    
-    if (result.flag < 0) {
-      throw new Error(`Failed to calculate Moon position: ${result.serr}`);
+    const positions = enhancedSwissEphemeris.getPlanetaryPositions(julianDay);
+    const moon = positions.planets.moon;
+    if (!moon) {
+      throw new Error('Failed to calculate Moon position');
     }
-
     return {
-      longitude: result.longitude,
-      latitude: result.latitude,
-      speed: result.longitudeSpeed
+      longitude: moon.longitude,
+      latitude: moon.latitude,
+      speed: moon.speed
     };
   }
 
@@ -302,38 +285,15 @@ class PanchangService {
    */
   calculateSunTimes(julianDay, latitude, longitude) {
     try {
-      // Calculate sunrise
-      const sunriseResult = swisseph.swe_rise_trans(
-        julianDay, swisseph.SE_SUN, '', swisseph.SEFLG_SIDEREAL,
-        swisseph.SE_CALC_RISE, longitude, latitude, 0
+      // Convert Julian Day to date/time
+      const dateTime = enhancedSwissEphemeris.julianDayToDateTime(julianDay);
+
+      // Use astronomy engine for sun times calculation
+      const sunTimes = enhancedSwissEphemeris.calculateSunTimes(
+        dateTime.date, latitude, longitude, dateTime.timezone
       );
 
-      // Calculate sunset
-      const sunsetResult = swisseph.swe_rise_trans(
-        julianDay, swisseph.SE_SUN, '', swisseph.SEFLG_SIDEREAL,
-        swisseph.SE_CALC_SET, longitude, latitude, 0
-      );
-
-      // Calculate solar noon (midday)
-      const noonResult = swisseph.swe_rise_trans(
-        julianDay, swisseph.SE_SUN, '', swisseph.SEFLG_SIDEREAL,
-        swisseph.SE_CALC_MTRANSIT, longitude, latitude, 0
-      );
-
-      const sunrise = this.julianDayToTime(sunriseResult.tret);
-      const sunset = this.julianDayToTime(sunsetResult.tret);
-      const solarNoon = this.julianDayToTime(noonResult.tret);
-
-      // Calculate day length
-      const dayLengthHours = (sunsetResult.tret - sunriseResult.tret) * 24;
-      const dayLength = `${Math.floor(dayLengthHours)}h ${Math.floor((dayLengthHours % 1) * 60)}m`;
-
-      return {
-        sunrise: sunrise,
-        sunset: sunset,
-        solarNoon: solarNoon,
-        dayLength: dayLength
-      };
+      return sunTimes;
 
     } catch (error) {
       logger.error('Error calculating sun times:', error);
@@ -392,8 +352,16 @@ class PanchangService {
    * Calculate additional Panchang details
    */
   calculateAdditionalDetails(julianDay, latitude, longitude) {
+    const dateTime = enhancedSwissEphemeris.julianDayToDateTime(julianDay);
+    const astronomyDate = new Date(`${dateTime.date}T${dateTime.time}:00Z`);
+
+    // Calculate ayanamsa using astronomy engine
+    const ayanamsa = enhancedSwissEphemeris.calculateLahiriAyanamsa ?
+      enhancedSwissEphemeris.calculateLahiriAyanamsa(astronomyDate) :
+      23.85; // Default Lahiri ayanamsa
+
     return {
-      ayanamsa: swisseph.swe_get_ayanamsa_ut(julianDay),
+      ayanamsa: ayanamsa,
       localMeanTime: this.julianDayToTime(julianDay),
       siderealTime: this.calculateSiderealTime(julianDay, longitude),
       sunriseToSunset: '12:00', // Placeholder - would need proper calculation
@@ -405,21 +373,23 @@ class PanchangService {
    * Helper methods
    */
   julianDayToDate(julianDay) {
-    const calendar = swisseph.swe_revjul(julianDay, swisseph.SE_GREG_CAL);
-    return new Date(calendar.year, calendar.month - 1, calendar.day);
+    const dateTime = enhancedSwissEphemeris.julianDayToDateTime(julianDay);
+    return new Date(`${dateTime.date}T${dateTime.time}:00Z`);
   }
 
   julianDayToTime(julianDay) {
-    const calendar = swisseph.swe_revjul(julianDay, swisseph.SE_GREG_CAL);
-    const hours = Math.floor(calendar.hour);
-    const minutes = Math.floor((calendar.hour - hours) * 60);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    const dateTime = enhancedSwissEphemeris.julianDayToDateTime(julianDay);
+    return dateTime.time;
   }
 
   calculateSiderealTime(julianDay, longitude) {
-    const siderealTime = swisseph.swe_sidtime(julianDay) + (longitude / 15);
-    const hours = Math.floor(siderealTime);
-    const minutes = Math.floor((siderealTime - hours) * 60);
+    // Simplified sidereal time calculation
+    const dateTime = enhancedSwissEphemeris.julianDayToDateTime(julianDay);
+    const date = new Date(`${dateTime.date}T${dateTime.time}:00Z`);
+    const gst = (18.697374558 + 0.06570982441908 * (julianDay - 2451545.0)) % 24;
+    const lst = (gst + longitude / 15) % 24;
+    const hours = Math.floor(lst);
+    const minutes = Math.floor((lst - hours) * 60);
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
   }
 

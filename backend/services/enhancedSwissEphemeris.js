@@ -1,17 +1,18 @@
 const moment = require('moment-timezone');
 const logger = require('../utils/logger');
 const historicalTimezoneHandler = require('./historicalTimezoneHandler');
+const astronomyEngine = require('./astronomyEngine');
 
-// Try to load Swiss Ephemeris with better error handling
+// Use Astronomy Engine as primary, Swiss Ephemeris as optional enhancement
 let swisseph;
-let useSwissEph = true;
+let useSwissEph = false;
 
 try {
   swisseph = require('swisseph');
-  logger.info('Swiss Ephemeris loaded successfully');
+  logger.info('Swiss Ephemeris loaded successfully - will use for enhanced accuracy');
+  useSwissEph = true;
 } catch (error) {
-  logger.warn('Swiss Ephemeris not available:', error.message);
-  useSwissEph = false;
+  logger.warn('Swiss Ephemeris not available, using Astronomy Engine:', error.message);
 }
 
 class EnhancedSwissEphemerisService {
@@ -160,11 +161,42 @@ class EnhancedSwissEphemerisService {
     const a = Math.floor((14 - month) / 12);
     const y = year + 4800 - a;
     const m = month + 12 * a - 3;
-    
+
     const jdn = day + Math.floor((153 * m + 2) / 5) + 365 * y +
                 Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
-    
+
     return jdn + (hour / 24.0) - 0.5;
+  }
+
+  /**
+   * Convert Julian Day back to date/time for astronomy engine
+   */
+  julianDayToDateTime(julianDay) {
+    // Simplified conversion - in production, use proper astronomical conversion
+    const jd = julianDay + 0.5;
+    const z = Math.floor(jd);
+    const f = jd - z;
+
+    let a = z;
+    if (z >= 2299161) {
+      const alpha = Math.floor((z - 1867216.25) / 36524.25);
+      a = z + 1 + alpha - Math.floor(alpha / 4);
+    }
+
+    const b = a + 1524;
+    const c = Math.floor((b - 122.1) / 365.25);
+    const d = Math.floor(365.25 * c);
+    const e = Math.floor((b - d) / 30.6001);
+
+    const day = b - d - Math.floor(30.6001 * e) + f;
+    const month = e < 14 ? e - 1 : e - 13;
+    const year = c < 0 ? c - 4715 : (month > 2 ? c - 4716 : c - 4715);
+
+    const hour = (day - Math.floor(day)) * 24;
+    const date = `${year}-${month.toString().padStart(2, '0')}-${Math.floor(day).toString().padStart(2, '0')}`;
+    const time = `${Math.floor(hour).toString().padStart(2, '0')}:${Math.floor((hour % 1) * 60).toString().padStart(2, '0')}`;
+
+    return { date, time, timezone: 'UTC' };
   }
 
   /**
@@ -173,10 +205,113 @@ class EnhancedSwissEphemerisService {
    * @param {boolean} useTropical - Use tropical zodiac instead of sidereal (default: false)
    */
   getPlanetaryPositions(julianDay, useTropical = false) {
-    if (!this.useSwissEph) {
-      throw new Error('Swiss Ephemeris not available for accurate calculations');
-    }
+    try {
+      // Convert Julian Day to date/time for astronomy engine
+      const dateTime = this.julianDayToDateTime(julianDay);
+      const positions = {};
 
+      // Try Astronomy Engine first
+      let astronomyPositions = {};
+      let useAstronomyEngine = false;
+
+      try {
+        astronomyPositions = astronomyEngine.getPlanetaryPositions(
+          dateTime.date, dateTime.time, dateTime.timezone
+        ) || {};
+        logger.info(`Astronomy Engine returned ${Object.keys(astronomyPositions).length} planets`);
+        // Check if main planets are available (at least Sun, Moon, Mars, Jupiter, Saturn)
+        const mainPlanets = ['sun', 'moon', 'mars', 'jupiter', 'saturn'];
+        const hasMainPlanets = mainPlanets.some(planet => astronomyPositions[planet] && astronomyPositions[planet].sign);
+        useAstronomyEngine = hasMainPlanets && Object.keys(astronomyPositions).length >= 7; // At least 7 planets
+        logger.info(`useAstronomyEngine: ${useAstronomyEngine} (has main planets: ${hasMainPlanets})`);
+      } catch (error) {
+        logger.warn('Astronomy Engine failed, falling back to Swiss Ephemeris:', error.message);
+      }
+
+      // If Astronomy Engine worked, use it as base
+      if (useAstronomyEngine) {
+        for (const [key, planet] of Object.entries(astronomyPositions)) {
+          if (planet && planet.sign) {
+            positions[key] = {
+              name: planet.name,
+              longitude: planet.longitude,
+              latitude: planet.latitude,
+              speed: planet.speed,
+              sign: planet.sign,
+              signNumber: planet.signNumber,
+              degreeInSign: planet.degree,
+              degreeFormatted: planet.degreeFormatted,
+              nakshatra: planet.nakshatra,
+              nakshatraPada: planet.nakshatraPada,
+              isRetrograde: planet.isRetrograde,
+              rawPosition: planet.longitude,
+              signLord: this.getSignLord(planet.sign)
+            };
+          }
+        }
+
+        // Use Swiss Ephemeris for enhancement if available
+        if (this.useSwissEph && !useTropical) {
+          try {
+            logger.info('Using Swiss Ephemeris for enhanced accuracy...');
+            const enhancedPositions = this.getSwissEphPositions(julianDay, useTropical);
+            for (const [key, planet] of Object.entries(enhancedPositions)) {
+              if (positions[key]) {
+                positions[key].longitude = planet.longitude;
+                positions[key].latitude = planet.latitude;
+                positions[key].speed = planet.speed;
+                positions[key].isRetrograde = planet.isRetrograde;
+              }
+            }
+          } catch (swissError) {
+            logger.warn('Swiss Ephemeris enhancement failed:', swissError.message);
+          }
+        }
+      } else {
+        // Use Swiss Ephemeris as primary if Astronomy Engine failed
+        if (this.useSwissEph && !useTropical) {
+          try {
+            logger.info('Using Swiss Ephemeris as primary calculation engine...');
+            const swissResult = this.getSwissEphPositions(julianDay, useTropical);
+            const swissPositions = swissResult.planets;
+            for (const [key, planet] of Object.entries(swissPositions)) {
+              positions[key] = {
+                name: planet.name,
+                longitude: planet.longitude,
+                latitude: planet.latitude,
+                speed: planet.speed,
+                sign: planet.sign,
+                signNumber: planet.signNumber,
+                degreeInSign: planet.degreeInSign,
+                degreeFormatted: planet.degreeFormatted,
+                nakshatra: planet.nakshatra,
+                nakshatraPada: planet.nakshatraPada,
+                isRetrograde: planet.isRetrograde,
+                rawPosition: planet.longitude,
+                signLord: this.getSignLord(planet.sign)
+              };
+            }
+          } catch (swissError) {
+            logger.error('Both Astronomy Engine and Swiss Ephemeris failed:', swissError);
+            throw new Error('All planetary calculation engines failed');
+          }
+        } else {
+          throw new Error('No planetary calculation engine available');
+        }
+      }
+
+      return { planets: positions, success: true };
+
+    } catch (error) {
+      logger.error('Error calculating planetary positions:', error);
+      throw new Error(`Failed to calculate planetary positions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calculate positions using Swiss Ephemeris (for enhanced accuracy)
+   */
+  getSwissEphPositions(julianDay, useTropical = false) {
     const positions = {};
     const flags = useTropical ? swisseph.SEFLG_SPEED : (swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED);
 
@@ -315,45 +450,71 @@ class EnhancedSwissEphemerisService {
    * @param {boolean} useTropical - Use tropical zodiac instead of sidereal (default: false)
    */
   calculateAscendant(julianDay, latitude, longitude, useTropical = false) {
-    if (!this.useSwissEph) {
-      throw new Error('Swiss Ephemeris not available for ascendant calculation');
-    }
-
     try {
-      // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation (only for sidereal)
-      if (!useTropical) {
-        swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-        logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
-      }
-      
-      const flags = useTropical ? 0 : swisseph.SEFLG_SIDEREAL;
-      logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
-      const houses = swisseph.swe_houses_ex(julianDay, flags, latitude, longitude, 'P');
-      
-      if (!houses || houses.rflag < 0) {
-        throw new Error('Failed to calculate houses/ascendant');
+      // Convert Julian Day to date/time for astronomy engine
+      const dateTime = this.julianDayToDateTime(julianDay);
+
+      // Use Astronomy Engine as primary calculation method
+      const ascendant = astronomyEngine.calculateAscendant(
+        dateTime.date, dateTime.time, latitude, longitude, dateTime.timezone
+      );
+
+      // Add sign lord
+      ascendant.signLord = this.getSignLord(ascendant.sign);
+
+      // If Swiss Ephemeris is available, use it for enhanced accuracy
+      if (this.useSwissEph && !useTropical) {
+        try {
+          logger.info('Using Swiss Ephemeris for enhanced ascendant calculation...');
+          const swissAscendant = this.calculateSwissEphAscendant(julianDay, latitude, longitude, useTropical);
+          // Use Swiss Eph result if available
+          return swissAscendant;
+        } catch (swissError) {
+          logger.warn('Swiss Ephemeris ascendant calculation failed, using Astronomy Engine:', swissError.message);
+        }
       }
 
-      const ascendantLongitude = houses.ascendant;
-      const signNumber = Math.floor(ascendantLongitude / 30);
-      const degreeInSign = ascendantLongitude % 30;
-      const nakshatraInfo = this.calculateNakshatra(ascendantLongitude);
-
-      return {
-        longitude: ascendantLongitude,
-        sign: this.zodiacSigns[signNumber],
-        signNumber: signNumber + 1,
-        degreeInSign: degreeInSign,
-        degreeFormatted: this.formatDegree(degreeInSign),
-        nakshatra: nakshatraInfo.name,
-        nakshatraPada: nakshatraInfo.pada,
-        signLord: this.getSignLord(this.zodiacSigns[signNumber])
-      };
+      return ascendant;
 
     } catch (error) {
       logger.error('Error calculating ascendant:', error);
       throw new Error(`Failed to calculate ascendant: ${error.message}`);
     }
+  }
+
+  /**
+   * Calculate ascendant using Swiss Ephemeris (for enhanced accuracy)
+   */
+  calculateSwissEphAscendant(julianDay, latitude, longitude, useTropical = false) {
+    // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation (only for sidereal)
+    if (!useTropical) {
+      swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
+      logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
+    }
+
+    const flags = useTropical ? 0 : swisseph.SEFLG_SIDEREAL;
+    logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
+    const houses = swisseph.swe_houses_ex(julianDay, flags, latitude, longitude, 'P');
+
+    if (!houses || houses.rflag < 0) {
+      throw new Error('Failed to calculate houses/ascendant');
+    }
+
+    const ascendantLongitude = houses.ascendant;
+    const signNumber = Math.floor(ascendantLongitude / 30);
+    const degreeInSign = ascendantLongitude % 30;
+    const nakshatraInfo = this.calculateNakshatra(ascendantLongitude);
+
+    return {
+      longitude: ascendantLongitude,
+      sign: this.zodiacSigns[signNumber],
+      signNumber: signNumber + 1,
+      degreeInSign: degreeInSign,
+      degreeFormatted: this.formatDegree(degreeInSign),
+      nakshatra: nakshatraInfo.name,
+      nakshatraPada: nakshatraInfo.pada,
+      signLord: this.getSignLord(this.zodiacSigns[signNumber])
+    };
   }
 
   /**
