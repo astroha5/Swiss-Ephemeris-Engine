@@ -16,18 +16,9 @@ const panchangRoutes = require('./routes/panchang');
 const dashaRoutes = require('./routes/dasha');
 const planetaryPositionsRoutes = require('./routes/planetaryPositions');
 const transitRoutes = require('./routes/transits');
-// const aiRoutes = require('./routes/ai');
-// const patternRecallRoutes = require('./routes/patternRecall');
-// const planetaryEventsRoutes = require('./routes/planetaryEvents');
-// const patternsRoutes = require('./routes/patterns');
-// const analyticsRoutes = require('./routes/analytics');
-// const majorPatternsRoutes = require('./routes/majorPatterns');
-// const historicalEnrichmentRoutes = require('./routes/historicalEnrichment');
-// const mlRoutes = require('./routes/ml');
-// const subscriptionRoutes = require('./routes/subscription');
-// const paymentsRoutes = require('./routes/payments');
 
 const app = express();
+app.set('trust proxy', true);
 const PORT = process.env.PORT || 3001;
 
 app.use(helmet({
@@ -95,16 +86,7 @@ app.use('/api/panchang', panchangRoutes);
 app.use('/api/dasha', dashaRoutes);
 app.use('/api/planetary-positions', planetaryPositionsRoutes);
 app.use('/api/transits', transitRoutes);
-// app.use('/api/ai', aiRoutes);
-// app.use('/api/subscription', subscriptionRoutes);
-// app.use('/api/payments', paymentsRoutes);
-// app.use('/api/pattern-recall', patternRecallRoutes);
-// app.use('/api/planetary-events', planetaryEventsRoutes);
-// app.use('/api/patterns', patternsRoutes);
-// app.use('/api/analytics', analyticsRoutes);
-// app.use('/api/major-patterns', majorPatternsRoutes);
-// app.use('/api/historical-enrichment', historicalEnrichmentRoutes);
-// app.use('/api/ml', mlRoutes);
+
 
 // Root endpoint
 app.get('/', (req, res) => {

@@ -30,7 +30,7 @@ class AstronomyEngineService {
     try {
       const dateTimeString = `${date} ${time}`;
       const momentObj = moment.tz(dateTimeString, 'YYYY-MM-DD HH:mm', timezone);
-      
+
       if (!momentObj.isValid()) {
         throw new Error('Invalid date/time format');
       }
@@ -49,10 +49,11 @@ class AstronomyEngineService {
   calculateLahiriAyanamsa(astronomyDate) {
     // Simplified Lahiri Ayanamsa calculation
     // Full implementation would use more complex algorithms
-    const year = astronomyDate.getFullYear();
+    const jsDate = astronomyDate.date || astronomyDate;
+    const year = jsDate.getFullYear();
     const yearDiff = year - 2000;
     const precessionRate = 50.2564; // arcseconds per year
-    
+
     const ayanamsaDegrees = this.lahiriAyanamsa2000 + (yearDiff * precessionRate / 3600);
     return ayanamsaDegrees;
   }
@@ -79,23 +80,43 @@ class AstronomyEngineService {
       // Calculate positions for all planets
       const planets = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
       
+      // Map planet names to Swiss Ephemeris body IDs for compatibility
+      const planetIds = {
+        'Sun': 0,
+        'Moon': 1,
+        'Mercury': 2,
+        'Venus': 3,
+        'Mars': 4,
+        'Jupiter': 5,
+        'Saturn': 6
+      };
+
       for (const planetName of planets) {
         try {
           let equatorial;
-          
+
           let ecliptic;
-          if (planetName === 'Sun' || planetName === 'Moon') {
-            if (planetName === 'Sun') {
-              equatorial = Astronomy.SunPosition(astronomyDate);
-            } else {
-              equatorial = Astronomy.MoonPosition(astronomyDate);
-            }
+          if (planetName === 'Sun') {
+            equatorial = Astronomy.SunPosition(astronomyDate);
             ecliptic = {
               elon: Astronomy.EclipticLongitude(equatorial.ra, equatorial.dec),
               elat: Astronomy.EclipticLatitude(equatorial.ra, equatorial.dec)
             };
+          } else if (planetName === 'Moon') {
+            ecliptic = Astronomy.GeoMoon(astronomyDate);
           } else {
-            ecliptic = Astronomy.GeoVector(planetName, astronomyDate);
+            // Use HelioVector for planets to calculate geocentric position
+            const helioVec = Astronomy.HelioVector(planetName, astronomyDate);
+            const earthHelioVec = Astronomy.HelioVector('Earth', astronomyDate);
+            const geoVec = {
+              x: helioVec.x - earthHelioVec.x,
+              y: helioVec.y - earthHelioVec.y,
+              z: helioVec.z - earthHelioVec.z
+            };
+            ecliptic = {
+              elon: Astronomy.EclipticLongitude(geoVec.x, geoVec.y, geoVec.z),
+              elat: Astronomy.EclipticLatitude(geoVec.x, geoVec.y, geoVec.z)
+            };
           }
           
           // Convert to sidereal longitude
@@ -187,9 +208,10 @@ class AstronomyEngineService {
   calculateMoonNodes(astronomyDate) {
     // Simplified calculation - in a full implementation, this would use
     // proper lunar node calculations
-    const year = astronomyDate.getFullYear();
-    const month = astronomyDate.getMonth() + 1;
-    const day = astronomyDate.getDate();
+    const jsDate = astronomyDate.date || astronomyDate;
+    const year = jsDate.getFullYear();
+    const month = jsDate.getMonth() + 1;
+    const day = jsDate.getDate();
     
     // Approximate Rahu longitude based on date
     // This is a simplified calculation for demonstration
@@ -208,10 +230,10 @@ class AstronomyEngineService {
     try {
       const astronomyDate = this.getAstronomyDate(date, time, timezone);
       const ayanamsa = this.calculateLahiriAyanamsa(astronomyDate);
-      
+
       // Create observer location
       const observer = new Astronomy.Observer(latitude, longitude, 0);
-      
+
       // Calculate local sidereal time
       const lst = Astronomy.SiderealTime(astronomyDate);
       
