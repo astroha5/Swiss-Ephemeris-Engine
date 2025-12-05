@@ -73,7 +73,7 @@ class AstronomyEngineService {
     try {
       const astronomyDate = this.getAstronomyDate(date, time, timezone);
       const ayanamsa = this.calculateLahiriAyanamsa(astronomyDate);
-      
+
       const positions = {};
       
       // Calculate positions for all planets
@@ -83,17 +83,20 @@ class AstronomyEngineService {
         try {
           let equatorial;
           
-          // Handle different planet calculation methods
-          if (planetName === 'Sun') {
-            equatorial = Astronomy.SunPosition(astronomyDate);
-          } else if (planetName === 'Moon') {
-            equatorial = Astronomy.MoonPosition(astronomyDate);
+          let ecliptic;
+          if (planetName === 'Sun' || planetName === 'Moon') {
+            if (planetName === 'Sun') {
+              equatorial = Astronomy.SunPosition(astronomyDate);
+            } else {
+              equatorial = Astronomy.MoonPosition(astronomyDate);
+            }
+            ecliptic = {
+              elon: Astronomy.EclipticLongitude(equatorial.ra, equatorial.dec),
+              elat: Astronomy.EclipticLatitude(equatorial.ra, equatorial.dec)
+            };
           } else {
-            equatorial = Astronomy.HelioVector(planetName, astronomyDate);
+            ecliptic = Astronomy.GeoVector(planetName, astronomyDate);
           }
-
-          // Convert to ecliptic coordinates
-          const ecliptic = Astronomy.EquatorialToEcliptic(equatorial);
           
           // Convert to sidereal longitude
           const siderealLongitude = this.tropicalToSidereal(ecliptic.elon, ayanamsa);
