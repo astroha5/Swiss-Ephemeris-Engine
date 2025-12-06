@@ -9,10 +9,10 @@ let useSwissEph = false;
 
 try {
   swisseph = require('swisseph');
-  logger.info('Swiss Ephemeris loaded successfully - will use for enhanced accuracy');
+  // logger.info('Swiss Ephemeris loaded successfully - will use for enhanced accuracy');
   useSwissEph = true;
 } catch (error) {
-  logger.warn('Swiss Ephemeris not available, using Astronomy Engine:', error.message);
+  // logger.warn('Swiss Ephemeris not available, using Astronomy Engine:', error.message);
 }
 
 class EnhancedSwissEphemerisService {
@@ -71,12 +71,12 @@ class EnhancedSwissEphemerisService {
       swisseph.swe_set_ephe_path(ephemerisPath);
       
       // Set Lahiri Ayanamsa (most accurate for Vedic astrology)
-      logger.info(`🔧 DEBUG - Setting Lahiri Ayanamsa: SE_SIDM_LAHIRI = ${swisseph.SE_SIDM_LAHIRI}`);
+      // logger.info(`🔧 DEBUG - Setting Lahiri Ayanamsa: SE_SIDM_LAHIRI = ${swisseph.SE_SIDM_LAHIRI}`);
       swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-      logger.info(`🔧 DEBUG - Lahiri Ayanamsa set successfully`);
+      // logger.info(`🔧 DEBUG - Lahiri Ayanamsa set successfully`);
       
       this.isInitialized = true;
-      logger.info('Enhanced Swiss Ephemeris initialized with Lahiri Ayanamsa');
+      // logger.info('Enhanced Swiss Ephemeris initialized with Lahiri Ayanamsa');
     } catch (error) {
       logger.error('Failed to initialize Swiss Ephemeris:', error);
       this.useSwissEph = false;
@@ -96,7 +96,7 @@ class EnhancedSwissEphemerisService {
       
       if (!this.useSwissEph) {
         // Fallback calculation for when Swiss Ephemeris is not available
-        logger.info(`⚠️  Using fallback Julian Day calculation (Swiss Ephemeris not available)`);
+        // logger.info(`⚠️  Using fallback Julian Day calculation (Swiss Ephemeris not available)`);
         const momentObj = moment.tz(`${date} ${time}`, 'YYYY-MM-DD HH:mm', timezone);
         if (!momentObj.isValid()) {
           throw new Error('Invalid date/time format');
@@ -225,7 +225,7 @@ class EnhancedSwissEphemerisService {
         useAstronomyEngine = hasMainPlanets && Object.keys(astronomyPositions).length >= 7; // At least 7 planets
         logger.info(`useAstronomyEngine: ${useAstronomyEngine} (has main planets: ${hasMainPlanets})`);
       } catch (error) {
-        logger.warn('Astronomy Engine failed, falling back to Swiss Ephemeris:', error.message);
+        // logger.warn('Astronomy Engine failed, falling back to Swiss Ephemeris:', error.message);
       }
 
       // If Astronomy Engine worked, use it as base
@@ -253,7 +253,7 @@ class EnhancedSwissEphemerisService {
         // Use Swiss Ephemeris for enhancement if available
         if (this.useSwissEph && !useTropical) {
           try {
-            logger.info('Using Swiss Ephemeris for enhanced accuracy...');
+            // logger.info('Using Swiss Ephemeris for enhanced accuracy...');
             const enhancedPositions = this.getSwissEphPositions(julianDay, useTropical);
             for (const [key, planet] of Object.entries(enhancedPositions)) {
               if (positions[key]) {
@@ -264,14 +264,14 @@ class EnhancedSwissEphemerisService {
               }
             }
           } catch (swissError) {
-            logger.warn('Swiss Ephemeris enhancement failed:', swissError.message);
+            // logger.warn('Swiss Ephemeris enhancement failed:', swissError.message);
           }
         }
       } else {
         // Use Swiss Ephemeris as primary if Astronomy Engine failed
         if (this.useSwissEph && !useTropical) {
           try {
-            logger.info('Using Swiss Ephemeris as primary calculation engine...');
+            // logger.info('Using Swiss Ephemeris as primary calculation engine...');
             const swissResult = this.getSwissEphPositions(julianDay, useTropical);
             const swissPositions = swissResult.planets;
             for (const [key, planet] of Object.entries(swissPositions)) {
@@ -292,7 +292,7 @@ class EnhancedSwissEphemerisService {
               };
             }
           } catch (swissError) {
-            logger.error('Both Astronomy Engine and Swiss Ephemeris failed:', swissError);
+            // logger.error('Both Astronomy Engine and Swiss Ephemeris failed:', swissError);
             throw new Error('All planetary calculation engines failed');
           }
         } else {
@@ -316,15 +316,15 @@ class EnhancedSwissEphemerisService {
     const flags = useTropical ? swisseph.SEFLG_SPEED : (swisseph.SEFLG_SIDEREAL | swisseph.SEFLG_SPEED);
 
     // DEBUG: Log calculation parameters
-    logger.info(`🔍 DEBUG - Julian Day: ${julianDay}`);
-    logger.info(`🔍 DEBUG - Calculation Type: ${useTropical ? 'TROPICAL' : 'SIDEREAL'}`);
-    logger.info(`🔍 DEBUG - Flags: ${flags} (SEFLG_SIDEREAL: ${swisseph.SEFLG_SIDEREAL})`);
+    // logger.info(`🔍 DEBUG - Julian Day: ${julianDay}`);
+    // logger.info(`🔍 DEBUG - Calculation Type: ${useTropical ? 'TROPICAL' : 'SIDEREAL'}`);
+    // logger.info(`🔍 DEBUG - Flags: ${flags} (SEFLG_SIDEREAL: ${swisseph.SEFLG_SIDEREAL})`);
     
     // CRITICAL: Re-verify and re-set Ayanamsa before calculations (only for sidereal)
     if (!useTropical && this.useSwissEph && this.isInitialized) {
       try {
         swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-        logger.info(`🔄 Re-confirmed Lahiri Ayanamsa setting before planetary calculations`);
+        // logger.info(`🔄 Re-confirmed Lahiri Ayanamsa setting before planetary calculations`);
       } catch (error) {
         logger.error('Failed to re-set Ayanamsa:', error);
       }
@@ -334,20 +334,20 @@ class EnhancedSwissEphemerisService {
     if (!useTropical) {
       try {
         const currentAyanamsa = swisseph.swe_get_ayanamsa_ut(julianDay);
-        logger.info(`📐 Ayanamsa (Lahiri) for JD ${julianDay.toFixed(8)}: ${currentAyanamsa.toFixed(6)}°`);
-        logger.info(`📐 Ayanamsa in DMS: ${this.formatDegree(currentAyanamsa)}`);
+        // logger.info(`📐 Ayanamsa (Lahiri) for JD ${julianDay.toFixed(8)}: ${currentAyanamsa.toFixed(6)}°`);
+        // logger.info(`📐 Ayanamsa in DMS: ${this.formatDegree(currentAyanamsa)}`);
       } catch (error) {
         logger.error('Error getting Ayanamsa:', error);
       }
     } else {
-      logger.info(`🌍 Using Tropical zodiac - no Ayanamsa applied`);
+      // logger.info(`🌍 Using Tropical zodiac - no Ayanamsa applied`);
     }
       
     try {
       for (const [planetName, planetId] of Object.entries(this.planets)) {
         if (planetName === 'KETU') continue; // Handle Ketu separately
 
-        logger.info(`🔍 DEBUG - Calculating ${planetName} (ID: ${planetId})`);
+        // logger.info(`🔍 DEBUG - Calculating ${planetName} (ID: ${planetId})`);
         const result = swisseph.swe_calc_ut(julianDay, planetId, flags);
         
         if (result.rflag < 0) {
@@ -363,25 +363,25 @@ class EnhancedSwissEphemerisService {
           const moonSignNumber = Math.floor(longitude / 30);
           const moonDegreeInSign = longitude % 30;
           const moonSignName = this.zodiacSigns[moonSignNumber];
-          
-          logger.info(`🌙 ========== MOON DETAILED ANALYSIS ==========`);
-          logger.info(`🌙 Raw longitude: ${longitude.toFixed(8)}°`);
-          logger.info(`🌙 Sign boundary: ${moonSignNumber * 30}° to ${(moonSignNumber + 1) * 30}°`);
-          logger.info(`🌙 Distance from sign start: ${moonDegreeInSign.toFixed(6)}°`);
-          logger.info(`🌙 Distance from sign end: ${(30 - moonDegreeInSign).toFixed(6)}°`);
-          logger.info(`🌙 Current sign: ${moonSignName} (#${moonSignNumber + 1})`);
-          
+
+          // logger.info(`🌙 ========== MOON DETAILED ANALYSIS ==========`);
+          // logger.info(`🌙 Raw longitude: ${longitude.toFixed(8)}°`);
+          // logger.info(`🌙 Sign boundary: ${moonSignNumber * 30}° to ${(moonSignNumber + 1) * 30}°`);
+          // logger.info(`🌙 Distance from sign start: ${moonDegreeInSign.toFixed(6)}°`);
+          // logger.info(`🌙 Distance from sign end: ${(30 - moonDegreeInSign).toFixed(6)}°`);
+          // logger.info(`🌙 Current sign: ${moonSignName} (#${moonSignNumber + 1})`);
+
           // Check if Moon is near sign boundaries (within 2 degrees)
           if (moonDegreeInSign < 2) {
             const prevSign = moonSignNumber > 0 ? this.zodiacSigns[moonSignNumber - 1] : this.zodiacSigns[11];
-            logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${moonDegreeInSign.toFixed(4)}° from ${prevSign}/${moonSignName} boundary!`);
+            // logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${moonDegreeInSign.toFixed(4)}° from ${prevSign}/${moonSignName} boundary!`);
           } else if (moonDegreeInSign > 28) {
             const nextSign = moonSignNumber < 11 ? this.zodiacSigns[moonSignNumber + 1] : this.zodiacSigns[0];
-            logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${(30 - moonDegreeInSign).toFixed(4)}° from ${moonSignName}/${nextSign} boundary!`);
+            // logger.warn(`⚠️ MOON NEAR BOUNDARY: Only ${(30 - moonDegreeInSign).toFixed(4)}° from ${moonSignName}/${nextSign} boundary!`);
           }
-          
-          logger.info(`🌙 Final determination: Moon in ${moonSignName}`);
-          logger.info(`🌙 ==========================================`);
+
+          // logger.info(`🌙 Final determination: Moon in ${moonSignName}`);
+          // logger.info(`🌙 ==========================================`);
         }
 
         // Calculate sign and degrees
@@ -465,12 +465,12 @@ class EnhancedSwissEphemerisService {
       // If Swiss Ephemeris is available, use it for enhanced accuracy
       if (this.useSwissEph && !useTropical) {
         try {
-          logger.info('Using Swiss Ephemeris for enhanced ascendant calculation...');
+          // logger.info('Using Swiss Ephemeris for enhanced ascendant calculation...');
           const swissAscendant = this.calculateSwissEphAscendant(julianDay, latitude, longitude, useTropical);
           // Use Swiss Eph result if available
           return swissAscendant;
         } catch (swissError) {
-          logger.warn('Swiss Ephemeris ascendant calculation failed, using Astronomy Engine:', swissError.message);
+          // logger.warn('Swiss Ephemeris ascendant calculation failed, using Astronomy Engine:', swissError.message);
         }
       }
 
@@ -489,11 +489,11 @@ class EnhancedSwissEphemerisService {
     // CRITICAL: Re-confirm Ayanamsa setting before Ascendant calculation (only for sidereal)
     if (!useTropical) {
       swisseph.swe_set_sid_mode(swisseph.SE_SIDM_LAHIRI, 0, 0);
-      logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
+      // logger.info(`🔄 Re-confirmed Lahiri Ayanamsa for Ascendant calculation`);
     }
 
     const flags = useTropical ? 0 : swisseph.SEFLG_SIDEREAL;
-    logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
+    // logger.info(`🌅 Calculating Ascendant with flags: ${flags}`);
     const houses = swisseph.swe_houses_ex(julianDay, flags, latitude, longitude, 'P');
 
     if (!houses || houses.rflag < 0) {

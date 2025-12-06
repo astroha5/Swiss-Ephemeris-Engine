@@ -553,7 +553,7 @@ class HistoricalTimezoneHandler {
    * Enhanced with strict validation and error handling
    */
   getHistoricalOffset(year, place, longitude, timezone, coordinates) {
-    logger.debug(`🔍 getHistoricalOffset called: year=${year}, place=${place}, longitude=${longitude}, timezone=${timezone}`);
+    // logger.debug(`🔍 getHistoricalOffset called: year=${year}, place=${place}, longitude=${longitude}, timezone=${timezone}`);
     
     // For Indian locations
     if (place && (place.includes('India') || this.historicalCoordinates[place.split(',')[0]])) {
@@ -579,7 +579,7 @@ class HistoricalTimezoneHandler {
 
     // For international locations, try to identify timezone region
     const internationalRegion = this.identifyInternationalTimezone(place, timezone, coordinates);
-    logger.debug(`🌍 Identified international region: ${internationalRegion}`);
+    // logger.debug(`🌍 Identified international region: ${internationalRegion}`);
     
     if (internationalRegion && this.internationalTimezoneHistory[internationalRegion]) {
       const rules = this.internationalTimezoneHistory[internationalRegion];
@@ -673,7 +673,7 @@ class HistoricalTimezoneHandler {
           throw new Error(`Historical date ${year} requires either coordinates or a valid IANA timezone for '${place}'. Please provide coordinates or timezone (e.g., 'America/New_York').`);
         }
         
-        logger.debug(`   🧭 Using longitude: ${longitude ? longitude + '°E' : 'Not available (will use timezone)'}`);
+        // logger.debug(`   🧭 Using longitude: ${longitude ? longitude + '°E' : 'Not available (will use timezone)'}`);
         
         const historicalOffset = this.getHistoricalOffset(year, place, longitude, timezone, coordinates);
         
@@ -684,8 +684,8 @@ class HistoricalTimezoneHandler {
         const localTimeDecimal = hours + (minutes / 60);
         const utcTimeDecimal = localTimeDecimal - historicalOffset;
         
-        logger.debug(`   🕐 Local time decimal: ${localTimeDecimal.toFixed(3)}`);
-        logger.debug(`   🌍 UTC time decimal: ${utcTimeDecimal.toFixed(3)}`);
+        // logger.debug(`   🕐 Local time decimal: ${localTimeDecimal.toFixed(3)}`);
+        // logger.debug(`   🌍 UTC time decimal: ${utcTimeDecimal.toFixed(3)}`);
         
         // Handle day rollover
         let utcDate = date;
@@ -698,14 +698,14 @@ class HistoricalTimezoneHandler {
           const prevDay = moment(date).subtract(1, 'day');
           utcDate = prevDay.format('YYYY-MM-DD');
           dayShift = -1;
-          logger.debug(`   📅 Day rollover: Previous day (${dayShift})`);
+          // logger.debug(`   📅 Day rollover: Previous day (${dayShift})`);
         } else if (utcTimeDecimal >= 24) {
           // Next day
           finalUTCHour -= 24;
           const nextDay = moment(date).add(1, 'day');
           utcDate = nextDay.format('YYYY-MM-DD');
           dayShift = +1;
-          logger.debug(`   📅 Day rollover: Next day (${dayShift})`);
+          // logger.debug(`   📅 Day rollover: Next day (${dayShift})`);
         }
         
         let utcHours = Math.floor(finalUTCHour);
@@ -722,7 +722,7 @@ class HistoricalTimezoneHandler {
             const nextDay = moment(utcDate).add(1, 'day');
             utcDate = nextDay.format('YYYY-MM-DD');
             dayShift += 1;
-            logger.debug(`   📅 Additional day rollover due to minute rounding`);
+            // logger.debug(`   📅 Additional day rollover due to minute rounding`);
           }
         }
         

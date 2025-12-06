@@ -56,7 +56,7 @@ class ManualGeocoder {
                 return result;
             }
         } catch (error) {
-            logger.debug(`Nominatim geocoding failed for ${cleanLocation}:`, error.message);
+          // logger.debug(`Nominatim geocoding failed for ${cleanLocation}:`, error.message);
         }
 
         // Fallback to Photon
@@ -68,7 +68,7 @@ class ManualGeocoder {
                 return result;
             }
         } catch (error) {
-            logger.debug(`Photon geocoding failed for ${cleanLocation}:`, error.message);
+          // logger.debug(`Photon geocoding failed for ${cleanLocation}:`, error.message);
         }
 
         // Cache null result to avoid repeated requests
@@ -308,7 +308,7 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
 
     // Extract title from URL
     const title = wikipediaUrl.split('/wiki/')[1];
-    logger.debug(`🔍 Processing Wikipedia page: ${title}`);
+    // logger.debug(`🔍 Processing Wikipedia page: ${title}`);
 
     try {
         // Rate limiting for Wikipedia requests
@@ -318,16 +318,16 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
         const eventData = await fetcher.fetchPageSummary(title);
 
         if (eventData) {
-            logger.debug(`📄 Retrieved event data for: ${eventData.title}`);
+            // logger.debug(`📄 Retrieved event data for: ${eventData.title}`);
             
             // Attempt to get location from Wikidata directly
             if (eventData.raw_data && eventData.raw_data.wikibase_item) {
-                logger.debug(`🔗 Found Wikidata item: ${eventData.raw_data.wikibase_item}`);
+                // logger.debug(`🔗 Found Wikidata item: ${eventData.raw_data.wikibase_item}`);
                 await rateLimiter.waitForSlot();
                 
                 const location = await fetcher.getLocationFromWikidata(eventData.raw_data.wikibase_item);
                 if (location && location.latitude && location.longitude) {
-                    logger.debug(`✅ Wikidata coordinates found: ${location.latitude}, ${location.longitude}`);
+                    // logger.debug(`✅ Wikidata coordinates found: ${location.latitude}, ${location.longitude}`);
                     return { 
                         latitude: location.latitude, 
                         longitude: location.longitude,
@@ -339,10 +339,10 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
 
             // Attempt geocoding with built-in geocoder if no direct location
             if (eventData.location_name) {
-                logger.debug(`🌍 Trying built-in geocoding for: ${eventData.location_name}`);
+                // logger.debug(`🌍 Trying built-in geocoding for: ${eventData.location_name}`);
                 const coords = await fetcher.simpleGeocode(eventData.location_name);
                 if (coords && coords.lat && coords.lon) {
-                    logger.debug(`✅ Built-in geocoding successful: ${coords.lat}, ${coords.lon}`);
+                    // logger.debug(`✅ Built-in geocoding successful: ${coords.lat}, ${coords.lon}`);
                     return { 
                         latitude: coords.lat, 
                         longitude: coords.lon,
@@ -356,10 +356,10 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
             if (!eventData.location_name) {
                 const extractedLocation = fetcher.extractLocationFromText(eventData);
                 if (extractedLocation) {
-                    logger.debug(`📍 Extracted location from text: ${extractedLocation}`);
+                    // logger.debug(`📍 Extracted location from text: ${extractedLocation}`);
                     const coords = await fetcher.simpleGeocode(extractedLocation);
                     if (coords && coords.lat && coords.lon) {
-                        logger.debug(`✅ Text extraction geocoding successful: ${coords.lat}, ${coords.lon}`);
+                        // logger.debug(`✅ Text extraction geocoding successful: ${coords.lat}, ${coords.lon}`);
                         return { 
                             latitude: coords.lat, 
                             longitude: coords.lon,
@@ -376,21 +376,21 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
             logger.warn(`⚠️  Wikipedia API rate limited for: ${title}`);
             // Don't throw, continue to manual geocoding
         } else {
-            logger.debug('Error retrieving coordinates from Wikipedia:', error.message);
+            // logger.debug('Error retrieving coordinates from Wikipedia:', error.message);
         }
     }
 
     // Manual geocoding fallback - extract locations from event title
-    logger.debug(`🔧 Falling back to manual geocoding for: ${eventTitle || title}`);
+    // logger.debug(`🔧 Falling back to manual geocoding for: ${eventTitle || title}`);
     const textToAnalyze = `${eventTitle} ${title.replace(/_/g, ' ')}`;
     const potentialLocations = manualGeocoder.extractLocationsFromText(textToAnalyze);
     
     for (const location of potentialLocations) {
         try {
-            logger.debug(`🌐 Manual geocoding attempt: ${location}`);
+            // logger.debug(`🌐 Manual geocoding attempt: ${location}`);
             const coords = await manualGeocoder.geocode(location);
             if (coords && coords.lat && coords.lon) {
-                logger.debug(`✅ Manual geocoding successful: ${coords.lat}, ${coords.lon}`);
+                // logger.debug(`✅ Manual geocoding successful: ${coords.lat}, ${coords.lon}`);
                 return {
                     latitude: coords.lat,
                     longitude: coords.lon,
@@ -400,16 +400,16 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
                 };
             }
         } catch (error) {
-            logger.debug(`Manual geocoding failed for ${location}:`, error.message);
+            // logger.debug(`Manual geocoding failed for ${location}:`, error.message);
         }
     }
 
     // Final fallback: try hardcoded locations for known problematic events
-    logger.debug(`🎯 Trying fallback location resolution for: ${eventTitle || title}`);
+    // logger.debug(`🎯 Trying fallback location resolution for: ${eventTitle || title}`);
     const fallbackLocation = fallbackResolver.findFallbackLocation(eventTitle, title);
     
     if (fallbackLocation) {
-        logger.debug(`✅ Fallback location found: ${fallbackLocation.latitude}, ${fallbackLocation.longitude} (${fallbackLocation.reason})`);
+        // logger.debug(`✅ Fallback location found: ${fallbackLocation.latitude}, ${fallbackLocation.longitude} (${fallbackLocation.reason})`);
         return {
             latitude: fallbackLocation.latitude,
             longitude: fallbackLocation.longitude,
@@ -419,7 +419,7 @@ async function getCoordinatesFromWikipediaUrl(wikipediaUrl, eventTitle = '') {
         };
     }
 
-    logger.debug(`❌ No coordinates found for: ${eventTitle || title}`);
+    // logger.debug(`❌ No coordinates found for: ${eventTitle || title}`);
     return null;
 }
 

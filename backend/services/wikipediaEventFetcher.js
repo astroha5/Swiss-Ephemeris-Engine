@@ -145,7 +145,7 @@ class WikipediaEventFetcher {
           // Rate limiting
           await this.delay(50);
         } catch (error) {
-          logger.debug(`Failed to fetch page ${member.title}:`, error.message);
+          // logger.debug(`Failed to fetch page ${member.title}:`, error.message);
         }
       }
 
@@ -195,7 +195,7 @@ class WikipediaEventFetcher {
 
     } catch (error) {
       if (error.response?.status === 404) {
-        logger.debug(`Page not found: ${title}`);
+        // logger.debug(`Page not found: ${title}`);
         return null;
       }
       throw error;
@@ -225,7 +225,7 @@ class WikipediaEventFetcher {
           // Rate limiting
           await this.delay(200);
         } catch (error) {
-          logger.debug(`Failed to fetch events for ${date.format('MM-DD')}:`, error.message);
+          // logger.debug(`Failed to fetch events for ${date.format('MM-DD')}:`, error.message);
         }
       }
 
@@ -270,7 +270,7 @@ class WikipediaEventFetcher {
               events.push(enrichedData);
             }
           } catch (error) {
-            logger.debug('Error processing daily event:', error.message);
+            // logger.debug('Error processing daily event:', error.message);
           }
         }
       }
@@ -278,7 +278,7 @@ class WikipediaEventFetcher {
       return events;
 
     } catch (error) {
-      logger.debug(`Error fetching day events for ${month}/${day}:`, error.message);
+      // logger.debug(`Error fetching day events for ${month}/${day}:`, error.message);
       return [];
     }
   }
@@ -340,7 +340,7 @@ class WikipediaEventFetcher {
             events.push(enrichedData);
           }
         } catch (error) {
-          logger.debug('Error processing Wikidata event:', error.message);
+          // logger.debug('Error processing Wikidata event:', error.message);
         }
       }
 
@@ -378,7 +378,7 @@ class WikipediaEventFetcher {
           // Rate limiting
           await this.delay(300);
         } catch (error) {
-          logger.debug(`Failed to parse timeline page ${page}:`, error.message);
+          // logger.debug(`Failed to parse timeline page ${page}:`, error.message);
         }
       }
 
@@ -446,7 +446,7 @@ class WikipediaEventFetcher {
       return events;
 
     } catch (error) {
-      logger.debug(`Error parsing timeline page ${pageTitle}:`, error.message);
+      // logger.debug(`Error parsing timeline page ${pageTitle}:`, error.message);
       return [];
     }
   }
@@ -477,7 +477,7 @@ class WikipediaEventFetcher {
       return eventData;
 
     } catch (error) {
-      logger.debug('Error enriching event data:', error.message);
+      // logger.debug('Error enriching event data:', error.message);
       return eventData;
     }
   }
@@ -629,7 +629,7 @@ class WikipediaEventFetcher {
       }
 
     } catch (error) {
-      logger.debug('Error adding location data:', error.message);
+      // logger.debug('Error adding location data:', error.message);
     }
   }
 
@@ -794,7 +794,7 @@ class WikipediaEventFetcher {
       return wikidataLocations;
       
     } catch (error) {
-      logger.debug(`Error fetching Wikidata properties for ${wikidataId}:`, error.message);
+      // logger.debug(`Error fetching Wikidata properties for ${wikidataId}:`, error.message);
       return [];
     }
   }
@@ -1297,7 +1297,7 @@ class WikipediaEventFetcher {
           processed.push(enriched);
         }
       } catch (error) {
-        logger.debug('Error processing event:', error.message);
+        // logger.debug('Error processing event:', error.message);
       }
     }
 
@@ -1365,7 +1365,7 @@ class WikipediaEventFetcher {
             result.country_code = this.getCountryCode(countryLabel);
           }
           
-          logger.debug(`📍 Retrieved location from Wikidata: ${locationName}`);
+          // logger.debug(`📍 Retrieved location from Wikidata: ${locationName}`);
           return result;
         }
       }
@@ -1373,7 +1373,7 @@ class WikipediaEventFetcher {
       return null;
       
     } catch (error) {
-      logger.debug(`Error fetching location from Wikidata for ${wikidataId}:`, error.message);
+      // logger.debug(`Error fetching location from Wikidata for ${wikidataId}:`, error.message);
       return null;
     }
   }
